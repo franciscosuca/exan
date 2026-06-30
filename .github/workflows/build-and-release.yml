@@ -1,13 +1,10 @@
-name: Tag Builder
+name: Build and Release
 
 on:
   push:
     branches:
       - main
       - pre-release
-  pull_request:
-    branches:
-      - main
   workflow_dispatch:
     inputs:
       environment:
@@ -20,6 +17,8 @@ on:
           - production
 
 env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
   SR_VERSION: '24.1.0'
   SR_CHANGELOG_VERSION: '6.0.3'
   SR_COMMIT_ANALYZER_VERSION: '13.0.1'
@@ -30,7 +29,7 @@ env:
   CC_CONVENTIONALCOMMITS_VERSION: '8.0.0'
 
 jobs:
-  tag-build:
+  build-and-release:
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -57,9 +56,13 @@ jobs:
       - name: Run tests (if any)
         run: npm test --if-present
 
+      - name: Build web application
+        run: npm run build
+
       - name: Semantic Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           npx \
             --package semantic-release@${SR_VERSION} \

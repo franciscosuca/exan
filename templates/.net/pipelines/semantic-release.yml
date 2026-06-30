@@ -1,0 +1,86 @@
+trigger:
+  branches:
+    include:
+      - main
+      - pre-release
+
+pr: none
+
+pool:
+  vmImage: "ubuntu-latest"
+
+jobs:
+  - job: SemanticRelease
+    displayName: 'Semantic Release'
+    steps:
+      - checkout: self
+        persistCredentials: true
+        fetchDepth: 0
+
+      - task: NodeTool@0
+        displayName: 'Use Node.js 20.x'
+        inputs:
+          versionSpec: '20.x'
+
+      - script: |
+          npm install --no-save --no-audit --no-fund \
+            semantic-release@^23.0.8 \
+            @semantic-release/changelog@^6.0.3 \
+            @semantic-release/commit-analyzer@^12.0.0 \
+            @semantic-release/exec@^6.0.3 \
+            @semantic-release/git@^10.0.1 \
+            @semantic-release/release-notes-generator@^13.0.0 \
+            conventional-changelog-conventionalcommits@^7.0.2
+        displayName: 'Install semantic-release tooling'
+
+      - script: |
+          echo "Configuring git authentication..."
+          git config --global user.email "azure-pipelines@gea.com"
+          git config --global user.name "Azure Pipelines"
+
+          # Use System.AccessToken (built-in, always available, no PAT needed)
+          git remote set-url origin https://x-access-token:$(System.AccessToken)@dev.azure.com/GEA-IIoT/IIoT-Platform/_git/api-asset
+
+          # Test authentication
+          echo "Testing git authentication..."
+          git ls-remote --heads origin
+        displayName: 'Configure Git user and authentication'
+        env:
+          SYSTEM_ACCESSTOKEN: $(System.AccessToken)
+
+      - script: |
+          echo "Running semantic-release..."
+          npx semantic-release
+        displayName: 'Run Semantic Release'
+
+      - script: |
+          if [ -f "CHANGELOG.md" ]; then
+            echo "##vso[task.setvariable variable=changelogExists]true"
+            echo "CHANGELOG.md found - will publish artifact"
+          else
+            echo "##vso[task.setvariable variable=changelogExists]false"
+            echo "CHANGELOG.md not found - skipping artifact publication"
+          fi
+          
+          if [ -f "VERSION.txt" ]; then
+            echo "##vso[task.setvariable variable=versionExists]true"
+            echo "VERSION.txt found - will publish artifact"
+          else
+            echo "##vso[task.setvariable variable=versionExists]false"
+            echo "VERSION.txt not found - skipping artifact publication"
+          fi
+        displayName: 'Check for generated files'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Changelog'
+        condition: and(succeeded(), eq(variables['changelogExists'], 'true'))
+        inputs:
+          pathToPublish: 'CHANGELOG.md'
+          artifactName: 'changelog'
+
+      - task: PublishBuildArtifacts@1
+        displayName: 'Publish Version'
+        condition: and(succeeded(), eq(variables['versionExists'], 'true'))
+        inputs:
+          pathToPublish: 'VERSION.txt'
+          artifactName: 'version'

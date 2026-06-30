@@ -1,0 +1,82 @@
+## Cloud Build template (Version #1)
+##
+## Version #1 deployment contract:
+## - Build one container image from the repository root.
+## - Tag images as both immutable (${SHORT_SHA}) and mutable (latest).
+## - Deploy to one Cloud Run service in one region.
+## - Expose HTTP publicly on port 8080 with fixed baseline resources.
+
+steps:
+  # Step 1: Build Docker image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+      - '.'
+    id: 'build-image'
+
+  # Step 2: Push image to Container Registry
+  # Push without a tag uploads all local tags for this image name
+  # (here: ${SHORT_SHA} and latest).
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}'
+    id: 'push-image'
+
+  # Step 3: Deploy to Cloud Run
+  # Deploys the immutable ${SHORT_SHA} image, which is the release artifact
+  # for Version #1 traceability and rollback safety.
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'gcloud'
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      # Runtime contract for Version #1 apps.
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+    id: 'deploy-cloud-run'
+
+images:
+  # Published artifacts for this build:
+  # - ${SHORT_SHA}: immutable reference (recommended for debugging/rollback)
+  # - latest: mutable reference (convenient for tooling/quick checks)
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:${SHORT_SHA}'
+  - 'gcr.io/$PROJECT_ID/${_SERVICE_NAME}:latest'
+
+options:
+  # CLOUD_LOGGING_ONLY sends build logs directly to Cloud Logging.
+  logging: CLOUD_LOGGING_ONLY
+  # N1_HIGHCPU_8 speeds up Docker builds in this baseline template.
+  machineType: 'N1_HIGHCPU_8'
+
+substitutions:
+  # Replace with your Cloud Run service name for each project.
+  _SERVICE_NAME: 'your-service-name'
+  # Keep your current default region unless the project requires another one.
+  # Common Cloud Run regions: us-central1, us-east1, us-west1, europe-west1,
+  # europe-west4, europe-west9, asia-northeast1, asia-southeast1,
+  # australia-southeast1, southamerica-east1.
+  # Full list: https://cloud.google.com/run/docs/locations
+  _REGION: 'europe-west1'
+
+tags:
+  # Build metadata tags for filtering/searching in Cloud Build history.
+  - 'gcp-cloud'
+  - '${_SERVICE_NAME}'
+  - '${SHORT_SHA}'

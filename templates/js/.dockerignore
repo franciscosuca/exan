@@ -1,0 +1,38 @@
+# Node modules
+node_modules/
+npm-debug.log*
+
+# Expo/React Native
+.expo/
+.expo-shared/
+dist/
+web-build/
+
+# Git
+.git/
+.gitignore
+
+# Development files
+*.md
+!README.md
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Testing and CI
+.github/
+
+# Excel files
+*.xlsx
+*.xls
+
+# Archive
+archive/
+
+# Build artifacts
+*.log

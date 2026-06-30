@@ -1,0 +1,83 @@
+{
+  "branches": [
+    "main",
+    {
+      "name": "release",
+      "prerelease": "rc"
+    }
+  ],
+  "plugins": [
+    [
+      "@semantic-release/commit-analyzer",
+      {
+        "preset": "conventionalcommits",
+        "releaseRules": [
+          { "type": "feature", "release": "minor" },
+          { "type": "feat", "release": "minor" },
+          { "type": "fix", "release": "patch" },
+          { "type": "perf", "release": "patch" },
+          { "type": "revert", "release": "patch" },
+          { "type": "docs", "release": false },
+          { "type": "chore", "release": false },
+          { "type": "style", "release": false },
+          { "type": "refactor", "release": false },
+          { "type": "test", "release": false }
+        ],
+        "parserOpts": {
+          "headerPattern": "^(?:Merged PR \\d+:\\s*)?(?:Merged .* to .*:\\s*)?(\\w*)(?:\\(([\\w\\$\\.\\-\\*\\s]*)\\))?!?:\\s(.*)$",
+          "headerCorrespondence": ["type", "scope", "subject"],
+          "noteKeywords": ["BREAKING CHANGE", "BREAKING CHANGES"]
+        }
+      }
+    ],
+    [
+      "@semantic-release/release-notes-generator",
+      {
+        "preset": "conventionalcommits",
+        "presetConfig": {
+          "types": [
+            { "type": "feat", "section": "🚀 Features" },
+            { "type": "fix", "section": "🐛 Bug Fixes" },
+            { "type": "perf", "section": "⚡ Performance Improvements" },
+            { "type": "refactor", "section": "♻️ Code Refactoring" },
+            { "type": "style", "section": "💄 Styles" },
+            { "type": "docs", "section": "📚 Documentation", "hidden": true },
+            { "type": "test", "section": "🧪 Tests", "hidden": true },
+            { "type": "ci", "section": "🔧 CI/CD", "hidden": true },
+            { "type": "chore", "section": "🔨 Chores", "hidden": true }
+          ]
+        }
+      }
+    ],
+    [
+      "@semantic-release/changelog",
+      {
+        "changelogFile": "CHANGELOG.md",
+        "changelogTitle": "# Changelog\n\nAll notable changes to this project will be documented in this file."
+      }
+    ],
+    [
+      "@semantic-release/exec",
+      {
+        "verifyReleaseCmd": "echo 'Verifying release for version ${nextRelease.version}'",
+        "prepareCmd": "echo '${nextRelease.version}' > VERSION.txt && NUMERIC_VERSION=$(echo '${nextRelease.version}' | sed 's/-rc\\././' | sed 's/-.*//') && sed -i \"s|<Version>.*</Version>|<Version>${nextRelease.version}</Version>|g\" {{CSPROJ_PATH}} && sed -i \"s|<AssemblyVersion>.*</AssemblyVersion>|<AssemblyVersion>$NUMERIC_VERSION</AssemblyVersion>|g\" {{CSPROJ_PATH}} && sed -i \"s|<FileVersion>.*</FileVersion>|<FileVersion>$NUMERIC_VERSION</FileVersion>|g\" {{CSPROJ_PATH}} && sed -i \"s|<InformationalVersion>.*</InformationalVersion>|<InformationalVersion>${nextRelease.version}</InformationalVersion>|g\" {{CSPROJ_PATH}}",
+        "publishCmd": "echo 'Published version ${nextRelease.version} with tag ${nextRelease.gitTag}'"
+      }
+    ],
+    [
+      "@semantic-release/git",
+      {
+        "assets": [
+          "CHANGELOG.md",
+          "VERSION.txt",
+          "{{CSPROJ_PATH}}"
+        ],
+        "message": "chore(release): ${nextRelease.version} [skip ci]\n\n${nextRelease.notes}"
+      }
+    ]
+  ],
+  "tagFormat": "${version}",
+  "ci": true,
+  "dryRun": false,
+  "debug": false
+}

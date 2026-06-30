@@ -1,9 +1,0 @@
-{
-  "name": "{{PROJECT_NAME}}",
-  "description": "{{PROJECT_NAME}}",
-  "repository": {
-    "type": "git",
-    "url": "{{REPOSITORY_URL}}"
-  },
-  "private": true
-}

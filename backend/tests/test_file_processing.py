@@ -60,8 +60,9 @@ def test_process_upload_pdf():
 
 def test_process_upload_image():
     """process_upload handles valid images."""
-    from PIL import Image
     import io
+
+    from PIL import Image
 
     img = Image.new("RGB", (100, 100), color="red")
     buf = io.BytesIO()

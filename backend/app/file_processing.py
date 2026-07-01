@@ -1,9 +1,9 @@
 """Utilities for processing uploaded files (PDF and images)."""
 
-import fitz  # PyMuPDF
-from PIL import Image
 import io
 
+import fitz  # PyMuPDF
+from PIL import Image
 
 SUPPORTED_IMAGE_TYPES = {"image/png", "image/jpeg", "image/webp", "image/jpg"}
 SUPPORTED_PDF_TYPES = {"application/pdf"}

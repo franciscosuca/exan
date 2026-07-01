@@ -4,6 +4,7 @@ Each provider implements the same interface for:
 1. Analyzing exam structure from images/PDFs
 2. Extracting answers from filled exams
 3. Comparing student answers against answer keys
+4. Evaluating text against criteria (batch evaluation)
 """
 
 from abc import ABC, abstractmethod
@@ -42,4 +43,12 @@ class BaseProvider(ABC):
 
         Returns dict with:
         - student_name (if detectable), answers list with correctness
+        """
+
+    @abstractmethod
+    async def evaluate_text(self, text: str, prompt: str) -> dict:
+        """Evaluate text using a given prompt.
+
+        Returns dict with:
+        - score (0-100), feedback (string)
         """

@@ -55,6 +55,37 @@ export interface ProviderConfig {
   is_local: boolean;
 }
 
+// --- Batch Evaluation Types ---
+
+export interface EvaluationCriteria {
+  name: string;
+  description: string;
+  zero_description: string;
+  hundred_description: string;
+}
+
+export interface CriteriaScore {
+  criteria_name: string;
+  score: number;
+  feedback: string;
+}
+
+export interface FileEvaluationResult {
+  id: string;
+  filename: string;
+  scores: CriteriaScore[];
+  overall_score: number;
+  summary: string;
+}
+
+export interface BatchEvaluationResponse {
+  id: string;
+  results: FileEvaluationResult[];
+  created_at: string;
+}
+
+// --- API Functions ---
+
 export async function getProviders(): Promise<ProviderConfig[]> {
   const res = await fetch(`${API_BASE}/providers`);
   if (!res.ok) throw new Error('Failed to fetch providers');
@@ -109,6 +140,28 @@ export async function uploadStudentExams(
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: 'Grading failed' }));
     throw new Error(err.detail || 'Grading failed');
+  }
+  return res.json();
+}
+
+export async function batchEvaluate(
+  files: File[],
+  provider: string,
+  language: string,
+  includeGrammar: boolean,
+  customCriteria: EvaluationCriteria[]
+): Promise<BatchEvaluationResponse> {
+  const form = new FormData();
+  files.forEach((f) => form.append('files', f));
+  form.append('provider', provider);
+  form.append('language', language);
+  form.append('include_grammar', includeGrammar ? 'true' : 'false');
+  form.append('custom_criteria', JSON.stringify(customCriteria));
+
+  const res = await fetch(`${API_BASE}/batch/evaluate`, { method: 'POST', body: form });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ detail: 'Evaluation failed' }));
+    throw new Error(err.detail || 'Evaluation failed');
   }
   return res.json();
 }

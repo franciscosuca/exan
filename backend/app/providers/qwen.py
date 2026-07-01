@@ -76,3 +76,12 @@ class QwenProvider(BaseProvider):
             max_tokens=4096,
         )
         return self._parse_json(response.choices[0].message.content)
+
+    async def evaluate_text(self, text: str, prompt: str) -> dict:
+        full_prompt = prompt + text
+        response = self.client.chat.completions.create(
+            model=self.model,
+            messages=[{"role": "user", "content": [{"type": "text", "text": full_prompt}]}],
+            max_tokens=4096,
+        )
+        return self._parse_json(response.choices[0].message.content)

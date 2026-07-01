@@ -54,3 +54,39 @@ class ProviderConfig(BaseModel):
     available: bool
     requires_api_key: bool
     is_local: bool
+
+
+# --- Batch Evaluation Models ---
+
+
+class EvaluationCriteria(BaseModel):
+    name: str
+    description: str  # what the LLM should evaluate
+    zero_description: str  # what 0% looks like
+    hundred_description: str  # what 100% looks like
+
+
+class BatchEvaluationRequest(BaseModel):
+    language: str = "en"
+    include_grammar: bool = True
+    custom_criteria: list[EvaluationCriteria] = []
+
+
+class CriteriaScore(BaseModel):
+    criteria_name: str
+    score: float  # 0-100
+    feedback: str
+
+
+class FileEvaluationResult(BaseModel):
+    id: str
+    filename: str
+    scores: list[CriteriaScore]
+    overall_score: float
+    summary: str
+
+
+class BatchEvaluationResponse(BaseModel):
+    id: str
+    results: list[FileEvaluationResult]
+    created_at: str

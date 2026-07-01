@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import App from '../App';
 
@@ -11,6 +11,7 @@ vi.mock('../lib/api', () => ({
   uploadExamTemplate: vi.fn(),
   uploadAnswerKey: vi.fn(),
   uploadStudentExams: vi.fn(),
+  batchEvaluate: vi.fn(),
 }));
 
 describe('App', () => {
@@ -23,26 +24,31 @@ describe('App', () => {
     expect(screen.getByText('Exan')).toBeInTheDocument();
   });
 
-  it('renders the step indicator', async () => {
+  it('renders the landing page with two options', async () => {
     render(<App />);
+    expect(screen.getByText('Exam Comparison')).toBeInTheDocument();
+    expect(screen.getByText('Batch Evaluation')).toBeInTheDocument();
+  });
+
+  it('navigates to exam comparison when clicked', async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText('Exam Comparison'));
     expect(screen.getByText('Upload Exam Template')).toBeInTheDocument();
-    expect(screen.getByText('Upload Answer Key')).toBeInTheDocument();
-    expect(screen.getByText('Grade Student Exams')).toBeInTheDocument();
-  });
-
-  it('shows step 1 content initially', async () => {
-    render(<App />);
     expect(screen.getByText('Step 1: Upload Empty Exam')).toBeInTheDocument();
-    expect(screen.getByText('Drop exam template here')).toBeInTheDocument();
   });
 
-  it('renders the Start Over button', async () => {
+  it('navigates to batch evaluation when clicked', async () => {
     render(<App />);
-    expect(screen.getByText('Start Over')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Batch Evaluation'));
+    expect(screen.getByText('Upload Exams')).toBeInTheDocument();
+    expect(screen.getByText('Evaluation Criteria')).toBeInTheDocument();
   });
 
-  it('shows AI Provider label', async () => {
+  it('returns to landing page when clicking Exan logo', async () => {
     render(<App />);
-    expect(screen.getByText('AI Provider')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Exam Comparison'));
+    expect(screen.getByText('Step 1: Upload Empty Exam')).toBeInTheDocument();
+    fireEvent.click(screen.getByText('Exan'));
+    expect(screen.getByText('Welcome to Exan')).toBeInTheDocument();
   });
 });

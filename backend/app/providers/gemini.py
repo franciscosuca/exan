@@ -76,3 +76,14 @@ class GeminiProvider(BaseProvider):
             ),
         )
         return self._parse_json(response.text)
+
+    async def evaluate_text(self, text: str, prompt: str) -> dict:
+        full_prompt = prompt + text
+        response = self.client.models.generate_content(
+            model=self.model,
+            contents=full_prompt,
+            config=types.GenerateContentConfig(
+                response_mime_type="application/json",
+            ),
+        )
+        return self._parse_json(response.text)

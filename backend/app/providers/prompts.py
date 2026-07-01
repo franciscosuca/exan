@@ -79,3 +79,64 @@ Return your grading as JSON with this exact structure:
 }}
 
 Only return valid JSON, no other text."""
+
+
+# --- Batch Evaluation Prompts ---
+
+
+def grammar_evaluation_prompt(language: str) -> str:
+    return f"""You are an expert language and grammar evaluator for {language}.
+
+Analyze the following text for grammatical correctness, spelling, punctuation, sentence structure, and overall writing quality in {language}.
+
+Evaluate on a scale of 0 to 100 where:
+- 0% means the text is completely unintelligible, full of errors in every sentence, and impossible to understand
+- 100% means the text is perfectly written with flawless grammar, spelling, punctuation, and natural flow
+
+Provide:
+1. A numeric score (0-100)
+2. Detailed feedback explaining the errors found and suggestions for improvement
+
+Return your evaluation as JSON with this exact structure:
+{{
+  "score": 85,
+  "feedback": "The text is mostly well-written with minor issues: ..."
+}}
+
+Only return valid JSON, no other text.
+
+TEXT TO EVALUATE:
+"""
+
+
+def custom_criteria_evaluation_prompt(
+    criteria_name: str,
+    description: str,
+    zero_description: str,
+    hundred_description: str,
+) -> str:
+    return f"""You are an expert evaluator. Evaluate the following text based on this specific criteria:
+
+CRITERIA: {criteria_name}
+DESCRIPTION: {description}
+
+SCORING GUIDE:
+- 0% (lowest score): {zero_description}
+- 100% (highest score): {hundred_description}
+
+Evaluate the text on a scale of 0 to 100 based strictly on the criteria above.
+
+Provide:
+1. A numeric score (0-100)
+2. Detailed feedback explaining your assessment and how the text could improve
+
+Return your evaluation as JSON with this exact structure:
+{{
+  "score": 75,
+  "feedback": "The text demonstrates..."
+}}
+
+Only return valid JSON, no other text.
+
+TEXT TO EVALUATE:
+"""

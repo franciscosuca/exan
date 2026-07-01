@@ -58,3 +58,9 @@ class OllamaProvider(BaseProvider):
         messages = self._build_messages(student_images, student_mime_types, prompt)
         text = await self._chat(messages)
         return self._parse_json(text)
+
+    async def evaluate_text(self, text: str, prompt: str) -> dict:
+        full_prompt = prompt + text
+        messages = [{"role": "user", "content": full_prompt}]
+        result = await self._chat(messages)
+        return self._parse_json(result)

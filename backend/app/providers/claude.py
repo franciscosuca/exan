@@ -73,3 +73,12 @@ class ClaudeProvider(BaseProvider):
             messages=[{"role": "user", "content": content}],
         )
         return self._parse_json(response.content[0].text)
+
+    async def evaluate_text(self, text: str, prompt: str) -> dict:
+        full_prompt = prompt + text
+        response = self.client.messages.create(
+            model=self.model,
+            max_tokens=4096,
+            messages=[{"role": "user", "content": [{"type": "text", "text": full_prompt}]}],
+        )
+        return self._parse_json(response.content[0].text)

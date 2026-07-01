@@ -6,8 +6,17 @@ from datetime import datetime, timezone
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from .file_processing import get_mime_type, process_upload
-from .models import AnswerKey, ExamStructure, GradingResult, StudentAnswer
+from .file_processing import extract_text, get_mime_type, process_upload
+from .models import (
+    AnswerKey,
+    BatchEvaluationResponse,
+    CriteriaScore,
+    ExamStructure,
+    FileEvaluationResult,
+    GradingResult,
+    StudentAnswer,
+)
+from .providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
 from .providers.registry import get_available_providers, get_provider
 
 app = FastAPI(title="Exan API", version="0.1.0")
@@ -182,3 +191,112 @@ async def grade_student_exams(
         results.append(result)
 
     return results
+
+
+@app.post("/api/batch/evaluate", response_model=BatchEvaluationResponse)
+async def batch_evaluate(
+    files: list[UploadFile] = File(...),
+    provider: str = Form("gemini"),
+    language: str = Form("en"),
+    include_grammar: str = Form("true"),
+    custom_criteria: str = Form("[]"),
+):
+    """Evaluate a batch of documents against grammar and/or custom criteria.
+
+    custom_criteria should be a JSON array of objects with:
+    - name, description, zero_description, hundred_description
+    """
+    import json as json_mod
+
+    include_grammar_bool = include_grammar.lower() in ("true", "1", "yes")
+
+    try:
+        criteria_list = json_mod.loads(custom_criteria)
+    except (json_mod.JSONDecodeError, TypeError):
+        raise HTTPException(status_code=400, detail="Invalid custom_criteria JSON")
+
+    if not include_grammar_bool and not criteria_list:
+        raise HTTPException(
+            status_code=400,
+            detail="At least one evaluation criteria must be selected",
+        )
+
+    ai = get_provider(provider)
+    results: list[FileEvaluationResult] = []
+
+    for file in files:
+        content = await file.read()
+        mime = get_mime_type(file.filename or "unknown", file.content_type)
+
+        try:
+            text = extract_text(content, mime)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"File {file.filename}: {e}")
+
+        if not text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail=f"File {file.filename}: No text content could be extracted",
+            )
+
+        scores: list[CriteriaScore] = []
+
+        # Grammar evaluation
+        if include_grammar_bool:
+            try:
+                prompt = grammar_evaluation_prompt(language)
+                result = await ai.evaluate_text(text, prompt)
+                scores.append(
+                    CriteriaScore(
+                        criteria_name="Grammar",
+                        score=float(result.get("score", 0)),
+                        feedback=result.get("feedback", ""),
+                    )
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Grammar evaluation failed for {file.filename}: {e}",
+                )
+
+        # Custom criteria evaluations
+        for criteria in criteria_list:
+            try:
+                prompt = custom_criteria_evaluation_prompt(
+                    criteria_name=criteria["name"],
+                    description=criteria["description"],
+                    zero_description=criteria["zero_description"],
+                    hundred_description=criteria["hundred_description"],
+                )
+                result = await ai.evaluate_text(text, prompt)
+                scores.append(
+                    CriteriaScore(
+                        criteria_name=criteria["name"],
+                        score=float(result.get("score", 0)),
+                        feedback=result.get("feedback", ""),
+                    )
+                )
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Evaluation of '{criteria['name']}' failed for {file.filename}: {e}",
+                )
+
+        overall = sum(s.score for s in scores) / len(scores) if scores else 0
+        summary_parts = [f"{s.criteria_name}: {s.score:.0f}%" for s in scores]
+
+        results.append(
+            FileEvaluationResult(
+                id=str(uuid.uuid4()),
+                filename=file.filename or "unknown",
+                scores=scores,
+                overall_score=overall,
+                summary=", ".join(summary_parts),
+            )
+        )
+
+    return BatchEvaluationResponse(
+        id=str(uuid.uuid4()),
+        results=results,
+        created_at=datetime.now(timezone.utc).isoformat(),
+    )

@@ -1,6 +1,7 @@
 """Shared prompt templates for all providers."""
 
-ANALYZE_STRUCTURE_PROMPT = """You are an expert at analyzing exam documents. Look at this exam document and identify all questions.
+ANALYZE_STRUCTURE_PROMPT = """You are an expert at analyzing exam documents.
+Look at this exam document and identify all questions.
 
 For each question, determine:
 1. The question number
@@ -24,11 +25,13 @@ Return your analysis as JSON with this exact structure:
 
 Only return valid JSON, no other text."""
 
-EXTRACT_ANSWERS_PROMPT = """You are an expert at reading filled-in exam answers. Look at this completed exam and extract all answers that have been filled in.
+EXTRACT_ANSWERS_PROMPT = """You are an expert at reading filled-in exam answers.
+Look at this completed exam and extract all answers that have been filled in.
 
 For each answered question, identify:
 1. The question number
-2. The answer given (the selected option letter for multiple choice, or the written text for open-ended)
+2. The answer given (the selected option letter for multiple choice,
+or the written text for open-ended)
 3. Points value if shown
 
 Return your extraction as JSON with this exact structure:
@@ -59,7 +62,8 @@ For each question in the exam:
 2. Compare it to the correct answer
 3. Determine if it is correct
 
-For open-ended questions, use reasonable judgment - the answer doesn't need to be word-for-word identical, just semantically correct.
+For open-ended questions, use reasonable judgment - the answer doesn't need to be
+word-for-word identical, just semantically correct.
 
 Also try to identify the student's name if it appears on the exam.
 

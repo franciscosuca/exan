@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/franciscosuca/exan/compare/v1.0.0...v1.1.0) (2026-07-04)
+
+### Features
+
+* **add batch exam evaluation mode and architecture diagrams:** feat: add batch exam evaluation mode and architecture diagrams ([995dd70](https://github.com/franciscosuca/exan/commit/995dd70b9b9bc636d895b6d82ca725ebc3d438c3))
+
 ## 1.0.0 (2026-07-02)
 
 ### ⚠ BREAKING CHANGES

@@ -1,3 +1,13 @@
+## [1.2.0](https://github.com/franciscosuca/exan/compare/v1.1.0...v1.2.0) (2026-07-25)
+
+### Features
+
+* **add batch exam evaluation mode and architecture diagrams:** feat: add batch exam evaluation mode and architecture diagrams ([871f430](https://github.com/franciscosuca/exan/commit/871f430b1474d5a74d8a0e62a7c2a0ad5dbe6921))
+
+### Bug Fixes
+
+* **resolve backend lint failures in prompt templates:** fix: resolve backend lint failures in prompt templates ([fc40046](https://github.com/franciscosuca/exan/commit/fc40046c7c6ac3d339f1b5b47bc534edebfb06eb))
+
 ## [1.1.0](https://github.com/franciscosuca/exan/compare/v1.0.0...v1.1.0) (2026-07-04)
 
 ### Features

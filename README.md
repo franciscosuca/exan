@@ -76,12 +76,12 @@ npm run dev
 
 ```bash
 cd backend
-python -m venv .venv
+uv venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
-pip install -e .
+uv pip install -e .
 cp .env.example .env
 # Edit .env with your API keys
-uvicorn app.main:app --reload --port 8000
+uv run uvicorn app.main:app --reload --port 8000
 ```
 
 ### Using Ollama (Offline Mode)

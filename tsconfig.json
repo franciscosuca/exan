@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": ".",
+    "types": ["node"],
+    "jsx": "react-jsx"
+  },
+  "include": ["db/**/*.ts", "src/**/*.ts", "frontend/src/**/*.ts", "frontend/src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}

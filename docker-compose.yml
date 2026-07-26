@@ -1,20 +1,58 @@
 services:
+  mongodb:
+    image: mongo:7
+    container_name: exan-mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=admin
+      - MONGO_INITDB_DATABASE=exan
+    volumes:
+      - mongodb_data:/data/db
+      - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+    restart: unless-stopped
+
   backend:
     build: ./backend
+    container_name: exan-backend
     ports:
       - "8000:8000"
     env_file:
-      - ./backend/.env
+      - path: ./backend/.env
+        required: false
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
     volumes:
       - ./backend/app:/app/app
+    depends_on:
+      - mongodb
+    restart: unless-stopped
+
+  auth-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.auth
+    container_name: exan-auth-server
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb://exan_app:exan_app_password@mongodb:27017/exan?authSource=exan
+      - JWT_SECRET=${JWT_SECRET:-change-this-to-a-random-secret}
+    depends_on:
+      - mongodb
     restart: unless-stopped
 
   frontend:
     build: ./frontend
+    container_name: exan-frontend
     ports:
       - "3000:80"
     depends_on:
       - backend
+      - auth-server
     restart: unless-stopped
+
+volumes:
+  mongodb_data:

@@ -64,6 +64,16 @@ An AI-powered application that scans exam documents, extracts their structure, a
 - Python 3.11+
 - (Optional) [Ollama](https://ollama.com) for local inference
 
+### Root Scripts
+
+```bash
+# Start local MongoDB
+npm run db:start
+
+# Start backend API server
+npm run dev:server
+```
+
 ### Frontend
 
 ```bash

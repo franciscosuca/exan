@@ -39,53 +39,83 @@ export function RegisterPage({
   }
 
   return (
-    <div className="auth-container">
-      <h1>Register</h1>
-      <form onSubmit={handleSubmit}>
-        <div className="field">
-          <label htmlFor="username">USERNAME</label>
-          <input
-            id="username"
-            type="text"
-            value={username}
-            onChange={(e) => setUsername(e.target.value)}
-            required
-            minLength={3}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="password">PASSWORD</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="repeatPassword">REPEAT PASSWORD</label>
-          <input
-            id="repeatPassword"
-            type="password"
-            value={repeatPassword}
-            onChange={(e) => setRepeatPassword(e.target.value)}
-            required
-            minLength={6}
-          />
-        </div>
-        {error && <p className="error">{error}</p>}
-        <button type="submit" disabled={loading}>
-          {loading ? "Creating account..." : "Create Account"}
-        </button>
-      </form>
-      <p className="switch">
-        Already have an account?{" "}
-        <button type="button" onClick={onNavigateToLogin}>
-          Login
-        </button>
-      </p>
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
+      <div className="w-full max-w-sm rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm">
+        <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">
+          Register
+        </h1>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label
+              htmlFor="username"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              USERNAME
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              minLength={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="password"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              PASSWORD
+            </label>
+            <input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="repeatPassword"
+              className="mb-1 block text-xs font-medium text-gray-600"
+            >
+              REPEAT PASSWORD
+            </label>
+            <input
+              id="repeatPassword"
+              type="password"
+              value={repeatPassword}
+              onChange={(e) => setRepeatPassword(e.target.value)}
+              required
+              minLength={6}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100"
+            />
+          </div>
+          {error && <p className="text-sm text-red-600">{error}</p>}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full rounded-lg bg-purple-600 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {loading ? "Creating account..." : "Create Account"}
+          </button>
+        </form>
+        <p className="mt-4 text-center text-sm text-gray-600">
+          Already have an account?{" "}
+          <button
+            type="button"
+            onClick={onNavigateToLogin}
+            className="font-medium text-purple-600 hover:text-purple-700"
+          >
+            Login
+          </button>
+        </p>
+      </div>
     </div>
   );
 }

@@ -58,6 +58,23 @@ export function clearToken(): void {
   localStorage.removeItem("auth_token");
 }
 
+export function saveUsername(username: string): void {
+  localStorage.setItem("auth_username", username);
+}
+
+export function getUsername(): string | null {
+  return localStorage.getItem("auth_username");
+}
+
+export function clearUsername(): void {
+  localStorage.removeItem("auth_username");
+}
+
 export function isAuthenticated(): boolean {
   return getToken() !== null;
+}
+
+export function logout(): void {
+  clearToken();
+  clearUsername();
 }

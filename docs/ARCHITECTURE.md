@@ -11,8 +11,7 @@ graph TB
     subgraph Frontend["Frontend (React 19 + Vite + Tailwind CSS 4)"]
         App["App.tsx<br/>(Mode Router)"]
         Landing["Landing Page"]
-        EC["ExamComparison"]
-        BE_UI["BatchEvaluation"]
+        Eval["ExamComparison / BatchEvaluation"]
         
         subgraph SharedComponents["Shared Components"]
             FD["FileDropzone"]
@@ -32,56 +31,22 @@ graph TB
         Main["main.py<br/>(API Routes)"]
         FP["file_processing.py<br/>(PDF/Word/Image)"]
         Models["models/<br/>(Pydantic Models)"]
-        
-        subgraph Providers["AI Provider Layer"]
-            Base["BaseProvider (ABC)"]
-            Gemini["GeminiProvider"]
-            Claude["ClaudeProvider"]
-            Qwen["QwenProvider"]
-            Ollama["OllamaProvider"]
-            Registry["registry.py"]
-            Prompts["prompts.py"]
-        end
-    end
-    
-    subgraph External["External Services"]
-        GeminiAPI["Google Gemini API"]
-        ClaudeAPI["Anthropic Claude API"]
-        QwenAPI["Qwen/Dashscope API"]
-        OllamaLocal["Ollama (Local)"]
+        AI["AI-provider"]
     end
 
     App --> Landing
-    App --> EC
-    App --> BE_UI
-    EC --> FD
-    EC --> PS
-    EC --> SI
-    EC --> GR
-    BE_UI --> FD
-    BE_UI --> PS
-    BE_UI --> BR
-    EC --> API
-    BE_UI --> API
+    App --> Eval
+    Eval --> FD
+    Eval --> PS
+    Eval --> SI
+    Eval --> GR
+    Eval --> BR
+    Eval --> API
     
     API -->|HTTP REST| Main
     Main --> FP
     Main --> Models
-    Main --> Registry
-    Registry --> Base
-    Base --> Gemini
-    Base --> Claude
-    Base --> Qwen
-    Base --> Ollama
-    Gemini --> Prompts
-    Claude --> Prompts
-    Qwen --> Prompts
-    Ollama --> Prompts
-    
-    Gemini -->|API| GeminiAPI
-    Claude -->|API| ClaudeAPI
-    Qwen -->|API| QwenAPI
-    Ollama -->|HTTP| OllamaLocal
+    Main --> AI
 ```
 
 ---

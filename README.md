@@ -64,18 +64,28 @@ An AI-powered application that scans exam documents, extracts their structure, a
 - Python 3.11+
 - (Optional) [Ollama](https://ollama.com) for local inference
 
-### Frontend
+### Root Scripts
 
 ```bash
-cd frontend
+# Start local MongoDB
+npm run db:start
+
+# Start auth API server
+npm run dev:auth
+```
+
+### Webapp
+
+```bash
+cd webapp
 npm install
 npm run dev
 ```
 
-### Backend
+### Inference
 
 ```bash
-cd backend
+cd inference
 uv venv .venv
 source .venv/bin/activate  # Windows: .venv\Scripts\activate
 uv pip install -e .
@@ -89,37 +99,37 @@ uv run uvicorn app.main:app --reload --port 8000
 ```bash
 # Install Ollama from https://ollama.com
 ollama pull qwen2.5-vl
-# The backend auto-detects Ollama availability
+# The inference service auto-detects Ollama availability
 ```
 
 ### Docker Compose (One Command)
 
 ```bash
 # Copy and configure environment
-cp backend/.env.example backend/.env
-# Edit backend/.env with your API keys
+cp inference/.env.example inference/.env
+# Edit inference/.env with your API keys
 
-# Run both frontend and backend
+# Run both webapp and inference services
 docker compose up --build
 ```
 
-The app will be available at `http://localhost:3000`. The backend API runs on port 8000 internally.
+The app will be available at `http://localhost:3000`. The inference API runs on port 8000 internally.
 
 ## Running Tests
 
-### Backend
+### Inference
 
 ```bash
-cd backend
+cd inference
 source .venv/bin/activate
 pip install -e ".[dev]"
 pytest -v
 ```
 
-### Frontend
+### Webapp
 
 ```bash
-cd frontend
+cd webapp
 npm test
 ```
 
@@ -135,19 +145,21 @@ npm test
 ## Project Structure
 
 ```
-├── frontend/           # React + Tailwind UI
+├── webapp/             # React + Tailwind UI
 │   └── src/
 │       ├── components/ # Reusable UI components
 │       ├── lib/        # API client
 │       ├── test/       # Vitest component tests
 │       └── App.tsx     # Main 3-step workflow
-├── backend/            # Python FastAPI
+├── inference/          # Python FastAPI
 │   ├── app/
 │   │   ├── providers/  # AI provider implementations
 │   │   ├── models/     # Pydantic data models
 │   │   ├── file_processing.py
 │   │   └── main.py     # API routes
 │   └── tests/          # Pytest test suite
+├── auth/               # Node/Express JWT auth microservice
+├── db/                 # Mongo connection helper + init script
 ├── docs/
 │   └── MODEL_TRAINING.md  # Guide for fine-tuning custom models
 ├── docker-compose.yml  # One-command deployment

@@ -209,7 +209,7 @@ The most effective training process is iterative:
 
 ### 4.1 Implementing Feedback Collection
 
-Add a "correction" endpoint to the backend:
+Add a "correction" endpoint to the inference service:
 
 ```python
 @app.post("/api/exam/correct")

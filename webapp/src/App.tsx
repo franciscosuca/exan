@@ -1,12 +1,48 @@
 import { useState } from 'react';
 import { ExamComparison } from './components/ExamComparison';
 import { BatchEvaluation } from './components/BatchEvaluation';
-import { ClipboardCheck, FileText } from 'lucide-react';
+import { LoginPage } from './pages/LoginPage';
+import { RegisterPage } from './pages/RegisterPage';
+import { ClipboardCheck, FileText, LogOut, UserRound } from 'lucide-react';
+import { getUsername, isAuthenticated, logout, saveUsername } from './auth.api';
 
 type AppMode = 'landing' | 'exam-comparison' | 'batch-evaluation';
+type AuthView = 'login' | 'register';
 
 function App() {
   const [mode, setMode] = useState<AppMode>('landing');
+  const [authView, setAuthView] = useState<AuthView>('login');
+  const [username, setUsername] = useState<string | null>(() =>
+    isAuthenticated() ? getUsername() : null
+  );
+
+  function handleAuthSuccess(name: string) {
+    saveUsername(name);
+    setUsername(name);
+    setAuthView('login');
+    setMode('landing');
+  }
+
+  function handleLogout() {
+    logout();
+    setUsername(null);
+    setMode('landing');
+    setAuthView('login');
+  }
+
+  if (!username) {
+    return authView === 'login' ? (
+      <LoginPage
+        onSuccess={handleAuthSuccess}
+        onNavigateToRegister={() => setAuthView('register')}
+      />
+    ) : (
+      <RegisterPage
+        onSuccess={handleAuthSuccess}
+        onNavigateToLogin={() => setAuthView('login')}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -15,11 +51,24 @@ function App() {
           <button onClick={() => setMode('landing')} className="text-2xl font-bold text-gray-900 hover:text-blue-700">
             Exan
           </button>
-          {mode !== 'landing' && (
-            <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-              {mode === 'exam-comparison' ? 'Exam Comparison' : 'Batch Evaluation'}
+          <div className="flex items-center gap-4">
+            {mode !== 'landing' && (
+              <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+                {mode === 'exam-comparison' ? 'Exam Comparison' : 'Batch Evaluation'}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
+              <UserRound className="h-4 w-4 text-gray-500" />
+              {username}
             </span>
-          )}
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+            >
+              <LogOut className="h-4 w-4" />
+              Logout
+            </button>
+          </div>
         </div>
       </header>
 

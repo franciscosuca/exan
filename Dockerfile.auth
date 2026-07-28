@@ -7,8 +7,8 @@ RUN npm ci
 
 COPY tsconfig.json ./
 COPY db/ ./db/
-COPY src/ ./src/
+COPY auth/ ./auth/
 
 EXPOSE 3001
 
-CMD ["npx", "tsx", "src/server.ts"]
+CMD ["npx", "tsx", "auth/server.ts"]

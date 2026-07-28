@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { Db } from "mongodb";
-import { createUser, verifyUser } from "../auth/user.model.js";
-import { generateToken } from "../auth/token.js";
+import { createUser, verifyUser } from "../lib/user.model.js";
+import { generateToken } from "../lib/token.js";
 
 export function authRoutes(db: Db): Router {
   const router = Router();

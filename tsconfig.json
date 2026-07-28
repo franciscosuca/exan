@@ -11,6 +11,6 @@
     "types": ["node"],
     "jsx": "react-jsx"
   },
-  "include": ["db/**/*.ts", "src/**/*.ts", "frontend/src/**/*.ts", "frontend/src/**/*.tsx"],
+  "include": ["db/**/*.ts", "auth/**/*.ts", "webapp/src/**/*.ts", "webapp/src/**/*.tsx"],
   "exclude": ["node_modules", "dist"]
 }

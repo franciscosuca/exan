@@ -1,6 +1,6 @@
 import express from "express";
 import { connectToDatabase } from "../db/connection.js";
-import { ensureIndexes } from "./auth/user.model.js";
+import { ensureIndexes } from "./lib/user.model.js";
 import { authRoutes } from "./routes/auth.routes.js";
 import { authMiddleware } from "./middleware/auth.middleware.js";
 

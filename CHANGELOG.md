@@ -1,3 +1,10 @@
+## [1.3.0](https://github.com/franciscosuca/exan/compare/v1.2.0...v1.3.0) (2026-07-28)
+
+### Features
+
+* **implement authentication flow with login and registration pages:** feat: implement authentication flow with login and registration pages ([ee45a0e](https://github.com/franciscosuca/exan/commit/ee45a0ecf98e219682e21fd93caabe64591f66d6))
+* **implement authentication system with JWT and MongoDB:** feat: implement authentication system with JWT and MongoDB ([67ad3f9](https://github.com/franciscosuca/exan/commit/67ad3f9f406b869930ee5986cfbdbf48c361d9f3))
+
 ## [1.2.0](https://github.com/franciscosuca/exan/compare/v1.1.0...v1.2.0) (2026-07-25)
 
 ### Features

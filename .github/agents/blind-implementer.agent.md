@@ -2,7 +2,7 @@
 name: "blind-implementer"
 description: "Use to implement features from requirements without reading tests. Keywords: blind implementation, behavior-first coding, test-isolated implementation."
 tools: [read, search, edit, execute, agent]
-user-invocable: true
+user-invocable: false
 agents: ["react", "Python", "Express", "Docker"]
 argument-hint: "Provide only requirement text, constraints, and acceptance checklist. Do not include test content."
 ---

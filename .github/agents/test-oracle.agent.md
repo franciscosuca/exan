@@ -2,7 +2,7 @@
 name: "test-oracle"
 description: "Use to write acceptance and edge-case tests from requirements, then keep those tests hidden from the implementation agent until coding is done. Keywords: hidden tests, acceptance tests, edge cases, contract tests, quality gate."
 tools: [read, search, edit, execute, agent]
-user-invocable: true
+user-invocable: false
 agents: ["playwright", "vitest"]
 argument-hint: "Describe the feature or bug fix in plain requirements and constraints."
 ---

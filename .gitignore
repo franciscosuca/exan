@@ -9,7 +9,6 @@ venv/
 frontend/dist/
 
 # Environment
-backend/.env
 .env
 uv.lock
 

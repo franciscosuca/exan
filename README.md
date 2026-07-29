@@ -60,7 +60,8 @@ An AI-powered application that scans exam documents, extracts their structure, a
 
 ### Prerequisites
 
-- Node.js 20+
+- Bun 1.2+
+- Node.js 20+ (for auth and release tooling)
 - Python 3.11+
 - (Optional) [Ollama](https://ollama.com) for local inference
 

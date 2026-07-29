@@ -68,18 +68,18 @@ An AI-powered application that scans exam documents, extracts their structure, a
 
 ```bash
 # Start local MongoDB
-npm run db:start
+bun run db:start
 
 # Start auth API server
-npm run dev:auth
+bun run dev:auth
 ```
 
 ### Webapp
 
 ```bash
 cd webapp
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 ### Inference
@@ -130,7 +130,7 @@ pytest -v
 
 ```bash
 cd webapp
-npm test
+bun run test
 ```
 
 ## API Endpoints

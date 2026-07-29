@@ -1,3 +1,9 @@
+## [1.3.1](https://github.com/franciscosuca/exan/compare/v1.3.0...v1.3.1) (2026-07-29)
+
+### Performance Improvements
+
+* **update TypeScript and TSX versions to 7.0.2 and 4.23.1 respectively:** perf: update TypeScript and TSX versions to 7.0.2 and 4.23.1 respectively ([55c0041](https://github.com/franciscosuca/exan/commit/55c004104fb32555b1f80cfd3acba73bcd4a1eb5))
+
 ## [1.3.0](https://github.com/franciscosuca/exan/compare/v1.2.0...v1.3.0) (2026-07-28)
 
 ### Features

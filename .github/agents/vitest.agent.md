@@ -2,7 +2,7 @@
 name: "vitest"
 description: "Use when bootstrapping Vitest for the repo, adding or updating unit/component tests after a new feature, after a bug fix, or when syncing test coverage with recent code changes. Keywords: vitest, unit test, component test, test coverage, test sync, update tests, add tests, after feature, after bug fix."
 tools: [read, search, edit, execute]
-user-invocable: true
+user-invocable: false
 agents: []
 argument-hint: "Describe the feature or bug fix, the component or utility affected, and any files you changed."
 ---

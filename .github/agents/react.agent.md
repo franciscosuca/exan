@@ -1,9 +1,9 @@
 ---
 name: "react"
 description: "Use for React component architecture, state ownership decisions, feature decomposition, and scalable refactors. Keywords: React architecture, component hierarchy, state lifting, hooks, prop drilling, feature folder, refactor, reusable components."
-tools: [read, search, edit, execute, agent]
-user-invocable: true
-agents: ["playwright", "vitest"]
+tools: [read, search, edit, execute]
+user-invocable: false
+agents: []
 argument-hint: "Describe the React feature or refactor, the affected pages/components, and the intended behavior."
 ---
 
@@ -66,12 +66,6 @@ Apply Thinking in React and keep state, component boundaries, and data flow clea
 - For UI or styling tasks, first check whether a design system document exists.
 - Prefer `DESIGN.md` when present (for example project root, `.github/DESIGN.md`, or feature design folders).
 - If design guidance exists, follow it while keeping React architecture clean.
-
-## Delegation Guidance
-
-- Delegate to `Vitest` for unit and component test creation, updates, and coverage.
-- Delegate to `Playwright` for end-to-end test creation, updates, and regression coverage.
-- Keep architecture ownership in this agent, and delegate specialized execution.
 
 ## Output Expectations
 

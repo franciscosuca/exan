@@ -9,8 +9,9 @@
     "outDir": "dist",
     "rootDir": ".",
     "types": ["node"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "noEmit": true
   },
-  "include": ["db/**/*.ts", "auth/**/*.ts", "webapp/src/**/*.ts", "webapp/src/**/*.tsx"],
+  "include": ["db/**/*.ts", "auth/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }

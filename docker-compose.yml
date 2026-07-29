@@ -10,7 +10,6 @@ services:
       - MONGO_INITDB_DATABASE=exan
     volumes:
       - mongodb_data:/data/db
-      #! The script below might not be required with the latest version of the app that allows to create the user and database on the fly, but it is kept here for backward compatibility.
       - ./db/init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro 
     restart: unless-stopped
 
@@ -26,9 +25,6 @@ services:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
     volumes:
       - ./inference/app:/app/app
-    #! I dont think we need a dependency here but for the auth-server to work we need to have the mongodb up and running
-    depends_on:
-      - mongodb
     restart: unless-stopped
 
   auth-server:
@@ -41,7 +37,6 @@ services:
     environment:
       - PORT=3001
       - MONGO_URI=mongodb://exan_app:exan_app_password@mongodb:27017/exan?authSource=exan
-      #! is this actually necessary?
       - JWT_SECRET=${JWT_SECRET:-change-this-to-a-random-secret}
     depends_on:
       - mongodb

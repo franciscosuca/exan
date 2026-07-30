@@ -13,7 +13,7 @@
 - `webapp/Dockerfile` (Bun image and `bun install` / `bun run build`)
 - `.github/workflows/test-pipeline.yml` (Bun cache/install/lint/test)
 - `.github/workflows/build-and-release.yml` (Bun cache/install/test/build)
-- `.releaserc.json` (track `bun.lock` instead of `package-lock.json`)
+- `.releaserc.json` (track `webapp/bun.lock` alongside the root `package-lock.json`)
 
 ### implementation
 - Install Bun; verify with `bun --version` locally and in CI.
@@ -24,5 +24,5 @@
 - Update webapp Dockerfile to Bun base and build commands.
 - Change workflow cache keys to `webapp/bun.lock`.
 - Replace CI install/test/build commands with Bun script invocations.
-- Update semantic-release asset list to include `bun.lock`.
+- Update semantic-release asset list to include `webapp/bun.lock`.
 - Run lint, tests, and build using Bun end-to-end.

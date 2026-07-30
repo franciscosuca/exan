@@ -4,14 +4,14 @@
   "description": "AI-powered exam scanning and grading application",
   "private": true,
   "scripts": {
-    "dev:webapp": "cd webapp && npm run dev",
+    "dev:webapp": "cd webapp && bun run dev",
     "dev:inference": "cd inference && uv run uvicorn app.main:app --reload --port 8000",
     "dev:auth": "tsx watch auth/server.ts",
     "start:auth": "tsx auth/server.ts",
     "db:start": "docker compose up -d mongodb",
     "db:stop": "docker compose stop mongodb",
     "db:reset": "docker compose down -v && docker compose up -d mongodb",
-    "build:webapp": "cd webapp && npm run build"
+    "build:webapp": "cd webapp && bun run build"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",

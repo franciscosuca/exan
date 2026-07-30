@@ -60,7 +60,8 @@ An AI-powered application that scans exam documents, extracts their structure, a
 
 ### Prerequisites
 
-- Node.js 20+
+- Bun 1.2+
+- Node.js 20+ (for auth and release tooling)
 - Python 3.11+
 - (Optional) [Ollama](https://ollama.com) for local inference
 
@@ -68,18 +69,18 @@ An AI-powered application that scans exam documents, extracts their structure, a
 
 ```bash
 # Start local MongoDB
-npm run db:start
+bun run db:start
 
 # Start auth API server
-npm run dev:auth
+bun run dev:auth
 ```
 
 ### Webapp
 
 ```bash
 cd webapp
-npm install
-npm run dev
+bun install
+bun run dev
 ```
 
 ### Inference
@@ -130,7 +131,7 @@ pytest -v
 
 ```bash
 cd webapp
-npm test
+bun run test
 ```
 
 ## API Endpoints

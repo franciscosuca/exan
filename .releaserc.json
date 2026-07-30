@@ -52,7 +52,7 @@
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "package.json", "package-lock.json"],
+        "assets": ["CHANGELOG.md", "package.json", "package-lock.json", "webapp/bun.lock"],
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }
     ],

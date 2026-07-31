@@ -1,17 +1,19 @@
 import type { BatchEvaluationResponse } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 interface BatchResultsProps {
   response: BatchEvaluationResponse;
 }
 
 export function BatchResults({ response }: BatchResultsProps) {
+  const { t } = useLanguage();
   if (response.results.length === 0) return null;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Evaluation Results</h2>
+      <h2 className="text-2xl font-bold text-gray-900">{t('batchResults.title')}</h2>
       <p className="text-sm text-gray-500">
-        {response.results.length} file(s) evaluated
+        {t('batchResults.filesEvaluated', { count: response.results.length })}
       </p>
 
       {response.results.map((result) => (
@@ -22,7 +24,7 @@ export function BatchResults({ response }: BatchResultsProps) {
               <p className="text-3xl font-bold text-gray-900">
                 {result.overall_score.toFixed(0)}%
               </p>
-              <p className="text-sm text-gray-500">Overall</p>
+              <p className="text-sm text-gray-500">{t('batchResults.overall')}</p>
             </div>
           </div>
 

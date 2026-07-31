@@ -1,16 +1,18 @@
 import type { GradingResult } from '../lib/api';
 import { ResultsBadge } from './StepIndicator';
+import { useLanguage } from '../lib/i18n';
 
 interface GradingResultsProps {
   results: GradingResult[];
 }
 
 export function GradingResults({ results }: GradingResultsProps) {
+  const { t } = useLanguage();
   if (results.length === 0) return null;
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900">Grading Results</h2>
+      <h2 className="text-2xl font-bold text-gray-900">{t('gradingResults.title')}</h2>
 
       {results.map((result) => (
         <div key={result.id} className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
@@ -26,7 +28,7 @@ export function GradingResults({ results }: GradingResultsProps) {
                 {result.percentage.toFixed(0)}%
               </p>
               <p className="text-sm text-gray-500">
-                {result.total_score}/{result.max_score} points
+                {t('gradingResults.points', { score: result.total_score, max: result.max_score })}
               </p>
             </div>
           </div>
@@ -44,18 +46,18 @@ export function GradingResults({ results }: GradingResultsProps) {
           {/* Per-question breakdown */}
           <details className="group">
             <summary className="cursor-pointer text-sm font-medium text-blue-600 hover:text-blue-800">
-              View question breakdown
+              {t('gradingResults.viewBreakdown')}
             </summary>
             <div className="mt-3 divide-y divide-gray-100">
               {result.answers.map((a) => (
                 <div key={a.question_number} className="flex items-center justify-between py-2">
                   <div className="flex items-center gap-3">
                     <span className="text-sm font-medium text-gray-600">Q{a.question_number}</span>
-                    <span className="text-sm text-gray-700">{a.student_answer || '(no answer)'}</span>
+                    <span className="text-sm text-gray-700">{a.student_answer || t('gradingResults.noAnswer')}</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="text-xs text-gray-400">
-                      {a.points_earned}/{a.points_possible} pts
+                      {t('gradingResults.pts', { earned: a.points_earned, possible: a.points_possible })}
                     </span>
                     <ResultsBadge correct={a.is_correct} />
                   </div>

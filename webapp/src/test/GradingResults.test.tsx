@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { GradingResults } from '../components/GradingResults';
+import { LanguageProvider, LANGUAGE_STORAGE_KEY } from '../lib/i18n';
 import type { GradingResult } from '../lib/api';
 
 const RESULTS: GradingResult[] = [
@@ -34,25 +35,29 @@ const RESULTS: GradingResult[] = [
 ];
 
 describe('GradingResults', () => {
+  beforeEach(() => {
+    window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
+  });
+
   it('renders nothing when results are empty', () => {
-    const { container } = render(<GradingResults results={[]} />);
+    const { container } = render(<LanguageProvider><GradingResults results={[]} /></LanguageProvider>);
     expect(container.firstChild).toBeNull();
   });
 
   it('renders student name and score', () => {
-    render(<GradingResults results={RESULTS} />);
+    render(<LanguageProvider><GradingResults results={RESULTS} /></LanguageProvider>);
     expect(screen.getByText('Alice')).toBeInTheDocument();
     expect(screen.getByText('80%')).toBeInTheDocument();
     expect(screen.getByText('8/10 points')).toBeInTheDocument();
   });
 
   it('renders the heading', () => {
-    render(<GradingResults results={RESULTS} />);
+    render(<LanguageProvider><GradingResults results={RESULTS} /></LanguageProvider>);
     expect(screen.getByText('Grading Results')).toBeInTheDocument();
   });
 
   it('shows filename', () => {
-    render(<GradingResults results={RESULTS} />);
+    render(<LanguageProvider><GradingResults results={RESULTS} /></LanguageProvider>);
     expect(screen.getByText('alice_exam.pdf')).toBeInTheDocument();
   });
 });

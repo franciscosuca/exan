@@ -1,4 +1,5 @@
 import { Check, X } from 'lucide-react';
+import { useLanguage } from '../lib/i18n';
 
 interface StepIndicatorProps {
   steps: string[];
@@ -49,13 +50,14 @@ interface ResultsBadgeProps {
 }
 
 export function ResultsBadge({ correct }: ResultsBadgeProps) {
+  const { t } = useLanguage();
   return correct ? (
     <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-      <Check className="h-3 w-3" /> Correct
+      <Check className="h-3 w-3" /> {t('gradingResults.correct')}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-      <X className="h-3 w-3" /> Incorrect
+      <X className="h-3 w-3" /> {t('gradingResults.incorrect')}
     </span>
   );
 }

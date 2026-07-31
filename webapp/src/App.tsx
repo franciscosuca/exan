@@ -3,13 +3,16 @@ import { ExamComparison } from './components/ExamComparison';
 import { BatchEvaluation } from './components/BatchEvaluation';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
+import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ClipboardCheck, FileText, LogOut, UserRound } from 'lucide-react';
 import { getUsername, isAuthenticated, logout, saveUsername } from './auth.api';
+import { useLanguage } from './lib/i18n';
 
 type AppMode = 'landing' | 'exam-comparison' | 'batch-evaluation';
 type AuthView = 'login' | 'register';
 
 function App() {
+  const { t } = useLanguage();
   const [mode, setMode] = useState<AppMode>('landing');
   const [authView, setAuthView] = useState<AuthView>('login');
   const [username, setUsername] = useState<string | null>(() =>
@@ -49,24 +52,27 @@ function App() {
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-4xl items-center justify-between px-6 py-4">
           <button onClick={() => setMode('landing')} className="text-2xl font-bold text-gray-900 hover:text-blue-700">
-            Exan
+            {t('app.name')}
           </button>
           <div className="flex items-center gap-4">
             {mode !== 'landing' && (
               <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
-                {mode === 'exam-comparison' ? 'Exam Comparison' : 'Batch Evaluation'}
+                {mode === 'exam-comparison'
+                  ? t('app.header.examComparison')
+                  : t('app.header.batchEvaluation')}
               </span>
             )}
             <span className="flex items-center gap-1.5 text-sm font-medium text-gray-700">
               <UserRound className="h-4 w-4 text-gray-500" />
               {username}
             </span>
+            <LanguageSwitcher />
             <button
               onClick={handleLogout}
               className="flex items-center gap-1.5 rounded-lg border border-gray-200 px-3 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-600"
             >
               <LogOut className="h-4 w-4" />
-              Logout
+              {t('app.logout')}
             </button>
           </div>
         </div>
@@ -96,12 +102,13 @@ interface LandingProps {
 }
 
 function Landing({ onExamComparison, onBatchEvaluation }: LandingProps) {
+  const { t } = useLanguage();
   return (
     <div className="py-12">
       <div className="mb-12 text-center">
-        <h1 className="mb-3 text-4xl font-bold text-gray-900">Welcome to Exan</h1>
+        <h1 className="mb-3 text-4xl font-bold text-gray-900">{t('app.landing.title')}</h1>
         <p className="text-lg text-gray-600">
-          AI-powered exam scanning, grading, and evaluation
+          {t('app.landing.subtitle')}
         </p>
       </div>
 
@@ -114,13 +121,12 @@ function Landing({ onExamComparison, onBatchEvaluation }: LandingProps) {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-blue-600 group-hover:bg-blue-200">
             <ClipboardCheck className="h-6 w-6" />
           </div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">Exam Comparison</h2>
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">{t('app.landing.examComparison.title')}</h2>
           <p className="text-sm text-gray-600">
-            Upload an exam template and answer key, then grade student exams by comparing answers
-            against the correct solutions.
+            {t('app.landing.examComparison.description')}
           </p>
           <div className="mt-4 text-sm font-medium text-blue-600 group-hover:text-blue-700">
-            Get started →
+            {t('app.landing.getStarted')}
           </div>
         </button>
 
@@ -132,13 +138,12 @@ function Landing({ onExamComparison, onBatchEvaluation }: LandingProps) {
           <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-purple-100 text-purple-600 group-hover:bg-purple-200">
             <FileText className="h-6 w-6" />
           </div>
-          <h2 className="mb-2 text-xl font-semibold text-gray-900">Batch Evaluation</h2>
+          <h2 className="mb-2 text-xl font-semibold text-gray-900">{t('app.landing.batchEvaluation.title')}</h2>
           <p className="text-sm text-gray-600">
-            Upload multiple exams (PDF or Word) and evaluate them against grammar correctness and
-            custom criteria you define.
+            {t('app.landing.batchEvaluation.description')}
           </p>
           <div className="mt-4 text-sm font-medium text-purple-600 group-hover:text-purple-700">
-            Get started →
+            {t('app.landing.getStarted')}
           </div>
         </button>
       </div>

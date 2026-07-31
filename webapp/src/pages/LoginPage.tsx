@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { login, saveToken } from "../auth.api";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { useLanguage } from "../lib/i18n";
 
 interface LoginPageProps {
   onSuccess: (username: string) => void;
@@ -7,6 +9,7 @@ interface LoginPageProps {
 }
 
 export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
+  const { t } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,10 +32,13 @@ export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 px-6">
+      <div className="absolute right-6 top-6">
+        <LanguageSwitcher />
+      </div>
       <div className="w-full max-w-sm rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">
-          Login
+          {t('auth.login.title')}
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -40,7 +46,7 @@ export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
               htmlFor="username"
               className="mb-1 block text-xs font-medium text-gray-600"
             >
-              USERNAME
+              {t('auth.login.username')}
             </label>
             <input
               id="username"
@@ -56,7 +62,7 @@ export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
               htmlFor="password"
               className="mb-1 block text-xs font-medium text-gray-600"
             >
-              PASSWORD
+              {t('auth.login.password')}
             </label>
             <input
               id="password"
@@ -73,17 +79,17 @@ export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
             disabled={loading}
             className="w-full rounded-lg bg-blue-600 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Signing in..." : "Sign In"}
+            {loading ? t('auth.login.submitting') : t('auth.login.submit')}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          No account?{" "}
+          {t('auth.login.noAccount')}{" "}
           <button
             type="button"
             onClick={onNavigateToRegister}
             className="font-medium text-blue-600 hover:text-blue-700"
           >
-            Register
+            {t('auth.login.register')}
           </button>
         </p>
       </div>

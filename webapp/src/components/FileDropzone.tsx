@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload } from 'lucide-react';
+import { useLanguage } from '../lib/i18n';
 
 interface FileDropzoneProps {
   onFiles: (files: File[]) => void;
@@ -36,6 +37,8 @@ export function FileDropzone({
     disabled,
   });
 
+  const { t } = useLanguage();
+
   return (
     <div
       {...getRootProps()}
@@ -47,7 +50,7 @@ export function FileDropzone({
       <Upload className="mx-auto mb-3 h-10 w-10 text-gray-400" />
       <p className="text-lg font-medium text-gray-700">{label}</p>
       {description && <p className="mt-1 text-sm text-gray-500">{description}</p>}
-      {isDragActive && <p className="mt-2 text-sm text-blue-600">Drop files here...</p>}
+      {isDragActive && <p className="mt-2 text-sm text-blue-600">{t('fileDropzone.dropping')}</p>}
     </div>
   );
 }

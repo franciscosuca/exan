@@ -1,4 +1,5 @@
 import type { ProviderConfig } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 
 interface ProviderSelectorProps {
   providers: ProviderConfig[];
@@ -7,12 +8,13 @@ interface ProviderSelectorProps {
 }
 
 export function ProviderSelector({ providers, selected, onSelect }: ProviderSelectorProps) {
+  const { t } = useLanguage();
   const available = providers.filter((p) => p.available);
 
   if (available.length === 0) {
     return (
       <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
-        No AI providers available. Please configure at least one provider in the backend.
+        {t('common.noProviders')}
       </div>
     );
   }
@@ -33,7 +35,7 @@ export function ProviderSelector({ providers, selected, onSelect }: ProviderSele
           {p.provider}
           {p.is_local && (
             <span className="ml-1.5 rounded bg-green-100 px-1.5 py-0.5 text-xs text-green-700">
-              local
+              {t('common.local')}
             </span>
           )}
         </button>

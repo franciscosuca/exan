@@ -1,5 +1,7 @@
 import { useState, type FormEvent } from "react";
 import { register, saveToken } from "../auth.api";
+import { LanguageSwitcher } from "../components/LanguageSwitcher";
+import { useLanguage } from "../lib/i18n";
 
 interface RegisterPageProps {
   onSuccess: (username: string) => void;
@@ -10,6 +12,7 @@ export function RegisterPage({
   onSuccess,
   onNavigateToLogin,
 }: RegisterPageProps) {
+  const { t } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -21,7 +24,7 @@ export function RegisterPage({
     setError("");
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError(t('auth.register.passwordMismatch'));
       return;
     }
 
@@ -39,10 +42,13 @@ export function RegisterPage({
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-6">
+    <div className="relative flex min-h-screen items-center justify-center bg-gray-50 px-6">
+      <div className="absolute right-6 top-6">
+        <LanguageSwitcher />
+      </div>
       <div className="w-full max-w-sm rounded-2xl border-2 border-gray-200 bg-white p-8 shadow-sm">
         <h1 className="mb-6 text-center text-2xl font-bold text-gray-900">
-          Register
+          {t('auth.register.title')}
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
@@ -50,7 +56,7 @@ export function RegisterPage({
               htmlFor="username"
               className="mb-1 block text-xs font-medium text-gray-600"
             >
-              USERNAME
+              {t('auth.register.username')}
             </label>
             <input
               id="username"
@@ -67,7 +73,7 @@ export function RegisterPage({
               htmlFor="password"
               className="mb-1 block text-xs font-medium text-gray-600"
             >
-              PASSWORD
+              {t('auth.register.password')}
             </label>
             <input
               id="password"
@@ -84,7 +90,7 @@ export function RegisterPage({
               htmlFor="repeatPassword"
               className="mb-1 block text-xs font-medium text-gray-600"
             >
-              REPEAT PASSWORD
+              {t('auth.register.repeatPassword')}
             </label>
             <input
               id="repeatPassword"
@@ -102,17 +108,17 @@ export function RegisterPage({
             disabled={loading}
             className="w-full rounded-lg bg-purple-600 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? t('auth.register.submitting') : t('auth.register.submit')}
           </button>
         </form>
         <p className="mt-4 text-center text-sm text-gray-600">
-          Already have an account?{" "}
+          {t('auth.register.haveAccount')}{" "}
           <button
             type="button"
             onClick={onNavigateToLogin}
             className="font-medium text-purple-600 hover:text-purple-700"
           >
-            Login
+            {t('auth.register.login')}
           </button>
         </p>
       </div>

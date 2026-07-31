@@ -9,6 +9,7 @@ import {
   type EvaluationCriteria,
   type BatchEvaluationResponse,
 } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Loader2, Plus, Trash2, RotateCcw } from 'lucide-react';
 
 interface BatchEvaluationProps {
@@ -27,13 +28,16 @@ const LANGUAGES = [
 ];
 
 export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
+  const { t, language: uiLanguage } = useLanguage();
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [selectedProvider, setSelectedProvider] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [files, setFiles] = useState<File[]>([]);
-  const [language, setLanguage] = useState('en');
+  // Default the grammar-check language to the current webpage language, so
+  // AI answers follow the language the user is browsing in.
+  const [language, setLanguage] = useState<string>(uiLanguage);
   const [includeGrammar, setIncludeGrammar] = useState(true);
   const [customCriteria, setCustomCriteria] = useState<EvaluationCriteria[]>([]);
   const [results, setResults] = useState<BatchEvaluationResponse | null>(null);
@@ -45,8 +49,8 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
         const first = p.find((x) => x.available);
         if (first) setSelectedProvider(first.provider);
       })
-      .catch(() => setError('Cannot connect to backend. Is the server running?'));
-  }, []);
+      .catch(() => setError(t('common.cannotConnect')));
+  }, [t]);
 
   const reset = () => {
     setFiles([]);
@@ -81,11 +85,11 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
 
   const handleEvaluate = async () => {
     if (files.length === 0) {
-      setError('Please upload at least one file');
+      setError(t('batchEvaluation.noFiles'));
       return;
     }
     if (!includeGrammar && customCriteria.length === 0) {
-      setError('Please select at least one evaluation criteria');
+      setError(t('batchEvaluation.noCriteria'));
       return;
     }
 
@@ -105,7 +109,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
       );
       setResults(response);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Evaluation failed');
+      setError(e instanceof Error ? e.message : t('batchEvaluation.error'));
     } finally {
       setLoading(false);
     }
@@ -119,13 +123,13 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             onClick={onBack}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
           >
-            ← Back
+            {t('common.back')}
           </button>
           <button
             onClick={reset}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
           >
-            <RotateCcw className="h-4 w-4" /> New Evaluation
+            <RotateCcw className="h-4 w-4" /> {t('batchEvaluation.newEvaluation')}
           </button>
         </div>
         <BatchResults response={results} />
@@ -140,19 +144,19 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
           onClick={onBack}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
         >
-          ← Back
+          {t('common.back')}
         </button>
         <button
           onClick={reset}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
         >
-          <RotateCcw className="h-4 w-4" /> Reset
+          <RotateCcw className="h-4 w-4" /> {t('common.reset')}
         </button>
       </div>
 
       {/* Provider Selection */}
       <div className="mb-8">
-        <label className="mb-2 block text-sm font-medium text-gray-700">AI Provider</label>
+        <label className="mb-2 block text-sm font-medium text-gray-700">{t('common.aiProvider')}</label>
         <ProviderSelector
           providers={providers}
           selected={selectedProvider}
@@ -169,7 +173,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
       {loading && (
         <div className="mb-6 flex items-center justify-center gap-2 rounded-lg bg-blue-50 p-6 text-blue-700">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Evaluating {files.length} file(s) with {selectedProvider}...</span>
+          <span>{t('batchEvaluation.evaluating', { count: files.length, provider: selectedProvider })}</span>
         </div>
       )}
 
@@ -177,9 +181,9 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
         <div className="space-y-8">
           {/* File Upload */}
           <section>
-            <h2 className="mb-3 text-xl font-semibold text-gray-900">Upload Exams</h2>
+            <h2 className="mb-3 text-xl font-semibold text-gray-900">{t('batchEvaluation.uploadExams')}</h2>
             <p className="mb-4 text-gray-600">
-              Upload one or more exams in PDF or Word format. Each file will be evaluated individually.
+              {t('batchEvaluation.uploadExamsDescription')}
             </p>
             <FileDropzone
               onFiles={handleFiles}
@@ -189,12 +193,14 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                 'application/msword': ['.doc'],
               }}
               multiple
-              label="Drop exam files here"
-              description="PDF or Word documents (.pdf, .docx, .doc)"
+              label={t('batchEvaluation.dropLabel')}
+              description={t('batchEvaluation.dropDescription')}
             />
             {files.length > 0 && (
               <div className="mt-4 space-y-2">
-                <p className="text-sm font-medium text-gray-700">{files.length} file(s) selected:</p>
+                <p className="text-sm font-medium text-gray-700">
+                  {t('batchEvaluation.filesSelected', { count: files.length })}
+                </p>
                 {files.map((file, i) => (
                   <div
                     key={`${file.name}-${i}`}
@@ -215,7 +221,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
 
           {/* Evaluation Criteria */}
           <section>
-            <h2 className="mb-3 text-xl font-semibold text-gray-900">Evaluation Criteria</h2>
+            <h2 className="mb-3 text-xl font-semibold text-gray-900">{t('batchEvaluation.criteria')}</h2>
 
             {/* Grammar */}
             <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5">
@@ -228,15 +234,15 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                   className="h-4 w-4 rounded border-gray-300 text-blue-600"
                 />
                 <label htmlFor="grammar" className="text-sm font-medium text-gray-900">
-                  Grammar Correction
+                  {t('batchEvaluation.grammarCorrection')}
                 </label>
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-700">
-                  Default
+                  {t('batchEvaluation.default')}
                 </span>
               </div>
               {includeGrammar && (
                 <div className="mt-3 ml-7">
-                  <label className="mb-1 block text-sm text-gray-600">Language</label>
+                  <label className="mb-1 block text-sm text-gray-600">{t('batchEvaluation.language')}</label>
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
@@ -261,7 +267,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-700">
-                      Custom Criteria #{index + 1}
+                      {t('batchEvaluation.customCriteria', { index: index + 1 })}
                     </span>
                     <button
                       onClick={() => removeCriteria(index)}
@@ -273,13 +279,13 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                   <div className="space-y-3">
                     <input
                       type="text"
-                      placeholder="Criteria name (e.g., Argument Quality)"
+                      placeholder={t('batchEvaluation.criteriaName')}
                       value={criteria.name}
                       onChange={(e) => updateCriteria(index, 'name', e.target.value)}
                       className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                     />
                     <textarea
-                      placeholder="Description — what should the AI evaluate?"
+                      placeholder={t('batchEvaluation.criteriaDescription')}
                       value={criteria.description}
                       onChange={(e) => updateCriteria(index, 'description', e.target.value)}
                       rows={2}
@@ -287,14 +293,14 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                     />
                     <div className="grid grid-cols-2 gap-3">
                       <textarea
-                        placeholder="What does 0% look like?"
+                        placeholder={t('batchEvaluation.criteriaZero')}
                         value={criteria.zero_description}
                         onChange={(e) => updateCriteria(index, 'zero_description', e.target.value)}
                         rows={2}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm"
                       />
                       <textarea
-                        placeholder="What does 100% look like?"
+                        placeholder={t('batchEvaluation.criteriaHundred')}
                         value={criteria.hundred_description}
                         onChange={(e) =>
                           updateCriteria(index, 'hundred_description', e.target.value)
@@ -311,7 +317,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                 onClick={addCriteria}
                 className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 px-4 py-3 text-sm font-medium text-gray-600 hover:border-gray-400 hover:text-gray-700"
               >
-                <Plus className="h-4 w-4" /> Add Custom Criteria
+                <Plus className="h-4 w-4" /> {t('batchEvaluation.addCriteria')}
               </button>
             </div>
           </section>
@@ -322,7 +328,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             disabled={files.length === 0 || (!includeGrammar && customCriteria.length === 0)}
             className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Evaluate {files.length} File{files.length !== 1 ? 's' : ''}
+            {t('batchEvaluation.evaluate', { count: files.length, plural: files.length !== 1 ? 's' : '' })}
           </button>
         </div>
       )}

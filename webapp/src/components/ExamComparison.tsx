@@ -13,15 +13,16 @@ import {
   type AnswerKey,
   type GradingResult,
 } from '../lib/api';
+import { useLanguage } from '../lib/i18n';
 import { Loader2, RotateCcw } from 'lucide-react';
-
-const STEPS = ['Upload Exam Template', 'Upload Answer Key', 'Grade Student Exams'];
 
 interface ExamComparisonProps {
   onBack: () => void;
 }
 
 export function ExamComparison({ onBack }: ExamComparisonProps) {
+  const { t } = useLanguage();
+  const STEPS = [t('examComparison.step1'), t('examComparison.step2'), t('examComparison.step3')];
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [selectedProvider, setSelectedProvider] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
@@ -39,8 +40,8 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
         const first = p.find((x) => x.available);
         if (first) setSelectedProvider(first.provider);
       })
-      .catch(() => setError('Cannot connect to backend. Is the server running?'));
-  }, []);
+      .catch(() => setError(t('common.cannotConnect')));
+  }, [t]);
 
   const reset = () => {
     setCurrentStep(0);
@@ -58,7 +59,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
       setExamStructure(result);
       setCurrentStep(1);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to process exam template');
+      setError(e instanceof Error ? e.message : t('examComparison.step1.error'));
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
       setAnswerKey(result);
       setCurrentStep(2);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to process answer key');
+      setError(e instanceof Error ? e.message : t('examComparison.step2.error'));
     } finally {
       setLoading(false);
     }
@@ -88,7 +89,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
       setGradingResults(results);
       setCurrentStep(3);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Failed to grade student exams');
+      setError(e instanceof Error ? e.message : t('examComparison.step3.error'));
     } finally {
       setLoading(false);
     }
@@ -101,13 +102,13 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
           onClick={onBack}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
         >
-          ← Back
+          {t('common.back')}
         </button>
         <button
           onClick={reset}
           className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
         >
-          <RotateCcw className="h-4 w-4" /> Start Over
+          <RotateCcw className="h-4 w-4" /> {t('common.startOver')}
         </button>
       </div>
 
@@ -116,7 +117,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
       </div>
 
       <div className="mb-8">
-        <label className="mb-2 block text-sm font-medium text-gray-700">AI Provider</label>
+        <label className="mb-2 block text-sm font-medium text-gray-700">{t('common.aiProvider')}</label>
         <ProviderSelector
           providers={providers}
           selected={selectedProvider}
@@ -133,60 +134,62 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
       {loading && (
         <div className="mb-6 flex items-center justify-center gap-2 rounded-lg bg-blue-50 p-6 text-blue-700">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>Processing with {selectedProvider}...</span>
+          <span>{t('examComparison.processing', { provider: selectedProvider })}</span>
         </div>
       )}
 
       {!loading && currentStep === 0 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Step 1: Upload Empty Exam</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('examComparison.step1.title')}</h2>
           <p className="text-gray-600">
-            Upload a PDF or image of the blank exam template. The AI will analyze its structure
-            and identify all questions.
+            {t('examComparison.step1.description')}
           </p>
           <FileDropzone
             onFiles={handleExamTemplate}
-            label="Drop exam template here"
-            description="PDF or image (PNG, JPG, WebP)"
+            label={t('examComparison.step1.dropLabel')}
+            description={t('examComparison.step1.dropDescription')}
           />
         </div>
       )}
 
       {!loading && currentStep === 1 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Step 2: Upload Answer Key</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('examComparison.step2.title')}</h2>
           <p className="text-gray-600">
-            Upload the exam with the correct answers filled in. This will be used to grade student responses.
+            {t('examComparison.step2.description')}
           </p>
           {examStructure && (
             <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-              ✓ Detected {examStructure.questions.length} questions in "{examStructure.filename}"
+              {t('examComparison.step2.detected', {
+                count: examStructure.questions.length,
+                filename: examStructure.filename,
+              })}
             </div>
           )}
           <FileDropzone
             onFiles={handleAnswerKey}
-            label="Drop answer key here"
-            description="PDF or image with correct answers"
+            label={t('examComparison.step2.dropLabel')}
+            description={t('examComparison.step2.dropDescription')}
           />
         </div>
       )}
 
       {!loading && currentStep === 2 && (
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold text-gray-900">Step 3: Upload Student Exams</h2>
+          <h2 className="text-xl font-semibold text-gray-900">{t('examComparison.step3.title')}</h2>
           <p className="text-gray-600">
-            Upload one or more completed exams from students. Each file will be graded individually.
+            {t('examComparison.step3.description')}
           </p>
           {answerKey && (
             <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm text-green-800">
-              ✓ Answer key loaded with {answerKey.answers.length} answers
+              {t('examComparison.step3.loaded', { count: answerKey.answers.length })}
             </div>
           )}
           <FileDropzone
             onFiles={handleStudentExams}
             multiple
-            label="Drop student exams here"
-            description="Multiple files supported (PDF or images)"
+            label={t('examComparison.step3.dropLabel')}
+            description={t('examComparison.step3.dropDescription')}
           />
         </div>
       )}

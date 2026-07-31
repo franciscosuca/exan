@@ -16,17 +16,22 @@ def test_list_providers():
     assert response.status_code == 200
     data = response.json()
     assert isinstance(data, list)
-    assert len(data) == 4
+    assert len(data) == 5
     names = [p["provider"] for p in data]
-    assert "gemini" in names
-    assert "claude" in names
-    assert "qwen" in names
-    assert "ollama" in names
+    assert names == ["gemini", "claude", "gpt", "ollama", "lmstudio"]
 
     for p in data:
         assert "available" in p
         assert "requires_api_key" in p
         assert "is_local" in p
+
+    by_name = {p["provider"]: p for p in data}
+    for name in ("gemini", "claude", "gpt"):
+        assert by_name[name]["requires_api_key"] is True
+        assert by_name[name]["is_local"] is False
+    for name in ("ollama", "lmstudio"):
+        assert by_name[name]["requires_api_key"] is False
+        assert by_name[name]["is_local"] is True
 
 
 def test_list_providers_structure():

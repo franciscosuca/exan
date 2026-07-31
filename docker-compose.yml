@@ -23,6 +23,7 @@ services:
         required: false
     environment:
       - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - LMSTUDIO_BASE_URL=http://host.docker.internal:1234/v1
     volumes:
       - ./inference/app:/app/app
     restart: unless-stopped

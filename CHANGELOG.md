@@ -1,3 +1,10 @@
+## [1.4.0](https://github.com/franciscosuca/exan/compare/v1.3.1...v1.4.0) (2026-07-31)
+
+### Features
+
+* **add German/English language selector with persistence:** feat(webapp): add German/English language selector with persistence ([1166104](https://github.com/franciscosuca/exan/commit/11661045385b425f394810c20bee0af3378c6fcc))
+* **update authentication flow and proxy configuration for improved routing:** feat: update authentication flow and proxy configuration for improved routing ([d1fe564](https://github.com/franciscosuca/exan/commit/d1fe564ff6aabb08344e33160e46c83e465bad1e))
+
 ## [1.3.1](https://github.com/franciscosuca/exan/compare/v1.3.0...v1.3.1) (2026-07-29)
 
 ### Performance Improvements

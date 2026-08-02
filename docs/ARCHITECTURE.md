@@ -401,11 +401,20 @@ classDiagram
         -_parse_json(text) dict
     }
 
-    class QwenProvider {
-        +model: "qwen-vl-max"
+    class OpenAICompatibleProvider {
+        +model: string
         -_client: OpenAI
         -_build_content(images, mimes, prompt)
         -_parse_json(text) dict
+    }
+
+    class GPTProvider {
+        +model: "gpt-4o-mini"
+    }
+
+    class LMStudioProvider {
+        +model: string
+        +base_url: "http://localhost:1234/v1"
     }
 
     class OllamaProvider {
@@ -430,7 +439,9 @@ classDiagram
 
     BaseProvider <|-- GeminiProvider
     BaseProvider <|-- ClaudeProvider
-    BaseProvider <|-- QwenProvider
+    BaseProvider <|-- OpenAICompatibleProvider
+    OpenAICompatibleProvider <|-- GPTProvider
+    OpenAICompatibleProvider <|-- LMStudioProvider
     BaseProvider <|-- OllamaProvider
     Registry --> BaseProvider
     Registry --> ProviderConfig

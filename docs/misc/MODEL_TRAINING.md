@@ -6,7 +6,7 @@ This document explains how to fine-tune or train a custom model specifically for
 
 ## 1. Why Train a Custom Model?
 
-General-purpose models (Gemini, Claude, Qwen) are good at understanding documents, but they:
+General-purpose models available through Gemini, Claude, GPT, Ollama, or LM Studio are good at understanding documents, but they:
 
 - May misread certain handwriting styles common in your student population
 - Don't know your specific grading rubrics (partial credit rules, acceptable variations)
@@ -275,7 +275,7 @@ def evaluate_model(test_set, model):
 
 ## 7. Summary of Recommended Path
 
-1. **Start with zero-shot** (current implementation) — use Gemini/Claude/Qwen as-is
+1. **Start with zero-shot** (current implementation) — use a configured cloud or local provider as-is
 2. **Collect corrections** — have teachers verify and correct AI grades
 3. **Fine-tune Qwen2.5-VL-7B with LoRA** — using 200+ corrected examples
 4. **Deploy via Ollama** — keeps everything local and fast

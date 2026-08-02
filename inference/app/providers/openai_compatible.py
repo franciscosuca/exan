@@ -1,37 +1,35 @@
-"""Qwen provider via OpenAI-compatible API (Dashscope or local)."""
+"""Shared provider implementation for OpenAI-compatible chat APIs."""
 
 import base64
 import json
 
 from openai import OpenAI
 
-from ..config import settings
 from . import BaseProvider
 from .prompts import ANALYZE_STRUCTURE_PROMPT, EXTRACT_ANSWERS_PROMPT, grade_exam_prompt
 
 
-class QwenProvider(BaseProvider):
-    name = "qwen"
+class OpenAICompatibleProvider(BaseProvider):
+    """Base implementation for OpenAI-compatible multimodal providers."""
 
-    def __init__(self):
+    def __init__(self, *, api_key: str, model: str, base_url: str | None = None):
         self._client = None
-        self.model = "qwen-vl-max"
+        self.api_key = api_key
+        self.base_url = base_url
+        self.model = model
 
     @property
     def client(self):
         if self._client is None:
-            self._client = OpenAI(
-                api_key=settings.qwen_api_key or "placeholder",
-                base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
-            )
+            self._client = OpenAI(api_key=self.api_key, base_url=self.base_url)
         return self._client
 
     def _build_content(self, image_data: list[bytes], mime_types: list[str], prompt: str):
         content = []
         for data, mime in zip(image_data, mime_types):
-            b64 = base64.b64encode(data).decode()
+            encoded = base64.b64encode(data).decode()
             content.append(
-                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{b64}"}}
+                {"type": "image_url", "image_url": {"url": f"data:{mime};base64,{encoded}"}}
             )
         content.append({"type": "text", "text": prompt})
         return content
@@ -45,21 +43,11 @@ class QwenProvider(BaseProvider):
 
     async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         content = self._build_content(image_data, mime_types, ANALYZE_STRUCTURE_PROMPT)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": content}],
-            max_tokens=4096,
-        )
-        return self._parse_json(response.choices[0].message.content)
+        return self._complete(content)
 
     async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         content = self._build_content(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": content}],
-            max_tokens=4096,
-        )
-        return self._parse_json(response.choices[0].message.content)
+        return self._complete(content)
 
     async def grade_exam(
         self,
@@ -70,18 +58,16 @@ class QwenProvider(BaseProvider):
     ) -> dict:
         prompt = grade_exam_prompt(exam_structure, answer_key)
         content = self._build_content(student_images, student_mime_types, prompt)
+        return self._complete(content)
+
+    async def evaluate_text(self, text: str, prompt: str) -> dict:
+        content = [{"type": "text", "text": prompt + text}]
+        return self._complete(content)
+
+    def _complete(self, content: list[dict]) -> dict:
         response = self.client.chat.completions.create(
             model=self.model,
             messages=[{"role": "user", "content": content}],
-            max_tokens=4096,
-        )
-        return self._parse_json(response.choices[0].message.content)
-
-    async def evaluate_text(self, text: str, prompt: str) -> dict:
-        full_prompt = prompt + text
-        response = self.client.chat.completions.create(
-            model=self.model,
-            messages=[{"role": "user", "content": [{"type": "text", "text": full_prompt}]}],
             max_tokens=4096,
         )
         return self._parse_json(response.choices[0].message.content)

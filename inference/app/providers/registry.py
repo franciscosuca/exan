@@ -6,16 +6,18 @@ from ..config import settings
 from . import BaseProvider
 from .claude import ClaudeProvider
 from .gemini import GeminiProvider
+from .gpt import GPTProvider
+from .lmstudio import LMStudioProvider
 from .ollama import OllamaProvider
-from .qwen import QwenProvider
 
 
 def get_provider(name: str) -> BaseProvider:
     providers = {
         "gemini": GeminiProvider,
         "claude": ClaudeProvider,
-        "qwen": QwenProvider,
+        "gpt": GPTProvider,
         "ollama": OllamaProvider,
+        "lmstudio": LMStudioProvider,
     }
     if name not in providers:
         raise ValueError(f"Unknown provider: {name}. Available: {list(providers.keys())}")
@@ -46,11 +48,11 @@ def get_available_providers() -> list[dict]:
         }
     )
 
-    # Qwen (cloud)
+    # GPT (cloud)
     results.append(
         {
-            "provider": "qwen",
-            "available": bool(settings.qwen_api_key),
+            "provider": "gpt",
+            "available": bool(settings.openai_api_key),
             "requires_api_key": True,
             "is_local": False,
         }
@@ -68,6 +70,23 @@ def get_available_providers() -> list[dict]:
         {
             "provider": "ollama",
             "available": ollama_available,
+            "requires_api_key": False,
+            "is_local": True,
+        }
+    )
+
+    # LM Studio (local)
+    lmstudio_available = False
+    try:
+        resp = httpx.get(f"{settings.lmstudio_base_url}/models", timeout=2.0)
+        lmstudio_available = resp.status_code == 200
+    except Exception:
+        pass
+
+    results.append(
+        {
+            "provider": "lmstudio",
+            "available": lmstudio_available,
             "requires_api_key": False,
             "is_local": True,
         }

@@ -20,8 +20,11 @@ An AI-powered application that scans exam documents, extracts their structure, a
 │  • Results display  │       │  │  │ Gemini │ │  Claude  │  │  │
 └─────────────────────┘       │  │  └────────┘ └──────────┘  │  │
                               │  │  ┌────────┐ ┌──────────┐  │  │
-                              │  │  │  Qwen  │ │  Ollama  │  │  │
+                              │  │  │  GPT   │ │  Ollama  │  │  │
                               │  │  └────────┘ └──────────┘  │  │
+                              │  │       ┌───────────┐        │  │
+                              │  │       │ LM Studio │        │  │
+                              │  │       └───────────┘        │  │
                               │  └────────────────────────────┘  │
                               └──────────────────────────────────┘
 ```
@@ -46,15 +49,16 @@ An AI-powered application that scans exam documents, extracts their structure, a
 |----------|------|-----|
 | **Gemini** (google-genai) | Cloud | Best-in-class multimodal (vision + reasoning). Native JSON output mode reduces parsing errors. Generous free tier. |
 | **Claude** (anthropic) | Cloud | Exceptional at structured analysis and nuanced grading of open-ended answers. Strong vision capabilities. |
-| **Qwen** (openai-compat) | Cloud | Competitive vision-language model. OpenAI-compatible API simplifies integration. Good alternative when Gemini/Claude quotas are exhausted. |
+| **GPT** (OpenAI) | Cloud | Strong multimodal document understanding through OpenAI's API. Uses the configurable `OPENAI_MODEL` setting. |
 | **Ollama** | Local/Offline | Runs models like `qwen2.5-vl` entirely on-device. Zero data leaves the machine. Essential for privacy-sensitive educational environments and air-gapped deployments. |
+| **LM Studio** | Local/Offline | Serves locally loaded vision models through an OpenAI-compatible API. Useful for selecting and testing local models through a desktop interface. |
 
 ### Why This Provider Set?
 
-1. **Online-first, offline-capable**: Gemini and Claude provide the highest accuracy for complex exam structures. Ollama ensures the app works without internet.
+1. **Online-first, offline-capable**: Gemini, Claude, and GPT provide managed cloud inference. Ollama and LM Studio keep inference local when privacy or offline operation matters.
 2. **Unified interface**: All providers implement the same `BaseProvider` ABC, so switching between them is a single dropdown selection — no code changes.
-3. **Vision-native**: All selected providers have first-class multimodal (image understanding) support, which is essential for reading handwritten or scanned exam documents.
-4. **JSON-structured output**: Gemini supports native `response_mime_type="application/json"`, Claude and Qwen handle structured prompts well, and Ollama models increasingly support JSON mode.
+3. **Vision-native**: The cloud defaults and configured local models support image understanding, which is essential for reading handwritten or scanned exam documents.
+4. **Consistent structured output**: Every provider receives the same JSON-focused prompts and returns data through the same parsing contract.
 
 ## Quick Start
 
@@ -64,6 +68,7 @@ An AI-powered application that scans exam documents, extracts their structure, a
 - Node.js 20+ (for auth and release tooling)
 - Python 3.11+
 - (Optional) [Ollama](https://ollama.com) for local inference
+- (Optional) [LM Studio](https://lmstudio.ai) for local inference
 
 ### Root Scripts
 
@@ -95,13 +100,23 @@ cp .env.example .env
 uv run uvicorn app.main:app --reload --port 8000
 ```
 
-### Using Ollama (Offline Mode)
+### Using Local Providers
+
+#### Ollama
 
 ```bash
 # Install Ollama from https://ollama.com
 ollama pull qwen2.5-vl
 # The inference service auto-detects Ollama availability
 ```
+
+#### LM Studio
+
+1. Install LM Studio from `https://lmstudio.ai` and load a vision-capable model.
+2. Start its local server on port 1234.
+3. Set `LMSTUDIO_MODEL` in `inference/.env` to the loaded model identifier.
+
+Both local providers are reached through `localhost` during direct development and through `host.docker.internal` when the inference service runs in Docker Compose.
 
 ### Docker Compose (One Command)
 

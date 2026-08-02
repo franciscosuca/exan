@@ -1,4 +1,4 @@
-"""Tests for the provider registry."""
+"""Tests for provider implementations and the registry."""
 
 from unittest.mock import patch
 
@@ -26,12 +26,12 @@ def test_get_provider_claude():
     assert isinstance(provider, ClaudeProvider)
 
 
-def test_get_provider_qwen():
-    """get_provider returns QwenProvider."""
-    from app.providers.qwen import QwenProvider
+def test_get_provider_gpt():
+    """get_provider returns GPTProvider."""
+    from app.providers.gpt import GPTProvider
 
-    provider = get_provider("qwen")
-    assert isinstance(provider, QwenProvider)
+    provider = get_provider("gpt")
+    assert isinstance(provider, GPTProvider)
 
 
 def test_get_provider_ollama():
@@ -40,6 +40,14 @@ def test_get_provider_ollama():
 
     provider = get_provider("ollama")
     assert isinstance(provider, OllamaProvider)
+
+
+def test_get_provider_lmstudio():
+    """get_provider returns LMStudioProvider."""
+    from app.providers.lmstudio import LMStudioProvider
+
+    provider = get_provider("lmstudio")
+    assert isinstance(provider, LMStudioProvider)
 
 
 def test_get_provider_unknown_raises():
@@ -57,16 +65,58 @@ def test_ollama_implements_base():
     assert hasattr(provider, "grade_exam")
 
 
-def test_get_available_providers_shape():
-    """get_available_providers returns correctly shaped data."""
-    providers = get_available_providers()
-    assert len(providers) == 4
-    for p in providers:
-        assert "provider" in p
-        assert "available" in p
-        assert "requires_api_key" in p
-        assert "is_local" in p
+@patch("app.providers.registry.httpx.get")
+@patch("app.providers.registry.settings")
+def test_get_available_providers_shape(mock_settings, mock_get):
+    """Provider availability has the exact names and metadata."""
+    mock_settings.gemini_api_key = "gemini-key"
+    mock_settings.anthropic_api_key = ""
+    mock_settings.openai_api_key = "openai-key"
+    mock_settings.ollama_base_url = "http://ollama"
+    mock_settings.lmstudio_base_url = "http://lmstudio/v1"
+    mock_get.return_value.status_code = 200
 
-    ollama = next(p for p in providers if p["provider"] == "ollama")
-    assert ollama["is_local"] is True
-    assert ollama["requires_api_key"] is False
+    providers = get_available_providers()
+    assert [p["provider"] for p in providers] == [
+        "gemini",
+        "claude",
+        "gpt",
+        "ollama",
+        "lmstudio",
+    ]
+    for p in providers:
+        assert set(p) == {"provider", "available", "requires_api_key", "is_local"}
+
+    by_name = {p["provider"]: p for p in providers}
+    assert by_name["gemini"] == {
+        "provider": "gemini",
+        "available": True,
+        "requires_api_key": True,
+        "is_local": False,
+    }
+    assert by_name["claude"]["available"] is False
+    assert by_name["gpt"] == {
+        "provider": "gpt",
+        "available": True,
+        "requires_api_key": True,
+        "is_local": False,
+    }
+    for name in ("ollama", "lmstudio"):
+        assert by_name[name]["available"] is True
+        assert by_name[name]["requires_api_key"] is False
+        assert by_name[name]["is_local"] is True
+
+    assert mock_get.call_args_list[1].args[0] == "http://lmstudio/v1/models"
+    assert mock_get.call_args_list[1].kwargs["timeout"] == 2.0
+
+
+def test_gpt_preserves_multimodal_data_urls():
+    """GPT sends images as OpenAI-compatible data URLs."""
+    provider = get_provider("gpt")
+
+    content = provider._build_content([b"image"], ["image/png"], "Inspect")
+
+    assert content == [
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64,aW1hZ2U="}},
+        {"type": "text", "text": "Inspect"},
+    ]

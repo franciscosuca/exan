@@ -21,9 +21,9 @@ def elapsed_ms(start: float) -> float:
 
 def _metadata(provider: Any, output: Any) -> dict[str, Any]:
     usage = None
+    usage = getattr(output, "usage", None)
     if isinstance(output, dict):
-        usage = output.get("usage") or output.get("token_usage")
-    usage = usage or getattr(provider, "last_usage", None)
+        usage = usage or output.get("usage") or output.get("token_usage")
     metadata = {
         "provider": getattr(provider, "name", provider.__class__.__name__),
         "model": getattr(provider, "model", None),

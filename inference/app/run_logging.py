@@ -1,6 +1,7 @@
 """Persistent, compact records for inference runs."""
 
 import json
+import logging
 import time
 import uuid
 from datetime import datetime, timezone
@@ -8,6 +9,7 @@ from pathlib import Path
 from typing import Any
 
 LOG_ROOT = Path(__file__).resolve().parents[2] / "logs"
+logger = logging.getLogger(__name__)
 
 
 def start_timer() -> float:
@@ -44,17 +46,21 @@ def write_run_log(
     """Write one JSON record under ``logs/<category>/<yymmddhhmm>/``."""
     now = datetime.now(timezone.utc)
     directory = LOG_ROOT / category / now.strftime("%y%m%d%H%M")
-    directory.mkdir(parents=True, exist_ok=True)
-    record = {
-        "created_at": now.isoformat(),
-        "elapsed_ms": round(elapsed, 2),
-        "input": input_snapshot,
-        "model": _metadata(provider, outputs[-1]["output"] if outputs else {}).get("model"),
-        "provider": _metadata(provider, outputs[-1]["output"] if outputs else {}).get("provider"),
-        "outputs": [
-            {**call, **_metadata(provider, call.get("output"))} for call in outputs
-        ],
-    }
-    path = directory / f"run-{uuid.uuid4().hex}.json"
-    path.write_text(json.dumps(record, indent=2, default=str) + "\n", encoding="utf-8")
-    return path
+    try:
+        directory.mkdir(parents=True, exist_ok=True)
+        record = {
+            "created_at": now.isoformat(),
+            "elapsed_ms": round(elapsed, 2),
+            "input": input_snapshot,
+            "model": _metadata(provider, outputs[-1]["output"] if outputs else {}).get("model"),
+            "provider": _metadata(provider, outputs[-1]["output"] if outputs else {}).get("provider"),
+            "outputs": [
+                {**call, **_metadata(provider, call.get("output"))} for call in outputs
+            ],
+        }
+        path = directory / f"run-{uuid.uuid4().hex}.json"
+        path.write_text(json.dumps(record, indent=2, default=str) + "\n", encoding="utf-8")
+        return path
+    except (OSError, TypeError, ValueError):
+        logger.exception("Unable to persist %s inference log", category)
+        return None

@@ -26,6 +26,7 @@ services:
       - LMSTUDIO_BASE_URL=http://host.docker.internal:1234/v1
     volumes:
       - ./inference/app:/app/app
+      - ./logs:/app/logs
     restart: unless-stopped
 
   auth-server:

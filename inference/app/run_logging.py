@@ -53,7 +53,9 @@ def write_run_log(
             "elapsed_ms": round(elapsed, 2),
             "input": input_snapshot,
             "model": _metadata(provider, outputs[-1]["output"] if outputs else {}).get("model"),
-            "provider": _metadata(provider, outputs[-1]["output"] if outputs else {}).get("provider"),
+            "provider": _metadata(
+                provider, outputs[-1]["output"] if outputs else {}
+            ).get("provider"),
             "outputs": [
                 {**call, **_metadata(provider, call.get("output"))} for call in outputs
             ],

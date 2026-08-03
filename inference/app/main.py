@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime, timezone
+from typing import Any
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,6 +19,7 @@ from .models import (
 )
 from .providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
 from .providers.registry import get_available_providers, get_provider
+from .run_logging import elapsed_ms, start_timer, write_run_log
 
 app = FastAPI(title="Exan API", version="0.1.0")
 
@@ -149,10 +151,16 @@ async def grade_student_exams(
 
     ai = get_provider(provider)
     results = []
+    run_started = start_timer()
+    outputs: list[dict[str, Any]] = []
+    input_files = []
 
     for file in files:
         content = await file.read()
         mime = get_mime_type(file.filename or "unknown", file.content_type)
+        input_files.append(
+            {"filename": file.filename or "unknown", "mime_type": mime, "bytes": len(content)}
+        )
 
         try:
             images = process_upload(content, mime)
@@ -163,11 +171,20 @@ async def grade_student_exams(
         mime_types = [mt for _, mt in images]
 
         try:
+            call_started = start_timer()
             grading = await ai.grade_exam(
                 image_data,
                 mime_types,
                 exam_data["raw_result"],
                 answer_key_data["raw_result"],
+            )
+            outputs.append(
+                {
+                    "operation": "grade_exam",
+                    "filename": file.filename or "unknown",
+                    "elapsed_ms": elapsed_ms(call_started),
+                    "output": grading,
+                }
             )
         except Exception as e:
             raise HTTPException(
@@ -190,6 +207,18 @@ async def grade_student_exams(
         )
         results.append(result)
 
+    write_run_log(
+        "exam-comparison",
+        input_snapshot={
+            "exam_id": exam_id,
+            "files": input_files,
+            "exam_structure": exam_data["raw_result"],
+            "answer_key": answer_key_data["raw_result"],
+        },
+        outputs=outputs,
+        elapsed=elapsed_ms(run_started),
+        provider=ai,
+    )
     return results
 
 
@@ -223,6 +252,9 @@ async def batch_evaluate(
 
     ai = get_provider(provider)
     results: list[FileEvaluationResult] = []
+    run_started = start_timer()
+    outputs: list[dict[str, Any]] = []
+    input_files = []
 
     for file in files:
         content = await file.read()
@@ -238,6 +270,14 @@ async def batch_evaluate(
                 status_code=400,
                 detail=f"File {file.filename}: No text content could be extracted",
             )
+        input_files.append(
+            {
+                "filename": file.filename or "unknown",
+                "mime_type": mime,
+                "bytes": len(content),
+                "text_preview": text[:500],
+            }
+        )
 
         scores: list[CriteriaScore] = []
 
@@ -245,7 +285,16 @@ async def batch_evaluate(
         if include_grammar_bool:
             try:
                 prompt = grammar_evaluation_prompt(language)
+                call_started = start_timer()
                 result = await ai.evaluate_text(text, prompt)
+                outputs.append(
+                    {
+                        "operation": "grammar",
+                        "filename": file.filename or "unknown",
+                        "elapsed_ms": elapsed_ms(call_started),
+                        "output": result,
+                    }
+                )
                 scores.append(
                     CriteriaScore(
                         criteria_name="Grammar",
@@ -268,7 +317,17 @@ async def batch_evaluate(
                     zero_description=criteria["zero_description"],
                     hundred_description=criteria["hundred_description"],
                 )
+                call_started = start_timer()
                 result = await ai.evaluate_text(text, prompt)
+                outputs.append(
+                    {
+                        "operation": "custom_criteria",
+                        "criteria": criteria["name"],
+                        "filename": file.filename or "unknown",
+                        "elapsed_ms": elapsed_ms(call_started),
+                        "output": result,
+                    }
+                )
                 scores.append(
                     CriteriaScore(
                         criteria_name=criteria["name"],
@@ -295,8 +354,21 @@ async def batch_evaluate(
             )
         )
 
-    return BatchEvaluationResponse(
+    response = BatchEvaluationResponse(
         id=str(uuid.uuid4()),
         results=results,
         created_at=datetime.now(timezone.utc).isoformat(),
     )
+    write_run_log(
+        "batch-evaluation",
+        input_snapshot={
+            "language": language,
+            "include_grammar": include_grammar_bool,
+            "custom_criteria": criteria_list,
+            "files": input_files,
+        },
+        outputs=outputs,
+        elapsed=elapsed_ms(run_started),
+        provider=ai,
+    )
+    return response

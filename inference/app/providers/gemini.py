@@ -46,7 +46,7 @@ class GeminiProvider(BaseProvider):
                 response_mime_type="application/json",
             ),
         )
-        return self._parse_json(response.text)
+        return self._with_metadata(self._parse_json(response.text), response)
 
     async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         contents = self._build_content(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
@@ -57,7 +57,7 @@ class GeminiProvider(BaseProvider):
                 response_mime_type="application/json",
             ),
         )
-        return self._parse_json(response.text)
+        return self._with_metadata(self._parse_json(response.text), response)
 
     async def grade_exam(
         self,
@@ -75,7 +75,7 @@ class GeminiProvider(BaseProvider):
                 response_mime_type="application/json",
             ),
         )
-        return self._parse_json(response.text)
+        return self._with_metadata(self._parse_json(response.text), response)
 
     async def evaluate_text(self, text: str, prompt: str) -> dict:
         full_prompt = prompt + text
@@ -86,4 +86,4 @@ class GeminiProvider(BaseProvider):
                 response_mime_type="application/json",
             ),
         )
-        return self._parse_json(response.text)
+        return self._with_metadata(self._parse_json(response.text), response)

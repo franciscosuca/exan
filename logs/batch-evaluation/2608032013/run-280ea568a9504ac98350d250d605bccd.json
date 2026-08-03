@@ -1,0 +1,50 @@
+{
+  "created_at": "2026-08-03T20:13:51.080385+00:00",
+  "elapsed_ms": 17404.37,
+  "input": {
+    "language": "es",
+    "include_grammar": true,
+    "custom_criteria": [],
+    "files": [
+      {
+        "filename": "exan-batch-test-1.pdf",
+        "mime_type": "application/pdf",
+        "bytes": 15030,
+        "text_preview": "Estoy sumamente feliz por mis hermanos! Aunque las cosas quiz\u00e1s no han \nsucedido de la manara que uno inicialmente se las imagino, ambos est\u00e1n \nsumamente saludables y tienen un perspectiva del futuro. \nStanly, me hecho muy feliz el hecho de que el ha decidido tomar otro comienzo e \nintentar salir adelante. Me da un poco de pena el hecho que lo est\u00e9 intentando tan \nlejos de papi y mami, pero quiz\u00e1s ese ha sido su m\u00e9todo para poder empezar. Me \nencantar\u00eda que el supiera que puede solicitar ayuda a"
+      }
+    ]
+  },
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "outputs": [
+    {
+      "operation": "grammar",
+      "filename": "exan-batch-test-1.pdf",
+      "elapsed_ms": 17227.37,
+      "output": {
+        "score": 85,
+        "feedback": "El texto es en gran parte correcto y transmite el mensaje de manera efectiva, mostrando un buen dominio del vocabulario y la estructura b\u00e1sica del espa\u00f1ol. Sin embargo, presenta una serie de errores menores recurrentes que afectan la calidad general y la fluidez natural. \n\n**Errores espec\u00edficos y sugerencias de mejora:**\n\n1.  **Ortograf\u00eda y Acentuaci\u00f3n (Tildes):**\n    *   \"manara\" debe ser \"**manera**\".\n    *   \"imagino\" (en \"se las imagino\") debe ser \"**imagin\u00f3**\" (pret\u00e9rito perfecto simple).\n    *   El pronombre personal \"el\" debe llevar tilde cuando es t\u00f3nico, es decir, cuando se refiere a una persona: \"**\u00e9l** ha decidido\", \"que **\u00e9l** supiera\", \"con **\u00e9l**\", \"de **\u00e9l**\", \"**\u00e9l** no lo vea\".\n    *   \"deje\" (en \"te deje en RD\") debe ser \"**dej\u00e9**\" (pret\u00e9rito perfecto simple).\n\n2.  **Concordancia y Gram\u00e1tica:**\n    *   \"un perspectiva\" debe ser \"**una perspectiva**\" (el sustantivo \"perspectiva\" es femenino).\n    *   \"me hecho muy feliz\" debe ser \"**me ha hecho** muy feliz\" (le falta el verbo auxiliar \"haber\").\n    *   \"el hecho que\" debe ser \"**el hecho de que**\" (se requiere la preposici\u00f3n \"de\").\n    *   \"ayud\u00e1ndosela mutuamente\" es incorrecto. Debe ser \"**ayud\u00e1ndose mutuamente**\" o \"ayud\u00e1ndose el uno al otro\". El pronombre \"la\" no tiene referente aqu\u00ed.\n\n3.  **Expresiones Idiom\u00e1ticas y Claridad:**\n    *   \"tomar otro comienzo\": Aunque comprensible, suena un poco forzado. Ser\u00eda m\u00e1s natural \"**empezar de nuevo**\", \"**dar un giro a su vida**\" o \"**tomar un nuevo rumbo**\".\n    *   \"deja mucho que desear (por saber)\": La parte \"(por saber)\" es confusa y no encaja en el contexto de la frase. La expresi\u00f3n \"deja mucho que desear\" ya es completa y significa que algo no es satisfactorio. Se deber\u00eda eliminar o aclarar qu\u00e9 se quiere expresar.\n    *   \"futuro por delantero\": La expresi\u00f3n correcta es \"futuro **por delante**\" o \"futuro ante s\u00ed\".\n    *   \"tendr\u00e1n un muy bello futuro por delantero que puedan continuar su rumbo\": La subordinada \"que puedan continuar\" suena un poco suelta despu\u00e9s de \"por delantero\". Podr\u00eda ser \"tendr\u00e1n un muy bello futuro por delante **y podr\u00e1n continuar** su rumbo\" o \"**para continuar** su rumbo\".\n\n4.  **Puntuaci\u00f3n:**\n    *   El uso de cuatro puntos suspensivos (\"....\") no es est\u00e1ndar. Lo correcto es usar tres puntos (\"**...**\") para indicar una interrupci\u00f3n o una idea incompleta.\n\n**Observaciones adicionales:**\n\n*   El uso repetitivo de \"sumamente\" (\"sumamente feliz\", \"sumamente saludables\", \"sumamente curioso\") podr\u00eda variarse para enriquecer el texto (ej. \"extremadamente\", \"muy\", \"enormemente\").\n*   El tono es personal y afectuoso, lo cual es adecuado para el tipo de texto."
+      },
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "token_usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 785,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 543,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 543
+          }
+        ],
+        "thoughts_token_count": 2694,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 4022,
+        "traffic_type": null
+      }
+    }
+  ]
+}

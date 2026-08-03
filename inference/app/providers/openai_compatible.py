@@ -70,4 +70,4 @@ class OpenAICompatibleProvider(BaseProvider):
             messages=[{"role": "user", "content": content}],
             max_tokens=4096,
         )
-        return self._parse_json(response.choices[0].message.content)
+        return self._with_metadata(self._parse_json(response.choices[0].message.content), response)

@@ -8,12 +8,40 @@ Each provider implements the same interface for:
 """
 
 from abc import ABC, abstractmethod
+from typing import Any
+
+
+class ProviderResponse(dict):
+    """Parsed provider output with non-invasive per-call metadata."""
+
+    def __init__(self, data: dict, *, usage: Any = None):
+        super().__init__(data)
+        self.usage = usage
 
 
 class BaseProvider(ABC):
     """Base class for all AI providers."""
 
     name: str
+
+    @staticmethod
+    def _with_metadata(result: dict, response: Any) -> ProviderResponse:
+        """Keep the parsed dict contract while retaining response token usage."""
+        if isinstance(response, dict):
+            usage = response.get("usage")
+        else:
+            usage = getattr(response, "usage", None) or getattr(response, "usage_metadata", None)
+        if usage is not None and hasattr(usage, "model_dump"):
+            usage = usage.model_dump()
+        elif usage is not None and not isinstance(usage, (dict, list, str, int, float, bool)):
+            usage = vars(usage)
+        if usage is None and isinstance(response, dict):
+            usage = {
+                key: response[key]
+                for key in ("prompt_eval_count", "eval_count")
+                if key in response
+            } or None
+        return ProviderResponse(result, usage=usage)
 
     @abstractmethod
     async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:

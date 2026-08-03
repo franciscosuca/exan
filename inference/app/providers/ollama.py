@@ -28,24 +28,24 @@ class OllamaProvider(BaseProvider):
             text = text.rsplit("```", 1)[0]
         return json.loads(text)
 
-    async def _chat(self, messages: list[dict]) -> str:
+    async def _chat(self, messages: list[dict]) -> dict:
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.post(
                 f"{self.base_url}/api/chat",
                 json={"model": self.model, "messages": messages, "stream": False},
             )
             response.raise_for_status()
-            return response.json()["message"]["content"]
+            return response.json()
 
     async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         messages = self._build_messages(image_data, mime_types, ANALYZE_STRUCTURE_PROMPT)
-        text = await self._chat(messages)
-        return self._parse_json(text)
+        response = await self._chat(messages)
+        return self._with_metadata(self._parse_json(response["message"]["content"]), response)
 
     async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         messages = self._build_messages(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
-        text = await self._chat(messages)
-        return self._parse_json(text)
+        response = await self._chat(messages)
+        return self._with_metadata(self._parse_json(response["message"]["content"]), response)
 
     async def grade_exam(
         self,
@@ -56,11 +56,11 @@ class OllamaProvider(BaseProvider):
     ) -> dict:
         prompt = grade_exam_prompt(exam_structure, answer_key)
         messages = self._build_messages(student_images, student_mime_types, prompt)
-        text = await self._chat(messages)
-        return self._parse_json(text)
+        response = await self._chat(messages)
+        return self._with_metadata(self._parse_json(response["message"]["content"]), response)
 
     async def evaluate_text(self, text: str, prompt: str) -> dict:
         full_prompt = prompt + text
         messages = [{"role": "user", "content": full_prompt}]
-        result = await self._chat(messages)
-        return self._parse_json(result)
+        response = await self._chat(messages)
+        return self._with_metadata(self._parse_json(response["message"]["content"]), response)

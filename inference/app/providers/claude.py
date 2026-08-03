@@ -47,7 +47,7 @@ class ClaudeProvider(BaseProvider):
             max_tokens=4096,
             messages=[{"role": "user", "content": content}],
         )
-        return self._parse_json(response.content[0].text)
+        return self._with_metadata(self._parse_json(response.content[0].text), response)
 
     async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         content = self._build_content(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
@@ -56,7 +56,7 @@ class ClaudeProvider(BaseProvider):
             max_tokens=4096,
             messages=[{"role": "user", "content": content}],
         )
-        return self._parse_json(response.content[0].text)
+        return self._with_metadata(self._parse_json(response.content[0].text), response)
 
     async def grade_exam(
         self,
@@ -72,7 +72,7 @@ class ClaudeProvider(BaseProvider):
             max_tokens=4096,
             messages=[{"role": "user", "content": content}],
         )
-        return self._parse_json(response.content[0].text)
+        return self._with_metadata(self._parse_json(response.content[0].text), response)
 
     async def evaluate_text(self, text: str, prompt: str) -> dict:
         full_prompt = prompt + text
@@ -81,4 +81,4 @@ class ClaudeProvider(BaseProvider):
             max_tokens=4096,
             messages=[{"role": "user", "content": [{"type": "text", "text": full_prompt}]}],
         )
-        return self._parse_json(response.content[0].text)
+        return self._with_metadata(self._parse_json(response.content[0].text), response)

@@ -1,3 +1,15 @@
+## [1.5.0](https://github.com/franciscosuca/exan/compare/v1.4.1...v1.5.0) (2026-08-03)
+
+### Features
+
+* **persist inference run logs:** feat: persist inference run logs ([f8bbd24](https://github.com/franciscosuca/exan/commit/f8bbd24598ec077007a08e076361011bb37ad5c0))
+
+### Bug Fixes
+
+* **capture per-call provider usage:** fix: capture per-call provider usage ([1c9f753](https://github.com/franciscosuca/exan/commit/1c9f7538dcbec8e88ac48204a3fbf2b204b280b5))
+* **keep logging failures from breaking requests:** fix: keep logging failures from breaking requests ([c531ad6](https://github.com/franciscosuca/exan/commit/c531ad65433a432d703d4707a9de15de7d1bca9f))
+* **persist container logs at root path:** fix: persist container logs at root path ([dd2f3be](https://github.com/franciscosuca/exan/commit/dd2f3bea8d32ec51bdb402750db4c9e60165620d))
+
 ## [1.4.1](https://github.com/franciscosuca/exan/compare/v1.4.0...v1.4.1) (2026-08-02)
 
 ## [1.4.0](https://github.com/franciscosuca/exan/compare/v1.3.1...v1.4.0) (2026-07-31)

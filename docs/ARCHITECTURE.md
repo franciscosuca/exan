@@ -51,64 +51,6 @@ graph TB
 
 ---
 
-## 2. User Workflow Diagrams
-
-### 2.1 Landing Page Selection
-
-```mermaid
-flowchart TD
-    Start([User opens Exan]) --> Landing{Landing Page}
-    Landing -->|"Exam Comparison"| EC[Exam Comparison Workflow]
-    Landing -->|"Batch Evaluation"| BE[Batch Evaluation Workflow]
-    EC --> BackEC[← Back to Landing]
-    BE --> BackBE[← Back to Landing]
-    BackEC --> Landing
-    BackBE --> Landing
-```
-
-### 2.2 Exam Comparison Workflow
-
-```mermaid
-flowchart TD
-    Start([Enter Exam Comparison]) --> SelectProvider[Select AI Provider]
-    SelectProvider --> Step1[Step 1: Upload Exam Template]
-    Step1 -->|PDF/Image| Analyze[AI Analyzes Structure]
-    Analyze --> ShowQuestions[Show detected questions count]
-    ShowQuestions --> Step2[Step 2: Upload Answer Key]
-    Step2 -->|PDF/Image| Extract[AI Extracts Answers]
-    Extract --> ShowAnswers[Show loaded answers count]
-    ShowAnswers --> Step3[Step 3: Upload Student Exams]
-    Step3 -->|Multiple PDF/Images| Grade[AI Grades Each Exam]
-    Grade --> Results[Show Grading Results]
-    Results --> Details[View per-question breakdown]
-    Results --> Reset[Start Over]
-    Reset --> Step1
-```
-
-### 2.3 Batch Evaluation Workflow
-
-```mermaid
-flowchart TD
-    Start([Enter Batch Evaluation]) --> SelectProvider[Select AI Provider]
-    SelectProvider --> Upload[Upload Exam Files<br/>PDF or Word, multiple]
-    Upload --> ConfigCriteria{Configure Criteria}
-    
-    ConfigCriteria --> Grammar[Enable Grammar Check<br/>+ select language]
-    ConfigCriteria --> Custom[Add Custom Criteria<br/>name + description +<br/>0% definition + 100% definition]
-    ConfigCriteria --> AddMore[Add More Custom Criteria]
-    AddMore --> Custom
-    
-    Grammar --> Evaluate[Click Evaluate]
-    Custom --> Evaluate
-    
-    Evaluate --> Processing[AI evaluates each file<br/>against each criteria]
-    Processing --> Results[Show Results:<br/>per-file scores, per-criteria breakdown,<br/>overall percentage, feedback]
-    Results --> NewEval[New Evaluation]
-    NewEval --> Upload
-```
-
----
-
 ## 3. Swimlane Diagram — Frontend / Backend Interaction
 
 ### 3.1 Exam Comparison Flow
@@ -116,38 +58,66 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant FE as Frontend
-    participant BE as Backend API
+    participant EC as ExamComparison
+    participant API as API Client
+    participant BE as FastAPI
+    participant FP as File Processing
+    participant PR as Provider Registry
     participant AI as AI Provider
+    participant LOG as Run Logging
 
-    U->>FE: Open app
-    FE->>BE: GET /api/providers
-    BE-->>FE: List of available providers
+    U->>EC: Open Exam Comparison
+    EC->>API: getProviders()
+    API->>BE: GET /api/providers
+    BE->>PR: get_available_providers()
+    PR-->>BE: Provider status list
+    BE-->>API: ProviderConfig[]
+    API-->>EC: Available providers
 
-    U->>FE: Select provider
-    U->>FE: Upload exam template (PDF/Image)
-    FE->>BE: POST /api/exam/template<br/>{file, provider}
-    BE->>BE: process_upload() → images
-    BE->>AI: analyze_exam_structure(images)
-    AI-->>BE: {questions: [...]}
-    BE-->>FE: ExamStructure {id, questions}
+    U->>EC: Select provider and upload template
+    EC->>API: uploadExamTemplate(file, provider)
+    API->>BE: POST /api/exam/template<br/>multipart: file, provider
+    BE->>BE: get_mime_type(filename, content_type)
+    BE->>FP: process_upload(content, mime)
+    FP-->>BE: Image bytes and MIME types
+    BE->>PR: get_provider(provider)
+    PR-->>BE: Provider instance
+    BE->>AI: analyze_exam_structure(images, mimes)
+    AI-->>BE: Raw structure with questions
+    BE-->>API: ExamStructure {id, filename, questions, created_at}
+    API-->>EC: Store exam structure and advance step
 
-    U->>FE: Upload answer key (PDF/Image)
-    FE->>BE: POST /api/exam/answer-key<br/>{file, exam_id, provider}
-    BE->>BE: process_upload() → images
-    BE->>AI: extract_answers(images)
-    AI-->>BE: {answers: [...]}
-    BE-->>FE: AnswerKey {id, answers}
+    U->>EC: Upload answer key
+    EC->>API: uploadAnswerKey(file, exam_id, provider)
+    API->>BE: POST /api/exam/answer-key<br/>multipart: file, exam_id, provider
+    BE->>BE: Validate exam_id and get_mime_type()
+    BE->>FP: process_upload(content, mime)
+    FP-->>BE: Image bytes and MIME types
+    BE->>PR: get_provider(provider)
+    PR-->>BE: Provider instance
+    BE->>AI: extract_answers(images, mimes)
+    AI-->>BE: Raw answers
+    BE->>BE: Normalize answer fields and store answer key
+    BE-->>API: AnswerKey {id, exam_id, answers, created_at}
+    API-->>EC: Store answer key and advance step
 
-    U->>FE: Upload student exams (multiple)
-    FE->>BE: POST /api/exam/grade<br/>{files[], exam_id, provider}
+    U->>EC: Upload one or more student exams
+    EC->>API: uploadStudentExams(files, exam_id, provider)
+    API->>BE: POST /api/exam/grade<br/>multipart: files[], exam_id, provider
+    BE->>PR: get_provider(provider)
+    PR-->>BE: Provider instance
     loop For each student file
-        BE->>BE: process_upload() → images
-        BE->>AI: grade_exam(images, structure, key)
-        AI-->>BE: {student_name, answers}
+        BE->>BE: get_mime_type(filename, content_type)
+        BE->>FP: process_upload(content, mime)
+        FP-->>BE: Image bytes and MIME types
+        BE->>AI: grade_exam(images, mimes, structure, key)
+        AI-->>BE: Student name and answers
+        BE->>BE: Calculate scores and percentage
     end
-    BE-->>FE: GradingResult[]
-    FE->>U: Display scores & breakdown
+    BE->>LOG: write_run_log(exam-comparison, inputs, outputs, provider)
+    BE-->>API: GradingResult[]
+    API-->>EC: Store results and show breakdown
+    EC-->>U: Display scores and per-question results
 ```
 
 ### 3.2 Batch Evaluation Flow
@@ -155,39 +125,56 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant FE as Frontend
-    participant BE as Backend API
+    participant BE as BatchEvaluation
+    participant API as API Client
+    participant SVC as FastAPI
+    participant FP as File Processing
+    participant PR as Provider Registry
     participant AI as AI Provider
+    participant LOG as Run Logging
 
-    U->>FE: Open app → Batch Evaluation
-    FE->>BE: GET /api/providers
-    BE-->>FE: List of available providers
+    U->>BE: Open Batch Evaluation
+    BE->>API: getProviders()
+    API->>SVC: GET /api/providers
+    SVC->>PR: get_available_providers()
+    PR-->>SVC: Provider status list
+    SVC-->>API: ProviderConfig[]
+    API-->>BE: Available providers
 
-    U->>FE: Select provider
-    U->>FE: Upload files (PDF/Word)
-    U->>FE: Configure criteria<br/>(grammar + custom)
-    U->>FE: Click "Evaluate"
+    U->>BE: Select provider and upload PDF/Word files
+    U->>BE: Configure grammar and custom criteria
+    U->>BE: Click Evaluate
 
-    FE->>BE: POST /api/batch/evaluate<br/>{files[], provider, language,<br/>include_grammar, custom_criteria}
+    BE->>API: batchEvaluate(files, provider, language,<br/>includeGrammar, customCriteria)
+    API->>SVC: POST /api/batch/evaluate<br/>multipart: files[], provider, language,<br/>include_grammar, custom_criteria JSON
+    SVC->>SVC: Parse include_grammar and custom_criteria
+    SVC->>PR: get_provider(provider)
+    PR-->>SVC: Provider instance
 
     loop For each file
-        BE->>BE: extract_text(file) → text
+        SVC->>SVC: get_mime_type(filename, content_type)
+        SVC->>FP: extract_text(content, mime)
+        FP-->>SVC: Extracted document text
 
         opt Grammar enabled
-            BE->>AI: evaluate_text(text, grammar_prompt)
+            SVC->>SVC: grammar_evaluation_prompt(language)
+            SVC->>AI: evaluate_text(text, grammar prompt)
             AI-->>BE: {score, feedback}
         end
 
-        loop For each custom criteria
-            BE->>AI: evaluate_text(text, criteria_prompt)
-            AI-->>BE: {score, feedback}
+        loop For each valid custom criterion
+            SVC->>SVC: custom_criteria_evaluation_prompt(...)
+            SVC->>AI: evaluate_text(text, criteria prompt)
+            AI-->>SVC: {score, feedback}
         end
 
-        BE->>BE: Calculate overall score
+        SVC->>SVC: Calculate overall score and summary
     end
 
-    BE-->>FE: BatchEvaluationResponse {results[]}
-    FE->>U: Display per-file scores,<br/>per-criteria breakdown & feedback
+    SVC->>LOG: write_run_log(batch-evaluation, inputs, outputs, provider)
+    SVC-->>API: BatchEvaluationResponse {id, results[], created_at}
+    API-->>BE: Store response
+    BE-->>U: Display per-file scores, breakdown, and feedback
 ```
 
 ---

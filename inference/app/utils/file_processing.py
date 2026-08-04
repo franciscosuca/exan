@@ -71,9 +71,7 @@ def extract_text(file_bytes: bytes, mime_type: str) -> str:
     if mime_type in SUPPORTED_WORD_TYPES:
         return extract_text_from_word(file_bytes)
 
-    raise ValueError(
-        f"Text extraction not supported for: {mime_type}. Use PDF or Word documents."
-    )
+    raise ValueError(f"Text extraction not supported for: {mime_type}. Use PDF or Word documents.")
 
 
 def process_upload(file_bytes: bytes, mime_type: str) -> list[tuple[bytes, str]]:

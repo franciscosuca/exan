@@ -171,7 +171,9 @@ bun run test
 │   ├── app/
 │   │   ├── providers/  # AI provider implementations
 │   │   ├── models/     # Pydantic data models
-│   │   ├── file_processing.py
+│   │   ├── utils/
+│   │   │   ├── file_processing.py
+│   │   │   └── run_logging.py
 │   │   └── main.py     # API routes
 │   └── tests/          # Pytest test suite
 ├── auth/               # Node/Express JWT auth microservice

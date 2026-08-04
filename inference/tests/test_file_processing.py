@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.file_processing import get_mime_type, pdf_to_images, process_upload
+from app.utils.file_processing import get_mime_type, pdf_to_images, process_upload
 
 
 def test_get_mime_type_from_content_type():

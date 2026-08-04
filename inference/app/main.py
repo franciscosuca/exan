@@ -7,7 +7,6 @@ from typing import Any
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
-from .file_processing import extract_text, get_mime_type, process_upload
 from .models import (
     AnswerKey,
     BatchEvaluationResponse,
@@ -19,7 +18,8 @@ from .models import (
 )
 from .providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
 from .providers.registry import get_available_providers, get_provider
-from .run_logging import elapsed_ms, start_timer, write_run_log
+from .utils.file_processing import extract_text, get_mime_type, process_upload
+from .utils.run_logging import elapsed_ms, start_timer, write_run_log
 
 app = FastAPI(title="Exan API", version="0.1.0")
 
@@ -187,9 +187,7 @@ async def grade_student_exams(
                 }
             )
         except Exception as e:
-            raise HTTPException(
-                status_code=500, detail=f"Grading failed for {file.filename}: {e}"
-            )
+            raise HTTPException(status_code=500, detail=f"Grading failed for {file.filename}: {e}")
 
         answers = [StudentAnswer(**a) for a in grading.get("answers", [])]
         total = sum(a.points_earned for a in answers)

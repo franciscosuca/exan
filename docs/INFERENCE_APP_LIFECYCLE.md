@@ -158,11 +158,11 @@ flowchart LR
     Frontend["webapp/src/lib/api.ts"] -->|multipart HTTP| Main["inference/app/main.py"]
 
     subgraph Inference["Inference service"]
-        Main --> Processing["app/file_processing.py"]
+        Main --> Processing["app/utils/file_processing.py"]
         Main --> Models["app/models/__init__.py"]
         Main --> Registry["app/providers/registry.py"]
         Main --> Prompts["app/providers/prompts.py"]
-        Main --> Logging["app/run_logging.py"]
+        Main --> Logging["app/utils/run_logging.py"]
 
         Registry --> Contract["app/providers/__init__.py\nBaseProvider"]
         Registry --> Implementations["gemini.py | claude.py | gpt.py\nollama.py | lmstudio.py"]
@@ -184,14 +184,14 @@ flowchart LR
 | --- | --- |
 | `webapp/src/lib/api.ts` | Builds multipart requests and consumes typed JSON responses. |
 | `inference/app/main.py` | Owns routes, workflow ordering, state gates, totals, and errors. |
-| `inference/app/file_processing.py` | Detects supported types, renders PDFs, validates images, and extracts text. |
+| `inference/app/utils/file_processing.py` | Detects supported types, renders PDFs, validates images, and extracts text. |
 | `inference/app/models/__init__.py` | Defines response and nested result contracts through Pydantic. |
 | `inference/app/providers/registry.py` | Maps a provider name to its implementation and reports availability. |
 | `inference/app/providers/__init__.py` | Defines the shared async provider methods. |
 | `inference/app/providers/*.py` | Calls a cloud or local model and parses its JSON response. |
 | `inference/app/providers/prompts.py` | Supplies the structure, grading, grammar, and custom-criteria instructions. |
 | `inference/app/config.py` | Loads API keys, model names, and local provider URLs. |
-| `inference/app/run_logging.py` | Records inputs, outputs, provider metadata, token usage, and elapsed time. |
+| `inference/app/utils/run_logging.py` | Records inputs, outputs, provider metadata, token usage, and elapsed time. |
 | `logs/` | Receives completed comparison and batch-evaluation JSON records. |
 
 ## Route Reference
@@ -199,10 +199,10 @@ flowchart LR
 | Route | Input | Main dependency path | Output |
 | --- | --- | --- | --- |
 | `GET /api/providers` | None | `main.py -> registry.py` | Provider availability list |
-| `POST /api/exam/template` | One PDF or image, provider | `main.py -> file_processing.py -> provider` | `ExamStructure` |
-| `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `main.py -> _exams -> file_processing.py -> provider` | `AnswerKey` |
-| `POST /api/exam/grade` | One or more PDFs/images, `exam_id`, provider | `main.py -> _exams + _answer_keys -> file_processing.py -> provider` | `GradingResult[]` |
-| `POST /api/batch/evaluate` | PDFs/Word files, provider, criteria | `main.py -> file_processing.py -> prompts -> provider` | `BatchEvaluationResponse` |
+| `POST /api/exam/template` | One PDF or image, provider | `main.py -> utils/file_processing.py -> provider` | `ExamStructure` |
+| `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `main.py -> _exams -> utils/file_processing.py -> provider` | `AnswerKey` |
+| `POST /api/exam/grade` | One or more PDFs/images, `exam_id`, provider | `main.py -> _exams + _answer_keys -> utils/file_processing.py -> provider` | `GradingResult[]` |
+| `POST /api/batch/evaluate` | PDFs/Word files, provider, criteria | `main.py -> utils/file_processing.py -> prompts -> provider` | `BatchEvaluationResponse` |
 
 ## Operational Notes
 

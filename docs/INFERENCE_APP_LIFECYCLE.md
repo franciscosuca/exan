@@ -64,7 +64,7 @@ Errors are converted to HTTP responses close to the operation that failed:
 | No selected batch criteria | `400` |
 | Provider or AI operation failure | `500` |
 
-## Exam Comparison Lifecycle
+## Exam Comparison Lifecycle (PENDING TO READ)
 
 The exam comparison workflow has an intentional dependency order:
 

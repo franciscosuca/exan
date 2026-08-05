@@ -185,7 +185,9 @@ sequenceDiagram
 
 ---
 
-## 4. Per-Feature Class Diagrams
+## 4. Per-Feature Class Diagrams (PENDING TO READ)
+
+TODO: This shall be simplified by removing the custom criteria and the grading-tools.
 
 ### 4.1 Exam Comparison — Models & Classes
 

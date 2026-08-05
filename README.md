@@ -174,7 +174,10 @@ bun run test
 │   │   ├── utils/
 │   │   │   ├── file_processing.py
 │   │   │   └── run_logging.py
-│   │   └── main.py     # API routes
+│   │   └── main.py      # App wiring and router registration
+│   │   ├── api/         # Routers and dependency providers
+│   │   ├── repositories/ # In-memory workflow state
+│   │   ├── services/    # Workflow orchestration
 │   └── tests/          # Pytest test suite
 ├── auth/               # Node/Express JWT auth microservice
 ├── db/                 # Mongo connection helper + init script

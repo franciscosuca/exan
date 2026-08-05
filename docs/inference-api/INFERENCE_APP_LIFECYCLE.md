@@ -1,25 +1,44 @@
 # Inference App Lifecycle
 
 This guide explains how the FastAPI inference app is started, how each route is
-used, and how `inference/app/main.py` coordinates the rest of the inference
-service.
+used, and how the MVP structure evolved into a standard FastAPI layout.
 
-## Mental Model
+## MVP Snapshot: Before Refactor
 
-`main.py` is the request orchestrator. It does not implement document parsing
-or AI calls itself. For each request it:
+The original MVP concentrated all five HTTP routes and their workflow logic in
+`inference/app/main.py`. The module handled:
 
-1. Accepts uploaded files and form fields.
-2. Determines the file type and converts the file into the representation the
-   selected operation needs.
-3. Resolves an AI provider through the common provider interface.
-4. Validates provider output with Pydantic models.
-5. Stores short-lived workflow state or returns evaluation results.
-6. Writes a run log for completed evaluation workflows.
+- multipart upload and form-field parsing
+- file conversion and text extraction
+- provider resolution and AI calls
+- Pydantic response construction and score calculation
+- in-memory exam and answer-key dictionaries
+- run-log creation and HTTP error conversion
 
-The app currently keeps exam structures and answer keys in process memory. A
-restart, container replacement, or multiple backend instances will not share
-that state.
+This was functional for the MVP, but route registration, HTTP concerns, and
+workflow orchestration were coupled in one module.
+
+## Refactored Snapshot: Current Structure
+
+`main.py` now creates the FastAPI application, installs CORS, and registers
+routers. The application is split into these ownership boundaries:
+
+| Boundary | Responsibility |
+| --- | --- |
+| `app/api/routes/providers.py` | Provider discovery HTTP endpoint. |
+| `app/api/routes/exams.py` | Exam upload HTTP concerns and error-to-HTTP translation. |
+| `app/api/routes/batch.py` | Batch form parsing, criteria validation, and HTTP errors. |
+| `app/api/dependencies.py` | Constructs injectable repositories and workflow services. |
+| `app/services/exam_comparison.py` | Template, answer-key, and grading orchestration. |
+| `app/services/batch_evaluation.py` | Text extraction, criteria evaluation, scoring, and logging. |
+| `app/repositories/exam_repository.py` | In-memory exam and answer-key storage. |
+| `app/utils/` | File processing and run logging primitives. |
+| `app/providers/` | Provider contract, registry, adapters, and prompts. |
+
+Storage remains process-local and in-memory for this MVP. A restart, container
+replacement, or multiple backend instances will not share exam state. Database
+storage and migration are future work; this refactor intentionally adds no
+database or new persistence service.
 
 ## Process Lifecycle
 
@@ -31,7 +50,8 @@ Uvicorn imports `app.main:app`. Importing `main.py` then:
   `config.py`.
 - Imports the provider registry and all configured provider classes.
 - Creates the FastAPI application and installs the CORS middleware.
-- Creates the empty in-memory stores `_exams` and `_answer_keys`.
+- Imports the route modules and registers their routers.
+- Leaves the process-local repository to the dependency provider.
 
 There are no explicit FastAPI startup or shutdown handlers. Providers are
 constructed when a request resolves one, rather than during app startup.
@@ -64,7 +84,7 @@ Errors are converted to HTTP responses close to the operation that failed:
 | No selected batch criteria | `400` |
 | Provider or AI operation failure | `500` |
 
-## Exam Comparison Lifecycle (PENDING TO READ)
+## Exam Comparison Lifecycle
 
 The exam comparison workflow has an intentional dependency order:
 
@@ -79,17 +99,17 @@ flowchart TD
     TemplatePages --> TemplateAI[Resolve provider and analyze structure]
     TemplateImage --> TemplateAI
     TemplateAI --> TemplateModel[Build ExamStructure]
-    TemplateModel --> ExamStore[Store structure and raw result in _exams]
+    TemplateModel --> ExamStore[ExamRepository stores structure and raw result]
     ExamStore --> TemplateResponse[Return exam_id and questions]
 
     TemplateResponse --> Key[POST /api/exam/answer-key]
-    Key --> KeyGate{exam_id exists in _exams?}
+    Key --> KeyGate{exam_id exists in ExamRepository?}
     KeyGate -->|No| NotFound[404 Exam not found]
     KeyGate -->|Yes| KeyRead[Read upload and determine MIME type]
     KeyRead --> KeyProcess[Convert PDF or validate image]
     KeyProcess --> KeyAI[Resolve provider and extract answers]
     KeyAI --> KeyModel[Normalize answer field and build AnswerKey]
-    KeyModel --> KeyStore[Store key and raw result in _answer_keys]
+    KeyModel --> KeyStore[ExamRepository stores key and raw result]
     KeyStore --> KeyResponse[Return answer key]
 
     KeyResponse --> Grade[POST /api/exam/grade]
@@ -109,22 +129,28 @@ flowchart TD
 ### What persists between steps
 
 The response from template upload contains a generated `exam_id`. The backend
-uses that identifier as the key into `_exams`:
+uses that identifier as the key into the in-memory `ExamRepository`:
 
 ```text
-_exams[exam_id] = {
+repository.save_exam(exam_id, structure, raw_result)
+```
+
+The repository stores the equivalent record:
+
+```text
+{
     "structure": ExamStructure.model_dump(),
     "raw_result": provider_structure_result,
 }
 ```
 
 Answer-key upload must receive that same `exam_id`. It stores the normalized
-`AnswerKey` and the original provider response in `_answer_keys[exam_id]`.
+`AnswerKey` and the original provider response by calling the repository.
 Grading then passes both raw provider results back to `grade_exam` so the
 provider can compare the student document against the same exam context.
 
-The stores are module-level dictionaries, so they are suitable for the MVP
-workflow but are not durable application storage.
+The repository instance owns dictionaries internally, so it remains suitable
+for the MVP workflow but is not durable application storage.
 
 ## Batch Evaluation Lifecycle
 
@@ -149,20 +175,28 @@ calls.
 
 ## Dependency Diagram
 
-A component dependency graph is the most useful diagram for `main.py`: it
-shows which local modules it calls directly and where runtime work leaves the
-Python process.
+The component graph shows the application wiring separately from request
+orchestration and external runtime work.
 
 ```mermaid
 flowchart LR
-    Frontend["webapp/src/lib/api.ts"] -->|multipart HTTP| Main["inference/app/main.py"]
+    Frontend["webapp/src/lib/api.ts"] -->|multipart HTTP| Main["inference/app/main.py\n(app wiring)"]
 
     subgraph Inference["Inference service"]
-        Main --> Processing["app/utils/file_processing.py"]
-        Main --> Models["app/models/__init__.py"]
-        Main --> Registry["app/providers/registry.py"]
-        Main --> Prompts["app/providers/prompts.py"]
-        Main --> Logging["app/utils/run_logging.py"]
+      Main --> Routers["app/api/routes/*.py"]
+      Routers --> Dependencies["app/api/dependencies.py"]
+      Dependencies --> ExamService["app/services/exam_comparison.py"]
+      Dependencies --> BatchService["app/services/batch_evaluation.py"]
+      ExamService --> Repository["app/repositories/exam_repository.py"]
+      ExamService --> Processing["app/utils/file_processing.py"]
+      BatchService --> Processing
+      ExamService --> Registry["app/providers/registry.py"]
+      BatchService --> Registry
+      ExamService --> Models["app/models/__init__.py"]
+      BatchService --> Models
+      ExamService --> Logging["app/utils/run_logging.py"]
+      BatchService --> Logging
+      BatchService --> Prompts["app/providers/prompts.py"]
 
         Registry --> Contract["app/providers/__init__.py\nBaseProvider"]
         Registry --> Implementations["gemini.py | claude.py | gpt.py\nollama.py | lmstudio.py"]
@@ -183,7 +217,11 @@ flowchart LR
 | File or boundary | Responsibility in the lifecycle |
 | --- | --- |
 | `webapp/src/lib/api.ts` | Builds multipart requests and consumes typed JSON responses. |
-| `inference/app/main.py` | Owns routes, workflow ordering, state gates, totals, and errors. |
+| `inference/app/main.py` | Creates the app, installs CORS, and registers routers. |
+| `inference/app/api/routes/*.py` | Owns HTTP inputs, response models, and service-error translation. |
+| `inference/app/api/dependencies.py` | Constructs the shared in-memory repository and workflow services. |
+| `inference/app/services/*.py` | Owns workflow ordering, provider calls, totals, and run-log inputs. |
+| `inference/app/repositories/exam_repository.py` | Owns in-memory exam and answer-key records. |
 | `inference/app/utils/file_processing.py` | Detects supported types, renders PDFs, validates images, and extracts text. |
 | `inference/app/models/__init__.py` | Defines response and nested result contracts through Pydantic. |
 | `inference/app/providers/registry.py` | Maps a provider name to its implementation and reports availability. |
@@ -198,11 +236,11 @@ flowchart LR
 
 | Route | Input | Main dependency path | Output |
 | --- | --- | --- | --- |
-| `GET /api/providers` | None | `main.py -> registry.py` | Provider availability list |
-| `POST /api/exam/template` | One PDF or image, provider | `main.py -> utils/file_processing.py -> provider` | `ExamStructure` |
-| `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `main.py -> _exams -> utils/file_processing.py -> provider` | `AnswerKey` |
-| `POST /api/exam/grade` | One or more PDFs/images, `exam_id`, provider | `main.py -> _exams + _answer_keys -> utils/file_processing.py -> provider` | `GradingResult[]` |
-| `POST /api/batch/evaluate` | PDFs/Word files, provider, criteria | `main.py -> utils/file_processing.py -> prompts -> provider` | `BatchEvaluationResponse` |
+| `GET /api/providers` | None | `routes/providers.py -> registry.py` | Provider availability list |
+| `POST /api/exam/template` | One PDF or image, provider | `routes/exams.py -> ExamComparisonService -> file_processing.py -> provider` | `ExamStructure` |
+| `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `AnswerKey` |
+| `POST /api/exam/grade` | One or more PDFs/images, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `GradingResult[]` |
+| `POST /api/batch/evaluate` | PDFs/Word files, provider, criteria | `routes/batch.py -> BatchEvaluationService -> prompts -> provider` | `BatchEvaluationResponse` |
 
 ## Operational Notes
 

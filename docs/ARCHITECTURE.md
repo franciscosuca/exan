@@ -28,7 +28,10 @@ graph TB
     end
     
     subgraph Backend["Backend (Python FastAPI)"]
-        Main["main.py<br/>(API Routes)"]
+        Main["main.py<br/>(App Wiring)"]
+        Routers["api/routes/<br/>(HTTP Routes)"]
+        Services["services/<br/>(Workflow Orchestration)"]
+        Repository["repositories/<br/>(In-Memory State)"]
         FP["file_processing.py<br/>(PDF/Word/Image)"]
         Models["models/<br/>(Pydantic Models)"]
         AI["AI-provider"]
@@ -43,10 +46,13 @@ graph TB
     Eval --> BR
     Eval --> API
     
-    API -->|HTTP REST| Main
-    Main --> FP
-    Main --> Models
-    Main --> AI
+    API -->|HTTP REST| Routers
+    Main --> Routers
+    Routers --> Services
+    Services --> Repository
+    Services --> FP
+    Services --> Models
+    Services --> AI
 ```
 
 ---

@@ -1,0 +1,155 @@
+"""Batch document evaluation workflow orchestration."""
+
+import uuid
+from collections.abc import Callable, Sequence
+from datetime import datetime, timezone
+from typing import Any, Mapping
+
+from ..models import BatchEvaluationResponse, CriteriaScore, FileEvaluationResult
+from ..providers import BaseProvider
+from ..providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
+from ..utils.file_processing import extract_text, get_mime_type
+from ..utils.run_logging import elapsed_ms, start_timer, write_run_log
+from . import UploadedDocument
+
+
+class UploadProcessingError(ValueError):
+    """Raised when a batch document cannot be converted to text."""
+
+
+class BatchEvaluationError(RuntimeError):
+    """Raised when a provider cannot complete a batch evaluation."""
+
+
+class BatchEvaluationService:
+    """Orchestrate batch evaluation without depending on HTTP routing."""
+
+    def __init__(self, provider_factory: Callable[[str], BaseProvider]) -> None:
+        self.provider_factory = provider_factory
+
+    async def evaluate(
+        self,
+        documents: Sequence[UploadedDocument],
+        provider_name: str,
+        language: str,
+        include_grammar: bool,
+        criteria: Sequence[Mapping[str, Any]],
+    ) -> BatchEvaluationResponse:
+        """Evaluate each document against the selected criteria."""
+        try:
+            provider = self.provider_factory(provider_name)
+        except Exception as exc:
+            raise BatchEvaluationError(f"Batch evaluation failed: {exc}") from exc
+
+        results: list[FileEvaluationResult] = []
+        run_started = start_timer()
+        outputs: list[dict[str, Any]] = []
+        input_files = []
+
+        for document in documents:
+            mime = get_mime_type(document.filename, document.content_type)
+            try:
+                text = extract_text(document.content, mime)
+            except ValueError as exc:
+                raise UploadProcessingError(f"File {document.filename}: {exc}") from exc
+
+            if not text.strip():
+                raise UploadProcessingError(
+                    f"File {document.filename}: No text content could be extracted"
+                )
+            input_files.append(
+                {
+                    "filename": document.filename,
+                    "mime_type": mime,
+                    "bytes": len(document.content),
+                    "text_preview": text[:500],
+                }
+            )
+
+            scores: list[CriteriaScore] = []
+            if include_grammar:
+                try:
+                    prompt = grammar_evaluation_prompt(language)
+                    call_started = start_timer()
+                    result = await provider.evaluate_text(text, prompt)
+                    outputs.append(
+                        {
+                            "operation": "grammar",
+                            "filename": document.filename,
+                            "elapsed_ms": elapsed_ms(call_started),
+                            "output": result,
+                        }
+                    )
+                    scores.append(
+                        CriteriaScore(
+                            criteria_name="Grammar",
+                            score=float(result.get("score", 0)),
+                            feedback=result.get("feedback", ""),
+                        )
+                    )
+                except Exception as exc:
+                    raise BatchEvaluationError(
+                        f"Grammar evaluation failed for {document.filename}: {exc}"
+                    ) from exc
+
+            for criterion in criteria:
+                try:
+                    prompt = custom_criteria_evaluation_prompt(
+                        criteria_name=criterion["name"],
+                        description=criterion["description"],
+                        zero_description=criterion["zero_description"],
+                        hundred_description=criterion["hundred_description"],
+                    )
+                    call_started = start_timer()
+                    result = await provider.evaluate_text(text, prompt)
+                    outputs.append(
+                        {
+                            "operation": "custom_criteria",
+                            "criteria": criterion["name"],
+                            "filename": document.filename,
+                            "elapsed_ms": elapsed_ms(call_started),
+                            "output": result,
+                        }
+                    )
+                    scores.append(
+                        CriteriaScore(
+                            criteria_name=criterion["name"],
+                            score=float(result.get("score", 0)),
+                            feedback=result.get("feedback", ""),
+                        )
+                    )
+                except Exception as exc:
+                    raise BatchEvaluationError(
+                        f"Evaluation of '{criterion['name']}' failed for {document.filename}: {exc}"
+                    ) from exc
+
+            overall = sum(score.score for score in scores) / len(scores) if scores else 0
+            summary_parts = [f"{score.criteria_name}: {score.score:.0f}%" for score in scores]
+            results.append(
+                FileEvaluationResult(
+                    id=str(uuid.uuid4()),
+                    filename=document.filename,
+                    scores=scores,
+                    overall_score=overall,
+                    summary=", ".join(summary_parts),
+                )
+            )
+
+        response = BatchEvaluationResponse(
+            id=str(uuid.uuid4()),
+            results=results,
+            created_at=datetime.now(timezone.utc).isoformat(),
+        )
+        write_run_log(
+            "batch-evaluation",
+            input_snapshot={
+                "language": language,
+                "include_grammar": include_grammar,
+                "custom_criteria": criteria,
+                "files": input_files,
+            },
+            outputs=outputs,
+            elapsed=elapsed_ms(run_started),
+            provider=provider,
+        )
+        return response

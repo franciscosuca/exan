@@ -3,8 +3,8 @@
 import json
 from types import SimpleNamespace
 
-from app import run_logging
 from app.providers import ProviderResponse
+from app.utils import run_logging
 
 
 def test_write_run_log_creates_timestamped_exam_comparison_record(tmp_path, monkeypatch):

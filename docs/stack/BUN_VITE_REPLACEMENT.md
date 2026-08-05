@@ -1,4 +1,4 @@
-# Replacing Vite with Bun
+# Replacing Vite with Bun (PENDING TO READ)
 
 ## Summary
 

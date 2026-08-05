@@ -15,7 +15,7 @@ Focus on:
 - FastAPI application code in `inference/app/main.py`
 - Pydantic models in `inference/app/models/`
 - AI provider implementations in `inference/app/providers/`
-- File processing utilities in `inference/app/file_processing.py`
+- File processing utilities in `inference/app/utils/file_processing.py`
 - Configuration in `inference/app/config.py`
 - Tests in `inference/tests/`
 - Python packaging (`inference/pyproject.toml`) and dependency management with `uv`

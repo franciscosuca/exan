@@ -1,6 +1,74 @@
-# Architecture Diagrams
+# Exan Architecture
 
-This document contains Mermaid diagrams describing the Exan project architecture, workflows, and interactions.
+This document is the short architecture index for Exan. It keeps the project purpose, current implementation status, architecture decisions, and links to deeper technical details in one place.
+
+## Table of Contents
+
+- [Purpose](#purpose)
+- [Current Status](#current-status)
+- [Architecture Options](#architecture-options)
+- [Recommended Architecture](#recommended-architecture)
+    - [Service boundaries](#service-boundaries)
+    - [Request flow](#request-flow)
+    - [Provider abstraction](#provider-abstraction)
+    - [State and persistence](#state-and-persistence)
+    - [Authentication and security](#authentication-and-security)
+- [Detailed Architecture Diagrams](#detailed-architecture-diagrams)
+    - [High-level component architecture](#1-high-level-component-architecture)
+    - [Frontend and backend interaction](#3-swimlane-diagram--frontend--backend-interaction)
+    - [Per-feature class diagrams](#4-per-feature-class-diagrams-pending-to-read)
+
+## Purpose
+
+Exan scans exam documents, extracts their structure, and grades student responses with AI. The architecture supports both cloud providers and local inference while keeping the frontend workflow consistent across providers.
+
+## Current Status
+
+- The React 19 webapp provides exam comparison and batch evaluation workflows.
+- The FastAPI inference service owns document processing, workflow orchestration, provider selection, and grading.
+- Gemini, Claude, GPT, Ollama, and LM Studio are represented behind a shared provider abstraction.
+- Express and MongoDB provide authentication and user storage.
+- Exam and answer-key workflow state is currently held in FastAPI process memory.
+- Inference endpoints are not yet authenticated, so user ownership and provider-credential isolation are not complete.
+- Docker Compose runs the webapp, inference service, auth service, and MongoDB for local deployment.
+
+## Architecture Options
+
+The options and their subtopics are maintained separately so this index remains quick to scan:
+
+- [Architecture options and trade-offs](architecture/ARCHITECTURE_OPTIONS.md): service topology, runtime provider credentials, phone scanning, storage, and deployment choices.
+- [Runtime provider, credential, model, and effort selection](PROVIDER_RUNTIME.md): detailed provider-connection alternatives and API contract.
+- [Phone scanning integration options](scanning/SCANNING_INTEGRATION_OPTIONS.md): mobile capture and desktop handoff alternatives.
+
+## Recommended Architecture
+
+### Service boundaries
+
+- **Webapp:** React UI, upload workflows, provider selection, and result presentation.
+- **Inference:** FastAPI routes, document processing, workflow services, repositories, provider registry, and AI calls.
+- **Auth:** Express JWT issuance and identity ownership.
+- **Database:** MongoDB user persistence and future durable metadata.
+- **Reverse proxy:** nginx routes `/api/auth/*` to `auth-server` and other `/api/*` requests to `inference`.
+
+### Request flow
+
+The browser submits files and workflow settings to FastAPI. FastAPI validates the request, processes files into text or images, resolves a provider through the registry, invokes the model, normalizes the structured result, and returns it to the React workflow. The detailed sequence diagrams below document the current flows.
+
+### Provider abstraction
+
+All providers implement the shared `BaseProvider` contract. The registry exposes provider availability and returns the selected implementation, allowing cloud and local providers to share the same exam-analysis and text-evaluation workflows. Runtime model and credential selection is documented in [PROVIDER_RUNTIME.md](PROVIDER_RUNTIME.md).
+
+### State and persistence
+
+Keep the current in-memory repositories for the single-instance MVP. Before adding multiple inference replicas or durable workflows, move workflow state to a shared persistence layer with explicit user ownership. Temporary uploads and runtime provider connections should have bounded lifetimes and cleanup.
+
+### Authentication and security
+
+Authenticate every inference endpoint using the authenticated Exan user, bind exams and answer keys to that user, and avoid returning raw upstream provider errors. For runtime credentials, use the short-lived server-side provider connection described in [PROVIDER_RUNTIME.md](PROVIDER_RUNTIME.md); never return or log the credential.
+
+## Detailed Architecture Diagrams
+
+The following sections retain the implementation diagrams and are intentionally lower in the document. Use the table of contents for direct navigation.
 
 ---
 
@@ -28,7 +96,10 @@ graph TB
     end
     
     subgraph Backend["Backend (Python FastAPI)"]
-        Main["main.py<br/>(API Routes)"]
+        Main["main.py<br/>(App Wiring)"]
+        Routers["api/routes/<br/>(HTTP Routes)"]
+        Services["services/<br/>(Workflow Orchestration)"]
+        Repository["repositories/<br/>(In-Memory State)"]
         FP["file_processing.py<br/>(PDF/Word/Image)"]
         Models["models/<br/>(Pydantic Models)"]
         AI["AI-provider"]
@@ -43,68 +114,13 @@ graph TB
     Eval --> BR
     Eval --> API
     
-    API -->|HTTP REST| Main
-    Main --> FP
-    Main --> Models
-    Main --> AI
-```
-
----
-
-## 2. User Workflow Diagrams
-
-### 2.1 Landing Page Selection
-
-```mermaid
-flowchart TD
-    Start([User opens Exan]) --> Landing{Landing Page}
-    Landing -->|"Exam Comparison"| EC[Exam Comparison Workflow]
-    Landing -->|"Batch Evaluation"| BE[Batch Evaluation Workflow]
-    EC --> BackEC[← Back to Landing]
-    BE --> BackBE[← Back to Landing]
-    BackEC --> Landing
-    BackBE --> Landing
-```
-
-### 2.2 Exam Comparison Workflow
-
-```mermaid
-flowchart TD
-    Start([Enter Exam Comparison]) --> SelectProvider[Select AI Provider]
-    SelectProvider --> Step1[Step 1: Upload Exam Template]
-    Step1 -->|PDF/Image| Analyze[AI Analyzes Structure]
-    Analyze --> ShowQuestions[Show detected questions count]
-    ShowQuestions --> Step2[Step 2: Upload Answer Key]
-    Step2 -->|PDF/Image| Extract[AI Extracts Answers]
-    Extract --> ShowAnswers[Show loaded answers count]
-    ShowAnswers --> Step3[Step 3: Upload Student Exams]
-    Step3 -->|Multiple PDF/Images| Grade[AI Grades Each Exam]
-    Grade --> Results[Show Grading Results]
-    Results --> Details[View per-question breakdown]
-    Results --> Reset[Start Over]
-    Reset --> Step1
-```
-
-### 2.3 Batch Evaluation Workflow
-
-```mermaid
-flowchart TD
-    Start([Enter Batch Evaluation]) --> SelectProvider[Select AI Provider]
-    SelectProvider --> Upload[Upload Exam Files<br/>PDF or Word, multiple]
-    Upload --> ConfigCriteria{Configure Criteria}
-    
-    ConfigCriteria --> Grammar[Enable Grammar Check<br/>+ select language]
-    ConfigCriteria --> Custom[Add Custom Criteria<br/>name + description +<br/>0% definition + 100% definition]
-    ConfigCriteria --> AddMore[Add More Custom Criteria]
-    AddMore --> Custom
-    
-    Grammar --> Evaluate[Click Evaluate]
-    Custom --> Evaluate
-    
-    Evaluate --> Processing[AI evaluates each file<br/>against each criteria]
-    Processing --> Results[Show Results:<br/>per-file scores, per-criteria breakdown,<br/>overall percentage, feedback]
-    Results --> NewEval[New Evaluation]
-    NewEval --> Upload
+    API -->|HTTP REST| Routers
+    Main --> Routers
+    Routers --> Services
+    Services --> Repository
+    Services --> FP
+    Services --> Models
+    Services --> AI
 ```
 
 ---
@@ -116,38 +132,66 @@ flowchart TD
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant FE as Frontend
-    participant BE as Backend API
+    participant EC as ExamComparison
+    participant API as API Client
+    participant BE as FastAPI
+    participant FP as File Processing
+    participant PR as Provider Registry
     participant AI as AI Provider
+    participant LOG as Run Logging
 
-    U->>FE: Open app
-    FE->>BE: GET /api/providers
-    BE-->>FE: List of available providers
+    U->>EC: Open Exam Comparison
+    EC->>API: getProviders()
+    API->>BE: GET /api/providers
+    BE->>PR: get_available_providers()
+    PR-->>BE: Provider status list
+    BE-->>API: ProviderConfig[]
+    API-->>EC: Available providers
 
-    U->>FE: Select provider
-    U->>FE: Upload exam template (PDF/Image)
-    FE->>BE: POST /api/exam/template<br/>{file, provider}
-    BE->>BE: process_upload() → images
-    BE->>AI: analyze_exam_structure(images)
-    AI-->>BE: {questions: [...]}
-    BE-->>FE: ExamStructure {id, questions}
+    U->>EC: Select provider and upload template
+    EC->>API: uploadExamTemplate(file, provider)
+    API->>BE: POST /api/exam/template<br/>multipart: file, provider
+    BE->>BE: get_mime_type(filename, content_type)
+    BE->>FP: process_upload(content, mime)
+    FP-->>BE: Image bytes and MIME types
+    BE->>PR: get_provider(provider)
+    PR-->>BE: Provider instance
+    BE->>AI: analyze_exam_structure(images, mimes)
+    AI-->>BE: Raw structure with questions
+    BE-->>API: ExamStructure {id, filename, questions, created_at}
+    API-->>EC: Store exam structure and advance step
 
-    U->>FE: Upload answer key (PDF/Image)
-    FE->>BE: POST /api/exam/answer-key<br/>{file, exam_id, provider}
-    BE->>BE: process_upload() → images
-    BE->>AI: extract_answers(images)
-    AI-->>BE: {answers: [...]}
-    BE-->>FE: AnswerKey {id, answers}
+    U->>EC: Upload answer key
+    EC->>API: uploadAnswerKey(file, exam_id, provider)
+    API->>BE: POST /api/exam/answer-key<br/>multipart: file, exam_id, provider
+    BE->>BE: Validate exam_id and get_mime_type()
+    BE->>FP: process_upload(content, mime)
+    FP-->>BE: Image bytes and MIME types
+    BE->>PR: get_provider(provider)
+    PR-->>BE: Provider instance
+    BE->>AI: extract_answers(images, mimes)
+    AI-->>BE: Raw answers
+    BE->>BE: Normalize answer fields and store answer key
+    BE-->>API: AnswerKey {id, exam_id, answers, created_at}
+    API-->>EC: Store answer key and advance step
 
-    U->>FE: Upload student exams (multiple)
-    FE->>BE: POST /api/exam/grade<br/>{files[], exam_id, provider}
+    U->>EC: Upload one or more student exams
+    EC->>API: uploadStudentExams(files, exam_id, provider)
+    API->>BE: POST /api/exam/grade<br/>multipart: files[], exam_id, provider
+    BE->>PR: get_provider(provider)
+    PR-->>BE: Provider instance
     loop For each student file
-        BE->>BE: process_upload() → images
-        BE->>AI: grade_exam(images, structure, key)
-        AI-->>BE: {student_name, answers}
+        BE->>BE: get_mime_type(filename, content_type)
+        BE->>FP: process_upload(content, mime)
+        FP-->>BE: Image bytes and MIME types
+        BE->>AI: grade_exam(images, mimes, structure, key)
+        AI-->>BE: Student name and answers
+        BE->>BE: Calculate scores and percentage
     end
-    BE-->>FE: GradingResult[]
-    FE->>U: Display scores & breakdown
+    BE->>LOG: write_run_log(exam-comparison, inputs, outputs, provider)
+    BE-->>API: GradingResult[]
+    API-->>EC: Store results and show breakdown
+    EC-->>U: Display scores and per-question results
 ```
 
 ### 3.2 Batch Evaluation Flow
@@ -155,44 +199,63 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant FE as Frontend
-    participant BE as Backend API
+    participant BE as BatchEvaluation
+    participant API as API Client
+    participant SVC as FastAPI
+    participant FP as File Processing
+    participant PR as Provider Registry
     participant AI as AI Provider
+    participant LOG as Run Logging
 
-    U->>FE: Open app → Batch Evaluation
-    FE->>BE: GET /api/providers
-    BE-->>FE: List of available providers
+    U->>BE: Open Batch Evaluation
+    BE->>API: getProviders()
+    API->>SVC: GET /api/providers
+    SVC->>PR: get_available_providers()
+    PR-->>SVC: Provider status list
+    SVC-->>API: ProviderConfig[]
+    API-->>BE: Available providers
 
-    U->>FE: Select provider
-    U->>FE: Upload files (PDF/Word)
-    U->>FE: Configure criteria<br/>(grammar + custom)
-    U->>FE: Click "Evaluate"
+    U->>BE: Select provider and upload PDF/Word files
+    U->>BE: Configure grammar and custom criteria
+    U->>BE: Click Evaluate
 
-    FE->>BE: POST /api/batch/evaluate<br/>{files[], provider, language,<br/>include_grammar, custom_criteria}
+    BE->>API: batchEvaluate(files, provider, language,<br/>includeGrammar, customCriteria)
+    API->>SVC: POST /api/batch/evaluate<br/>multipart: files[], provider, language,<br/>include_grammar, custom_criteria JSON
+    SVC->>SVC: Parse include_grammar and custom_criteria
+    SVC->>PR: get_provider(provider)
+    PR-->>SVC: Provider instance
 
     loop For each file
-        BE->>BE: extract_text(file) → text
+        SVC->>SVC: get_mime_type(filename, content_type)
+        SVC->>FP: extract_text(content, mime)
+        FP-->>SVC: Extracted document text
 
         opt Grammar enabled
-            BE->>AI: evaluate_text(text, grammar_prompt)
+            SVC->>SVC: grammar_evaluation_prompt(language)
+            SVC->>AI: evaluate_text(text, grammar prompt)
             AI-->>BE: {score, feedback}
         end
 
-        loop For each custom criteria
-            BE->>AI: evaluate_text(text, criteria_prompt)
-            AI-->>BE: {score, feedback}
+        loop For each valid custom criterion
+            SVC->>SVC: custom_criteria_evaluation_prompt(...)
+            SVC->>AI: evaluate_text(text, criteria prompt)
+            AI-->>SVC: {score, feedback}
         end
 
-        BE->>BE: Calculate overall score
+        SVC->>SVC: Calculate overall score and summary
     end
 
-    BE-->>FE: BatchEvaluationResponse {results[]}
-    FE->>U: Display per-file scores,<br/>per-criteria breakdown & feedback
+    SVC->>LOG: write_run_log(batch-evaluation, inputs, outputs, provider)
+    SVC-->>API: BatchEvaluationResponse {id, results[], created_at}
+    API-->>BE: Store response
+    BE-->>U: Display per-file scores, breakdown, and feedback
 ```
 
 ---
 
-## 4. Per-Feature Class Diagrams
+## 4. Per-Feature Class Diagrams (PENDING TO READ)
+
+TODO: This shall be simplified by removing the custom criteria and the grading-tools.
 
 ### 4.1 Exam Comparison — Models & Classes
 

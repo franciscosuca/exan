@@ -1,4 +1,4 @@
-# Phone Scanning Integration Options
+# Phone Scanning Integration Options (PENDING TO READ)
 
 ## Purpose
 

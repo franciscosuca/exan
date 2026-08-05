@@ -171,8 +171,13 @@ bun run test
 │   ├── app/
 │   │   ├── providers/  # AI provider implementations
 │   │   ├── models/     # Pydantic data models
-│   │   ├── file_processing.py
-│   │   └── main.py     # API routes
+│   │   ├── utils/
+│   │   │   ├── file_processing.py
+│   │   │   └── run_logging.py
+│   │   └── main.py      # App wiring and router registration
+│   │   ├── api/         # Routers and dependency providers
+│   │   ├── repositories/ # In-memory workflow state
+│   │   ├── services/    # Workflow orchestration
 │   └── tests/          # Pytest test suite
 ├── auth/               # Node/Express JWT auth microservice
 ├── db/                 # Mongo connection helper + init script

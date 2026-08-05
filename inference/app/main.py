@@ -4,9 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import batch, exams, providers
-from .providers.registry import get_provider
-
-what
+from .providers.registry import get_provider  # noqa: F401
 
 app = FastAPI(title="Exan API", version="0.1.0")
 

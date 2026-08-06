@@ -1,12 +1,12 @@
 # Implementation Phases for Scanning Options 3, 4, and 5
 
-This document is a high-level planning aid for deciding between the filtered phone-scanning options:
+This document still compares the filtered phone-scanning options at a high level, but the implementation planning below is now focused on **option 3**, which is the recommended first path for Exan:
 
 - **Option 3:** QR-paired web uploader
 - **Option 4:** Installable PWA scanner
 - **Option 5:** WebRTC peer transfer
 
-It focuses on the phases required to implement each option in Exan, with emphasis on **complexity**, **integration impact**, and likely **token usage** for AI-assisted implementation.
+It focuses on the phases required to implement option 3 in Exan, with emphasis on **complexity**, **integration impact**, and likely **token usage** for AI-assisted implementation.
 
 ## Comparison Summary
 
@@ -20,9 +20,9 @@ It focuses on the phases required to implement each option in Exan, with emphasi
 
 | Question | Answer |
 | --- | --- |
-| **Does option 3 need WebSockets?** | **No.** The simplest version can work with normal **HTTPS requests** for session creation, page upload, and finalization, plus **desktop polling** for status updates. |
+| **Does option 3 need WebSockets?** | **No.** The first implementation can work with normal **HTTPS requests** for session creation, page upload, and finalization, plus **desktop polling** for status updates. |
 | **What is the most likely first protocol?** | **REST-style HTTPS endpoints** between React and FastAPI. |
-| **How does the desktop learn the phone is done?** | Start with **polling** from the desktop. **SSE** is a reasonable later improvement. |
+| **How does the desktop learn the phone is done?** | The desktop can **poll a session-status endpoint** every few seconds until the session changes state. |
 | **When would WebSockets be useful?** | Only if Exan later needs richer real-time updates, bidirectional presence, or a more interactive pairing flow. |
 
 So for the first implementation of **option 3**, the recommended stack is:
@@ -32,54 +32,71 @@ So for the first implementation of **option 3**, the recommended stack is:
 3. **Polling first**, with **SSE optional later**
 4. **No WebSocket requirement**
 
-## High-Level Implementation Phases
+## Option 3 backend session lifecycle
 
-| Phase | Option 3: QR-paired web uploader | Option 4: Installable PWA scanner | Option 5: WebRTC peer transfer |
-| --- | --- | --- | --- |
-| **1. Product and workflow definition** | Define desktop upload-slot behavior, pairing lifetime, page ordering, finalize/cancel states, and ownership rules | Define the same workflow as option 3 plus install, resume, offline, and retry expectations | Define pairing, signaling, transfer ownership, failure recovery, and fallback behavior when peer connection fails |
-| **2. Frontend desktop integration** | Add a **Scan with phone** entry point in the existing React upload flow, session creation UI, QR display, and status updates | Reuse option 3 desktop flow with PWA-specific scanner status and retry states | Add QR/signaling UI, connection state, transfer progress, failure handling, and likely a server fallback path |
-| **3. Frontend phone experience** | Build a mobile web route for capture, page review, reorder, upload, and finalize | Build the same phone route plus app-like install flow, local drafts, and resume UX | Build a phone capture route plus peer-connection lifecycle, chunk send/retry, and reconnection handling |
-| **4. Backend/API work** | Add short-lived session APIs, staged upload/finalize endpoints, validation, expiry, and conversion into the existing processing pipeline | Mostly the same backend contract as option 3, with extra endpoints or state for resumable drafts if needed | Add signaling endpoints, transfer authorization, desktop-side finalize handling, and still keep a path into the existing processing pipeline |
-| **5. Persistence and storage** | Introduce TTL session metadata and temporary file/document staging | Add server staging from option 3 plus client-side storage strategy such as IndexedDB | Minimize server-side staging, but still store signaling/session metadata and possibly fallback or partial-transfer state |
-| **6. Auth and security hardening** | Bind sessions to authenticated desktop users, limit token scope, enforce expiry, and protect staged documents | Same as option 3 plus protect locally cached draft data and service-worker behavior | Same as option 3 plus secure signaling, peer authorization, integrity checks, and TURN-related exposure |
-| **7. Deployment and networking** | Ensure both phone and desktop can reach the app over HTTPS and that temporary uploads fit current deployment limits | Same as option 3 plus service-worker deployment/versioning and mobile storage constraints | Add HTTPS plus STUN/TURN decisions, firewall/NAT considerations, and relay-cost/reliability planning |
-| **8. Validation and rollout** | Test pairing, upload ordering, cancellation, expiry, and multi-document flows | Test option 3 flows plus install, update, offline draft, and retry behavior | Test connectivity across browsers/networks, suspension/reconnect cases, and degraded/fallback flows |
+The backend session is the core of option 3. It is a **short-lived upload container** owned by the signed-in desktop user and tied to one active upload slot.
 
-## Per-Option Planning Notes
+| Step | Backend behavior | Result |
+| --- | --- | --- |
+| **1. Desktop creates session** | The desktop calls a new authenticated FastAPI endpoint such as `POST /api/phone-scanning/sessions` with context like workflow type, upload slot, and file mode. | FastAPI creates a session record with `session_id`, `pair_token`, `status`, `expires_at`, and owner metadata. |
+| **2. Backend stores session** | The session record is written into a short-lived repository, ideally with TTL semantics even if the first version starts in memory. | Exan can track whether the session is `waiting_for_phone`, `uploading`, `finalized`, `cancelled`, or `expired`. |
+| **3. Desktop shows QR** | The backend returns a short-lived phone URL or redeemable token. | The desktop renders a QR code for the phone to open. |
+| **4. Phone claims session** | The phone opens the QR link and redeems the token through HTTPS. The backend verifies the token, expiry, and session status. | The phone is attached only to that upload session, without needing WebSockets. |
+| **5. Phone uploads pages** | The phone sends ordered pages with multipart uploads. FastAPI validates type, size, page order, and session ownership, then stages the files. | The session status moves to `uploading` and then to `ready_to_finalize` when enough data exists. |
+| **6. Phone finalizes document** | The phone sends a finalize request after reordering/confirming pages. The backend assembles or stages the logical document and stores result metadata on the session. | The session status becomes `finalized`. |
+| **7. Desktop consumes result** | The desktop keeps polling the session status endpoint until it sees `finalized`, then requests the staged document metadata or triggers the existing upload pipeline. | The existing Exan flow can continue without a persistent socket connection. |
 
-| Option | What makes it manageable | What makes it expensive | Suggested implementation order |
-| --- | --- | --- | --- |
-| **3. QR-paired web uploader** | Reuses the existing browser-first architecture and keeps transfer logic server-mediated | Needs new session APIs, temporary storage, authorization, and desktop/phone coordination | Start here first |
-| **4. Installable PWA scanner** | Builds directly on option 3 instead of replacing it | Adds service worker, client-side persistence, install/update behavior, and retry complexity | Only after option 3 proves the workflow |
-| **5. WebRTC peer transfer** | Reduces server storage during successful direct transfer | Adds the most networking, connection-state, and reliability complexity; TURN can erase the main benefit | Consider only if policy rules reject staged uploads |
+### Why polling is enough for the first version
 
-## Likely files for option 3 in the current repository
+Polling works because option 3 does not require continuous peer-to-peer coordination. The desktop only needs to know whether the session has moved from one coarse state to another.
 
-The table below maps **option 3** onto the repository as it exists today. It is not a final implementation plan, but it shows the most likely files to **modify** or **create**.
+A simple implementation would look like this:
 
-| Area | Likely files to modify | Likely files to create | Why |
-| --- | --- | --- | --- |
-| **Desktop upload entry points** | `/home/runner/work/exan/exan/webapp/src/components/FileDropzone.tsx`, `/home/runner/work/exan/exan/webapp/src/components/ExamComparison.tsx`, `/home/runner/work/exan/exan/webapp/src/components/BatchEvaluation.tsx` | `/home/runner/work/exan/exan/webapp/src/components/PhonePairingPanel.tsx` | Add a **Scan with phone** action next to the existing browser upload flow. |
-| **Frontend API client** | `/home/runner/work/exan/exan/webapp/src/lib/api.ts` | none required if kept in one file, or `/home/runner/work/exan/exan/webapp/src/lib/phoneScanning.ts` if split out | Add calls for session creation, phone upload, finalize, cancel, and status polling. |
-| **Phone scanner route/UI** | `/home/runner/work/exan/exan/webapp/src/App.tsx` | `/home/runner/work/exan/exan/webapp/src/pages/PhoneScannerPage.tsx` | Add a phone-only route/view that the QR code opens. |
-| **Frontend auth integration** | `/home/runner/work/exan/exan/webapp/src/auth.api.ts` | none required | Reuse the saved token or extend auth helpers so the desktop-owned pairing session is authenticated. |
-| **Inference route registration** | `/home/runner/work/exan/exan/inference/app/main.py`, `/home/runner/work/exan/exan/inference/app/api/routes/__init__.py` | `/home/runner/work/exan/exan/inference/app/api/routes/phone_scanning.py` | Register a dedicated FastAPI router for temporary upload sessions instead of overloading the existing exam endpoints. |
-| **Workflow/service layer** | `/home/runner/work/exan/exan/inference/app/api/dependencies.py` | `/home/runner/work/exan/exan/inference/app/services/phone_scanning.py` | Encapsulate session creation, pairing validation, staged uploads, finalization, and cleanup. |
-| **Temporary state / repository** | none required if first pass is in-memory, but existing repository wiring is in `/home/runner/work/exan/exan/inference/app/api/dependencies.py` | likely `/home/runner/work/exan/exan/inference/app/repositories/upload_session_repository.py` | Option 3 needs short-lived session state separate from the current exam repository. |
-| **Auth boundary** | `/home/runner/work/exan/exan/auth/server.ts`, `/home/runner/work/exan/exan/auth/middleware/auth.middleware.ts` if shared validation stays in the auth service | possibly a new shared token-validation path, depending on architecture | Ensure phone session creation is tied to the signed-in desktop user and cannot be claimed by another user. |
-| **Deployment / reachability** | `/home/runner/work/exan/exan/webapp/nginx.conf`, `/home/runner/work/exan/exan/docker-compose.yml` | none required | Phone access requires a reachable HTTPS deployment path and request-size/time-limit review. |
-| **Tests** | `/home/runner/work/exan/exan/webapp/src/test/App.test.tsx` and the existing inference test area | likely new tests under `/home/runner/work/exan/exan/inference/tests/` for session APIs | Validate pairing, expiry, upload ordering, and finalize behavior. |
+1. The desktop creates a session.
+2. The desktop calls `GET /api/phone-scanning/sessions/{session_id}` every 2 to 5 seconds.
+3. FastAPI returns a small JSON payload such as:
+   - `status`
+   - `expires_at`
+   - `uploaded_page_count`
+   - `document_ready`
+   - `error`
+4. When `status === "finalized"`, the desktop stops polling and continues with the normal analysis flow.
+5. If the session expires or is cancelled, the desktop stops polling and shows a retry action.
 
-### Smallest realistic file set
+This keeps the architecture simple because:
+
+- there is **no persistent connection** to maintain
+- nginx and FastAPI already support normal request/response traffic
+- retries are straightforward because each poll is independent
+- the session state remains authoritative on the server
+
+## Option 3 implementation phases mapped to the repository
+
+The table below matches the option 3 plan to the **real phases** and to the **specific files** most likely to be changed or created in this repository.
+
+| Phase | Goal | Files to modify | Files to create | Notes |
+| --- | --- | --- | --- | --- |
+| **1. Desktop entry point and pairing UI** | Add a **Scan with phone** action to the existing upload workflow and display the QR/session state. | `/home/runner/work/exan/exan/webapp/src/components/FileDropzone.tsx`, `/home/runner/work/exan/exan/webapp/src/components/ExamComparison.tsx`, `/home/runner/work/exan/exan/webapp/src/components/BatchEvaluation.tsx` | `/home/runner/work/exan/exan/webapp/src/components/PhonePairingPanel.tsx` | This phase is where the desktop user starts the session. |
+| **2. Frontend API and polling client** | Add session creation, status polling, cancel, phone upload, and finalize requests. | `/home/runner/work/exan/exan/webapp/src/lib/api.ts`, `/home/runner/work/exan/exan/webapp/src/auth.api.ts` | optional `/home/runner/work/exan/exan/webapp/src/lib/phoneScanning.ts` | Polling belongs here because the desktop needs a lightweight status loop, not WebSockets. |
+| **3. Phone scanner route and page flow** | Add the mobile route opened from the QR code, with capture/review/finalize behavior. | `/home/runner/work/exan/exan/webapp/src/App.tsx` | `/home/runner/work/exan/exan/webapp/src/pages/PhoneScannerPage.tsx` | This is the phone-only browser view for option 3. |
+| **4. Session API registration** | Register dedicated FastAPI routes for upload-session creation, claim, page upload, status, cancel, and finalize. | `/home/runner/work/exan/exan/inference/app/main.py`, `/home/runner/work/exan/exan/inference/app/api/routes/__init__.py` | `/home/runner/work/exan/exan/inference/app/api/routes/phone_scanning.py` | Keep this separate from the existing exam upload endpoints. |
+| **5. Session service and repository** | Implement the session lifecycle, token validation, staging, expiry, and cleanup behavior. | `/home/runner/work/exan/exan/inference/app/api/dependencies.py` | `/home/runner/work/exan/exan/inference/app/services/phone_scanning.py`, `/home/runner/work/exan/exan/inference/app/repositories/upload_session_repository.py` | This is the backend core of option 3. |
+| **6. Deployment and reachability** | Ensure the phone can reach the app, uploads fit limits, and the QR target is valid outside localhost-only development. | `/home/runner/work/exan/exan/webapp/nginx.conf`, `/home/runner/work/exan/exan/docker-compose.yml` | none required | HTTPS reachability matters more here than real-time transport. |
+| **7. Validation and tests** | Validate pairing, expiry, upload ordering, finalize behavior, and desktop polling. | `/home/runner/work/exan/exan/webapp/src/test/App.test.tsx` and the existing inference test area | likely new tests under `/home/runner/work/exan/exan/inference/tests/` | The first validation target is the session lifecycle, not live socket behavior. |
+
+## Smallest realistic file set for option 3
 
 If implemented with the **smallest viable scope**, the most likely first-pass changes would be:
 
 - **Modify**
   - `/home/runner/work/exan/exan/webapp/src/components/FileDropzone.tsx`
   - `/home/runner/work/exan/exan/webapp/src/components/ExamComparison.tsx`
+  - `/home/runner/work/exan/exan/webapp/src/components/BatchEvaluation.tsx`
   - `/home/runner/work/exan/exan/webapp/src/lib/api.ts`
+  - `/home/runner/work/exan/exan/webapp/src/auth.api.ts`
   - `/home/runner/work/exan/exan/webapp/src/App.tsx`
   - `/home/runner/work/exan/exan/inference/app/main.py`
+  - `/home/runner/work/exan/exan/inference/app/api/routes/__init__.py`
   - `/home/runner/work/exan/exan/inference/app/api/dependencies.py`
   - `/home/runner/work/exan/exan/webapp/nginx.conf`
   - `/home/runner/work/exan/exan/docker-compose.yml`

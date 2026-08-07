@@ -105,9 +105,17 @@ Provide:
 2. Detailed feedback explaining the errors found and suggestions for improvement
 
 Write the feedback entirely in {language}, regardless of the language of the text
-being evaluated. Use plain text only: do not use Markdown, bullet characters,
-asterisks, headings, or code fences. Separate distinct observations with
-complete sentences and line breaks so the feedback is easy to read.
+being evaluated. Use plain text only, without Markdown formatting, headings,
+asterisks, or code fences. Use this structure:
+
+Issue found | Correction
+<the exact error or issue> | <the corrected text or recommended correction>
+
+Summary:
+- <a complete sentence describing an improvement>
+
+Include one table row per issue. If there are no issues, say so in one row.
+Keep the entire bulleted summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{
@@ -145,9 +153,17 @@ Provide:
 2. Detailed feedback explaining your assessment and how the text could improve
 
 Write the feedback entirely in {language}, regardless of the language of the text
-being evaluated. Use plain text only: do not use Markdown, bullet characters,
-asterisks, headings, or code fences. Separate distinct observations with
-complete sentences and line breaks so the feedback is easy to read.
+being evaluated. Use plain text only, without Markdown formatting, headings,
+asterisks, or code fences. Use this structure:
+
+Issue found | Correction
+<the exact error or issue> | <the corrected text or recommended correction>
+
+Summary:
+- <a complete sentence describing an improvement>
+
+Include one table row per issue. If there are no issues, say so in one row.
+Keep the entire bulleted summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{

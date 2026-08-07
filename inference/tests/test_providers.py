@@ -5,6 +5,7 @@ from unittest.mock import patch
 import pytest
 
 from app.providers import BaseProvider
+from app.providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
 from app.providers.registry import get_available_providers, get_provider
 
 
@@ -132,4 +133,19 @@ def test_provider_feedback_is_plain_readable_text():
         {},
     )
 
-    assert result["feedback"] == "Grammar:\n\nGood flow.\nReview commas."
+    assert result["feedback"] == "Grammar:\n\n- Good flow.\n- Review commas."
+
+
+@pytest.mark.parametrize(
+    "prompt",
+    [
+        grammar_evaluation_prompt("Spanish"),
+        custom_criteria_evaluation_prompt(
+            "Clarity", "Clear writing", "Unclear", "Clear", "Spanish"
+        ),
+    ],
+)
+def test_batch_feedback_prompt_requests_structured_response(prompt):
+    assert "Issue found | Correction" in prompt
+    assert "Include one table row per issue" in prompt
+    assert "Keep the entire bulleted summary under 100 words" in prompt

@@ -1,0 +1,63 @@
+{
+  "created_at": "2026-08-07T19:46:49.254877+00:00",
+  "elapsed_ms": 44.36,
+  "input": {
+    "exam_id": "0fa0ff29-aaf3-4cb8-9fe7-9ff20b8729b5",
+    "files": [
+      {
+        "filename": "student1.pdf",
+        "mime_type": "application/pdf",
+        "bytes": 874
+      }
+    ],
+    "exam_structure": {
+      "questions": [
+        {
+          "number": 1,
+          "text": "What is 2+2?",
+          "type": "multiple_choice",
+          "options": [
+            "A) 3",
+            "B) 4",
+            "C) 5",
+            "D) 6"
+          ],
+          "points": 1
+        }
+      ]
+    },
+    "answer_key": {
+      "answers": [
+        {
+          "question_number": 1,
+          "answer": "B",
+          "points": 1
+        }
+      ]
+    }
+  },
+  "model": "<AsyncMock name='get_provider().model' id='140368053001376'>",
+  "provider": "<AsyncMock name='get_provider().name' id='140368053810720'>",
+  "outputs": [
+    {
+      "operation": "grade_exam",
+      "filename": "student1.pdf",
+      "elapsed_ms": 0.14,
+      "output": {
+        "student_name": "Test Student",
+        "answers": [
+          {
+            "question_number": 1,
+            "student_answer": "B",
+            "correct_answer": "B",
+            "is_correct": true,
+            "points_earned": 1,
+            "points_possible": 1
+          }
+        ]
+      },
+      "provider": "<AsyncMock name='get_provider().name' id='140368053810720'>",
+      "model": "<AsyncMock name='get_provider().model' id='140368053001376'>"
+    }
+  ]
+}

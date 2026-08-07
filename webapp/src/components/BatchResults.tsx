@@ -74,7 +74,7 @@ export function BatchResults({ response }: BatchResultsProps) {
                     style={{ width: `${score.score}%` }}
                   />
                 </div>
-                <p className="text-sm text-gray-600">{score.feedback}</p>
+                <p className="whitespace-pre-wrap text-sm text-gray-600">{score.feedback}</p>
               </div>
             ))}
           </div>

@@ -64,7 +64,7 @@ class BaseProvider(ABC):
         feedback = feedback.replace("**", "").replace("__", "").replace("`", "")
         feedback = re.sub(r"(?<!\w)\*([^*\n]+)\*(?!\w)", r"\1", feedback)
         feedback = re.sub(r"(?<!\w)_([^_\n]+)_(?!\w)", r"\1", feedback)
-        feedback = re.sub(r"(?m)^\s*[-*+]\s+", "", feedback)
+        feedback = re.sub(r"(?m)^\s*[*+]\s+", "- ", feedback)
         feedback = re.sub(r"[ \t]+", " ", feedback)
         feedback = re.sub(r"\n[ \t]+", "\n", feedback)
         feedback = re.sub(r"\n{3,}", "\n\n", feedback)

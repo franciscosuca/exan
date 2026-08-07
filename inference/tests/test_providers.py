@@ -120,3 +120,16 @@ def test_gpt_preserves_multimodal_data_urls():
         {"type": "image_url", "image_url": {"url": "data:image/png;base64,aW1hZ2U="}},
         {"type": "text", "text": "Inspect"},
     ]
+
+
+def test_provider_feedback_is_plain_readable_text():
+    """Provider evaluation output does not expose Markdown-only decoration."""
+    result = BaseProvider._with_metadata(
+        {
+            "score": 80,
+            "feedback": "**Grammar:**\n\n- Good flow.\n- [Review](https://example.com) commas.",
+        },
+        {},
+    )
+
+    assert result["feedback"] == "Grammar:\n\nGood flow.\nReview commas."

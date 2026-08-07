@@ -104,6 +104,11 @@ Provide:
 1. A numeric score (0-100)
 2. Detailed feedback explaining the errors found and suggestions for improvement
 
+Write the feedback entirely in {language}, regardless of the language of the text
+being evaluated. Use plain text only: do not use Markdown, bullet characters,
+asterisks, headings, or code fences. Separate distinct observations with
+complete sentences and line breaks so the feedback is easy to read.
+
 Return your evaluation as JSON with this exact structure:
 {{
   "score": 85,
@@ -121,6 +126,7 @@ def custom_criteria_evaluation_prompt(
     description: str,
     zero_description: str,
     hundred_description: str,
+    language: str = "the selected platform language",
 ) -> str:
     return f"""You are an expert evaluator.
 Evaluate the following text based on this specific criteria:
@@ -137,6 +143,11 @@ Evaluate the text on a scale of 0 to 100 based strictly on the criteria above.
 Provide:
 1. A numeric score (0-100)
 2. Detailed feedback explaining your assessment and how the text could improve
+
+Write the feedback entirely in {language}, regardless of the language of the text
+being evaluated. Use plain text only: do not use Markdown, bullet characters,
+asterisks, headings, or code fences. Separate distinct observations with
+complete sentences and line breaks so the feedback is easy to read.
 
 Return your evaluation as JSON with this exact structure:
 {{

@@ -7,6 +7,7 @@ Each provider implements the same interface for:
 4. Evaluating text against criteria (batch evaluation)
 """
 
+import re
 from abc import ABC, abstractmethod
 from typing import Any
 
@@ -26,7 +27,17 @@ class BaseProvider(ABC):
 
     @staticmethod
     def _with_metadata(result: dict, response: Any) -> ProviderResponse:
-        """Keep the parsed dict contract while retaining response token usage."""
+        """Keep the parsed dict contract while retaining response token usage.
+
+        Evaluation feedback is returned directly to end users.  Providers
+        occasionally put Markdown formatting in the JSON string, while the
+        API presents that string as plain text.  Normalize it at the common
+        provider boundary so every provider has the same output contract.
+        """
+        if isinstance(result.get("feedback"), str):
+            result = dict(result)
+            result["feedback"] = BaseProvider._normalize_feedback(result["feedback"])
+
         if isinstance(response, dict):
             usage = response.get("usage")
         else:
@@ -42,6 +53,22 @@ class BaseProvider(ABC):
                 if key in response
             } or None
         return ProviderResponse(result, usage=usage)
+
+    @staticmethod
+    def _normalize_feedback(feedback: str) -> str:
+        """Remove Markdown-only decoration while preserving readable text."""
+        feedback = feedback.replace("\r\n", "\n").replace("\r", "\n")
+        feedback = re.sub(r"```(?:[A-Za-z0-9_-]+)?\s*", "", feedback)
+        feedback = re.sub(r"(?m)^\s{0,3}#{1,6}\s*", "", feedback)
+        feedback = re.sub(r"\[([^\]]+)\]\([^)]+\)", r"\1", feedback)
+        feedback = feedback.replace("**", "").replace("__", "").replace("`", "")
+        feedback = re.sub(r"(?<!\w)\*([^*\n]+)\*(?!\w)", r"\1", feedback)
+        feedback = re.sub(r"(?<!\w)_([^_\n]+)_(?!\w)", r"\1", feedback)
+        feedback = re.sub(r"(?m)^\s*[-*+]\s+", "", feedback)
+        feedback = re.sub(r"[ \t]+", " ", feedback)
+        feedback = re.sub(r"\n[ \t]+", "\n", feedback)
+        feedback = re.sub(r"\n{3,}", "\n\n", feedback)
+        return feedback.strip()
 
     @abstractmethod
     async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:

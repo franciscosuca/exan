@@ -99,6 +99,7 @@ class BatchEvaluationService:
                         description=criterion["description"],
                         zero_description=criterion["zero_description"],
                         hundred_description=criterion["hundred_description"],
+                        language=language,
                     )
                     call_started = start_timer()
                     result = await provider.evaluate_text(text, prompt)

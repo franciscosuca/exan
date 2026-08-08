@@ -1,0 +1,50 @@
+{
+  "created_at": "2026-08-08T09:01:43.533114+00:00",
+  "elapsed_ms": 14925.37,
+  "input": {
+    "language": "es",
+    "include_grammar": true,
+    "custom_criteria": [],
+    "files": [
+      {
+        "filename": "exan-batch-test-1.pdf",
+        "mime_type": "application/pdf",
+        "bytes": 15030,
+        "text_preview": "Estoy sumamente feliz por mis hermanos! Aunque las cosas quiz\u00e1s no han \nsucedido de la manara que uno inicialmente se las imagino, ambos est\u00e1n \nsumamente saludables y tienen un perspectiva del futuro. \nStanly, me hecho muy feliz el hecho de que el ha decidido tomar otro comienzo e \nintentar salir adelante. Me da un poco de pena el hecho que lo est\u00e9 intentando tan \nlejos de papi y mami, pero quiz\u00e1s ese ha sido su m\u00e9todo para poder empezar. Me \nencantar\u00eda que el supiera que puede solicitar ayuda a"
+      }
+    ]
+  },
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "outputs": [
+    {
+      "operation": "grammar",
+      "filename": "exan-batch-test-1.pdf",
+      "elapsed_ms": 14790.89,
+      "output": {
+        "score": 85,
+        "feedback": "Issue found | Correction\nde la manara | de la manera\nse las imagino | se las imagin\u00f3\nun perspectiva | una perspectiva\nStanly | Stanley\nme hecho muy feliz | me ha hecho muy feliz\nel ha decidido | \u00e9l ha decidido\nel hecho que lo est\u00e9 intentando | el hecho de que lo est\u00e9 intentando\nel supiera | \u00e9l supiera\ncon el el cada d\u00eda | con \u00e9l cada d\u00eda\n(por saber) | (por la falta de comunicaci\u00f3n) o eliminar la expresi\u00f3n si no es esencial\ndesde que te deje en RD | desde que lo dej\u00e9 en RD\nde el | de \u00e9l\npor delantero | por delante\nque puedan continuar | para que puedan continuar (o \"en el que puedan continuar\")\nayud\u00e1ndosela mutuamente | ayud\u00e1ndose mutuamente\n\nSummary:\n- El texto es claro y conmovedor, transmitiendo eficazmente los sentimientos del autor. Sin embargo, presenta varios errores menores de ortograf\u00eda, como 'manara' y 'Stanly', as\u00ed como fallos en la acentuaci\u00f3n de pronombres personales ('el' por '\u00e9l') y conjugaciones verbales ('imagino' por 'imagin\u00f3', 'hecho' por 'ha hecho'). Tambi\u00e9n se observan algunas inconsistencias gramaticales en el uso de preposiciones, pronombres y expresiones idiom\u00e1ticas, como 'un perspectiva' o 'ayud\u00e1ndosela'. Una revisi\u00f3n atenta mejorar\u00eda la fluidez y la correcci\u00f3n general del escrito."
+      },
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "token_usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 339,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 654,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 654
+          }
+        ],
+        "thoughts_token_count": 2139,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 3132,
+        "traffic_type": null
+      }
+    }
+  ]
+}

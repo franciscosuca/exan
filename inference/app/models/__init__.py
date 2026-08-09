@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Question(BaseModel):
@@ -59,31 +59,28 @@ class ProviderConfig(BaseModel):
 # --- Batch Evaluation Models ---
 
 
-class EvaluationCriteria(BaseModel):
-    name: str
-    description: str  # what the LLM should evaluate
-    zero_description: str  # what 0% looks like
-    hundred_description: str  # what 100% looks like
-
-
-class BatchEvaluationRequest(BaseModel):
-    language: str = "en"
-    include_grammar: bool = True
-    custom_criteria: list[EvaluationCriteria] = []
-
-
 class CriteriaScore(BaseModel):
     criteria_name: str
     score: float  # 0-100
     feedback: str
 
 
+class GrammarIssue(BaseModel):
+    issue: str
+    correction: str
+
+
+class GrammarFeedback(BaseModel):
+    issues: list[GrammarIssue] = Field(default_factory=list)
+    summary: str = ""
+
+
 class FileEvaluationResult(BaseModel):
     id: str
     filename: str
     scores: list[CriteriaScore]
-    overall_score: float
     summary: str
+    grammar: GrammarFeedback | None = None
 
 
 class BatchEvaluationResponse(BaseModel):

@@ -1,10 +1,12 @@
 """Tests for provider implementations and the registry."""
 
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from app.providers import BaseProvider
+from app.providers.prompts import grammar_evaluation_prompt
 from app.providers.registry import get_available_providers, get_provider
 
 
@@ -120,3 +122,44 @@ def test_gpt_preserves_multimodal_data_urls():
         {"type": "image_url", "image_url": {"url": "data:image/png;base64,aW1hZ2U="}},
         {"type": "text", "text": "Inspect"},
     ]
+
+
+def test_provider_feedback_is_plain_readable_text():
+    """Provider evaluation output does not expose Markdown-only decoration."""
+    result = BaseProvider._with_metadata(
+        {
+            "score": 80,
+            "feedback": "**Grammar:**\n\n- Good flow.\n- [Review](https://example.com) commas.",
+        },
+        {},
+    )
+
+    assert result["feedback"] == "Grammar:\n\n- Good flow.\n- Review commas."
+
+
+def test_grammar_prompt_requests_structured_response():
+    prompt = grammar_evaluation_prompt("Spanish")
+
+    assert '"grammar": {' in prompt
+    assert '"issues": [' in prompt
+    assert "one JSON object (one row) per issue" in prompt
+    assert "Do not use Markdown formatting or tables" in prompt
+    assert '"issues": []' in prompt
+    assert '"feedback":' not in prompt
+
+
+async def test_gemini_uses_schema_only_for_grammar_evaluation():
+    from app.providers.gemini import GeminiProvider
+
+    provider = GeminiProvider()
+    client = MagicMock()
+    client.models.generate_content.return_value = SimpleNamespace(
+        text='{"score": 90, "grammar": {"issues": [], "summary": "No issues."}}',
+        usage=None,
+        usage_metadata=None,
+    )
+    provider._client = client
+
+    await provider.evaluate_text("Text", grammar_evaluation_prompt("Spanish"))
+    grammar_config = client.models.generate_content.call_args.kwargs["config"]
+    assert grammar_config.response_schema is not None

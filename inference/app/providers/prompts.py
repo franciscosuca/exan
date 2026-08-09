@@ -102,46 +102,31 @@ Evaluate on a scale of 0 to 100 where:
 
 Provide:
 1. A numeric score (0-100)
-2. Detailed feedback explaining the errors found and suggestions for improvement
+2. A grammar object containing:
+   - An issues array with one object for each issue. Each object must contain
+     the exact issue and its correction.
+   - A plain-text summary of the overall grammar assessment.
+
+Write the feedback entirely in {language}, regardless of the language of the text
+being evaluated. Do not use Markdown formatting or tables, including Markdown
+table syntax, headings, bullets, asterisks, or code fences. The issues array is
+the issue list: include exactly one JSON object (one row) per issue and do not
+combine multiple issues in one object. If there are no issues, return an empty
+issues array as "issues": [] and summarize that no grammar issues were found.
+Keep the summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{
   "score": 85,
-  "feedback": "The text is mostly well-written with minor issues: ..."
-}}
-
-Only return valid JSON, no other text.
-
-TEXT TO EVALUATE:
-"""
-
-
-def custom_criteria_evaluation_prompt(
-    criteria_name: str,
-    description: str,
-    zero_description: str,
-    hundred_description: str,
-) -> str:
-    return f"""You are an expert evaluator.
-Evaluate the following text based on this specific criteria:
-
-CRITERIA: {criteria_name}
-DESCRIPTION: {description}
-
-SCORING GUIDE:
-- 0% (lowest score): {zero_description}
-- 100% (highest score): {hundred_description}
-
-Evaluate the text on a scale of 0 to 100 based strictly on the criteria above.
-
-Provide:
-1. A numeric score (0-100)
-2. Detailed feedback explaining your assessment and how the text could improve
-
-Return your evaluation as JSON with this exact structure:
-{{
-  "score": 75,
-  "feedback": "The text demonstrates..."
+  "grammar": {{
+    "issues": [
+      {{
+        "issue": "the exact error or issue",
+        "correction": "the corrected text or recommended correction"
+      }}
+    ],
+    "summary": "The text is mostly well-written with minor issues."
+  }}
 }}
 
 Only return valid JSON, no other text.

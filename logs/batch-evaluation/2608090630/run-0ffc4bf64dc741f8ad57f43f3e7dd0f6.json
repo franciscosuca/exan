@@ -1,0 +1,118 @@
+{
+  "created_at": "2026-08-09T06:30:15.656535+00:00",
+  "elapsed_ms": 13310.04,
+  "input": {
+    "language": "es",
+    "include_grammar": true,
+    "custom_criteria": [],
+    "files": [
+      {
+        "filename": "exan-batch-test-1.pdf",
+        "mime_type": "application/pdf",
+        "bytes": 15030,
+        "text_preview": "Estoy sumamente feliz por mis hermanos! Aunque las cosas quiz\u00e1s no han \nsucedido de la manara que uno inicialmente se las imagino, ambos est\u00e1n \nsumamente saludables y tienen un perspectiva del futuro. \nStanly, me hecho muy feliz el hecho de que el ha decidido tomar otro comienzo e \nintentar salir adelante. Me da un poco de pena el hecho que lo est\u00e9 intentando tan \nlejos de papi y mami, pero quiz\u00e1s ese ha sido su m\u00e9todo para poder empezar. Me \nencantar\u00eda que el supiera que puede solicitar ayuda a"
+      }
+    ]
+  },
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "outputs": [
+    {
+      "operation": "grammar",
+      "filename": "exan-batch-test-1.pdf",
+      "elapsed_ms": 13141.19,
+      "output": {
+        "score": 82,
+        "grammar": {
+          "issues": [
+            {
+              "issue": "la manara",
+              "correction": "la manera"
+            },
+            {
+              "issue": "se las imagino",
+              "correction": "se las imagin\u00f3"
+            },
+            {
+              "issue": "un perspectiva",
+              "correction": "una perspectiva"
+            },
+            {
+              "issue": "Stanly, me hecho muy feliz",
+              "correction": "Stanley, me ha hecho muy feliz"
+            },
+            {
+              "issue": "el ha decidido",
+              "correction": "\u00e9l ha decidido"
+            },
+            {
+              "issue": "el hecho que lo est\u00e9 intentando",
+              "correction": "el hecho de que lo est\u00e9 intentando"
+            },
+            {
+              "issue": "que el supiera",
+              "correction": "que \u00e9l supiera"
+            },
+            {
+              "issue": "con el cada d\u00eda",
+              "correction": "con \u00e9l cada d\u00eda"
+            },
+            {
+              "issue": "escribir con mi familia en USA deja mucho que desear (por saber)",
+              "correction": "la comunicaci\u00f3n con mi familia en USA deja mucho que desear"
+            },
+            {
+              "issue": "te deje en RD",
+              "correction": "te dej\u00e9 en RD"
+            },
+            {
+              "issue": "cosas buenas de el",
+              "correction": "cosas buenas de \u00e9l"
+            },
+            {
+              "issue": "Quiz\u00e1s el no lo vea",
+              "correction": "Quiz\u00e1s \u00e9l no lo vea"
+            },
+            {
+              "issue": "pelear contra las adversidades",
+              "correction": "luchar contra las adversidades"
+            },
+            {
+              "issue": "futuro por delantero",
+              "correction": "futuro por delante"
+            },
+            {
+              "issue": "que puedan continuar su rumbo",
+              "correction": "y podr\u00e1n continuar su rumbo"
+            },
+            {
+              "issue": "ayud\u00e1ndosela mutuamente",
+              "correction": "ayud\u00e1ndose mutuamente"
+            }
+          ],
+          "summary": "El texto es generalmente comprensible y expresa claramente las emociones y pensamientos del autor. No obstante, presenta errores recurrentes en ortograf\u00eda, acentuaci\u00f3n, concordancia de g\u00e9nero, distinci\u00f3n entre pronombres y art\u00edculos, y algunas expresiones idiom\u00e1ticas. Corregir estos puntos mejorar\u00eda significativamente la calidad gramatical y la fluidez del escrito."
+        }
+      },
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "token_usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 350,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 738,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 738
+          }
+        ],
+        "thoughts_token_count": 2568,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 3656,
+        "traffic_type": null
+      }
+    }
+  ]
+}

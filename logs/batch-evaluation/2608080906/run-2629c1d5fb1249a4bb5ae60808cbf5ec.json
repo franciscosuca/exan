@@ -1,0 +1,50 @@
+{
+  "created_at": "2026-08-08T09:06:16.498931+00:00",
+  "elapsed_ms": 14896.37,
+  "input": {
+    "language": "es",
+    "include_grammar": true,
+    "custom_criteria": [],
+    "files": [
+      {
+        "filename": "exan-batch-test-1.pdf",
+        "mime_type": "application/pdf",
+        "bytes": 15030,
+        "text_preview": "Estoy sumamente feliz por mis hermanos! Aunque las cosas quiz\u00e1s no han \nsucedido de la manara que uno inicialmente se las imagino, ambos est\u00e1n \nsumamente saludables y tienen un perspectiva del futuro. \nStanly, me hecho muy feliz el hecho de que el ha decidido tomar otro comienzo e \nintentar salir adelante. Me da un poco de pena el hecho que lo est\u00e9 intentando tan \nlejos de papi y mami, pero quiz\u00e1s ese ha sido su m\u00e9todo para poder empezar. Me \nencantar\u00eda que el supiera que puede solicitar ayuda a"
+      }
+    ]
+  },
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "outputs": [
+    {
+      "operation": "grammar",
+      "filename": "exan-batch-test-1.pdf",
+      "elapsed_ms": 14753.6,
+      "output": {
+        "score": 85,
+        "feedback": "Issue found | Correction\nde la manara | de la manera\nun perspectiva | una perspectiva\nme hecho muy feliz el hecho de que el ha decidido | me ha hecho muy feliz el hecho de que \u00e9l ha decidido\ncon el cada d\u00eda | con \u00e9l cada d\u00eda\ncada d\u00eda\u2026. o al menos | cada d\u00eda... o al menos\ndeja mucho que desear (por saber). | deja mucho que desear (quiz\u00e1s por su falta de comunicaci\u00f3n).\ndesde que te deje en RD solo he escuchado cosas buenas de el. | desde que lo dej\u00e9 en RD solo he escuchado cosas buenas de \u00e9l.\nun muy bello futuro por delantero | un muy bello futuro por delante\nque puedan continuar su rumbo | en el que puedan continuar su rumbo\n(ayud\u00e1ndosela mutuamente). | (ayud\u00e1ndose mutuamente).\n\nSummary:\n- El texto presenta algunas inconsistencias ortogr\u00e1ficas y gramaticales, como el incorrecto acuerdo entre art\u00edculo y sustantivo y conjugaciones verbales.\n- Varios pronombres personales carecen de la tilde necesaria, afectando la forma escrita correcta.\n- Algunas expresiones idiom\u00e1ticas y el uso de pronombres podr\u00edan ser m\u00e1s precisos para mejorar la claridad y la fluidez natural.\n- Se observan errores menores de puntuaci\u00f3n, espec\u00edficamente en el uso de los puntos suspensivos.\n- A pesar de estas peque\u00f1as imprecisiones, el mensaje se transmite de manera efectiva."
+      },
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "token_usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 320,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 654,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 654
+          }
+        ],
+        "thoughts_token_count": 2791,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 3765,
+        "traffic_type": null
+      }
+    }
+  ]
+}

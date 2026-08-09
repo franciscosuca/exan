@@ -131,6 +131,10 @@ docker compose up --build
 
 The app will be available at `http://localhost:3000`. The inference API runs on port 8000 internally.
 
+### Cloud Deployment
+
+Docker Compose covers local and self-hosted runs. For the first beta release on a cloud provider, see [First release deployment options](docs/deployment/DEPLOYMENT_OPTIONS.md), which compares Cloud Run, Compute Engine, GKE, Firebase, and third-party PaaS, and records the recommended topology and automation.
+
 ## Running Tests
 
 ### Inference
@@ -182,6 +186,7 @@ bun run test
 ├── auth/               # Node/Express JWT auth microservice
 ├── db/                 # Mongo connection helper + init script
 ├── docs/
+│   ├── deployment/DEPLOYMENT_OPTIONS.md  # Beta deployment platform analysis
 │   └── MODEL_TRAINING.md  # Guide for fine-tuning custom models
 ├── docker-compose.yml  # One-command deployment
 └── README.md

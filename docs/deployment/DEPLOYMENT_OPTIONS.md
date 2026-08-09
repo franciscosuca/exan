@@ -57,11 +57,13 @@ The two properties that drive the decision are the inference service's *in-memor
 - Managed TLS, custom domain, and a global CDN for the SPA, with no nginx to operate.
 - Per-service revisions, traffic splitting, and instant rollback.
 - Native Secret Manager, Cloud Logging, and Cloud Monitoring integration.
-- Long request timeouts (up to 60 minutes), which comfortably cover slow grading calls.
+- Long Cloud Run request timeouts (up to 60 minutes) when a service is invoked directly, which comfortably cover slow grading calls.
 
 **Cons**
 
 - **32 MiB request limit** on the standard HTTP/1 path, while `nginx.conf` currently allows `client_max_body_size 50M`. Multi-file student uploads must be split, streamed over HTTP/2, or routed through signed-URL uploads to Cloud Storage.
+- **Firebase Hosting rewrites time out after 60 seconds**, far below Cloud Run's own limit. Grading requests that run longer must either bypass the rewrite (map a domain or an external HTTPS load balancer straight to Cloud Run) or become asynchronous jobs the frontend polls.
+- Hosting rewrites call Cloud Run over its public endpoint without an identity token, so those services must allow unauthenticated invocations and cannot use internal-only ingress. Application-level JWT checks on `/api/exam/*` are therefore mandatory, not optional.
 - Cold starts add a few seconds to the first request after idle.
 - The in-memory workflow repository breaks as soon as a second instance starts, so the beta must pin `max-instances` (or move state to MongoDB).
 - No local Ollama or LM Studio; only cloud providers work unless a GPU-backed service is added later.
@@ -153,7 +155,7 @@ The two properties that drive the decision are the inference service's *in-memor
 **Separate managed containers on a shared private network — not pods — for the first release.**
 
 - Exan has four services and no background workers, queues, or cross-service leader election. Kubernetes' scheduling, service mesh, and autoscaling primitives would sit unused while billing continuously.
-- Cloud Run gives each service its own URL, revision history, IAM identity, and autoscaling policy. Internal traffic stays private by making `inference` and `auth-server` ingress-restricted and fronting them with the Firebase Hosting rewrites.
+- Cloud Run gives each service its own URL, revision history, IAM identity, and autoscaling policy. Because Firebase Hosting rewrites invoke the services anonymously over their public endpoints, the services stay publicly reachable and the security boundary is the JWT check inside each service rather than network ingress. An external HTTPS load balancer with Cloud Armor or IAP is the upgrade path if network-level restriction becomes a requirement.
 - The `webapp` nginx container stops being a runtime service in the cloud and becomes a build artifact on a CDN, removing one container from the deployment while local Compose development stays unchanged.
 - Kubernetes becomes the right answer at the [Independently scaled services](../scanning/ARCHITECTURE_OPTIONS.md#option-3-independently-scaled-services) stage: shared workflow state, async grading workers, and per-workload scaling. The same images and twelve-factor configuration port to Kubernetes without application changes, so this decision is not a dead end.
 
@@ -181,11 +183,12 @@ Suggested split:
 
 1. **In-memory workflow state.** `inference` keeps exam and answer-key state in process memory, so a second instance loses the workflow. Either pin the service to a single instance for the beta or move the repository to MongoDB — see [Storage and workflow state](../scanning/ARCHITECTURE_OPTIONS.md#storage-and-workflow-state).
 2. **Upload size.** `nginx.conf` allows 50 MB while Cloud Run's default HTTP/1 request limit is 32 MiB. Cap client-side upload size, upload files one at a time, or move to direct-to-storage uploads.
-3. **Unauthenticated inference endpoints.** `/api/exam/*` has no auth today. Requiring the auth service's JWT is a prerequisite for a public URL.
-4. **Published ports.** `docker-compose.yml` publishes 8000, 3001, and 27017. Nothing but the frontend entry point may be publicly reachable in the deployed environment.
-5. **Secrets.** `JWT_SECRET` defaults to `change-this-to-a-random-secret` and MongoDB uses `admin`/`admin`. Both must be generated per environment and stored in Secret Manager.
-6. **Logs.** Run logging writes to the mounted `./logs` volume, which does not survive an ephemeral container. Write to stdout for Cloud Logging or to a storage bucket.
-7. **Local providers.** Ollama and LM Studio are unreachable from managed hosting, so the beta build should hide or disable them.
+3. **Unauthenticated inference endpoints.** `/api/exam/*` has no auth today. Because Hosting rewrites reach Cloud Run anonymously over its public URL, requiring the auth service's JWT inside `inference` is a hard prerequisite for going public.
+4. **Published ports.** `docker-compose.yml` publishes 8000, 3001, and 27017. In the deployed environment the database must never be publicly reachable, and every publicly reachable service must authenticate its own requests.
+5. **Long grading requests.** Firebase Hosting rewrites cut responses off at 60 seconds. Measure the slowest grading call and, if needed, move grading to an asynchronous job with polling or route it around the rewrite.
+6. **Secrets.** `JWT_SECRET` defaults to `change-this-to-a-random-secret` and MongoDB uses `admin`/`admin`. Both must be generated per environment and stored in Secret Manager.
+7. **Logs.** Run logging writes to the mounted `./logs` volume, which does not survive an ephemeral container. Write to stdout for Cloud Logging or to a storage bucket.
+8. **Local providers.** Ollama and LM Studio are unreachable from managed hosting, so the beta build should hide or disable them.
 
 ## Target Topology
 

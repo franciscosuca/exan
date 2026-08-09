@@ -48,7 +48,6 @@ class FileEvaluationResult(BaseModel):
     id: str
     filename: str
     scores: list[CriteriaScore]
-    overall_score: float
     summary: str
     grammar: GrammarFeedback | None = None
 ```
@@ -70,7 +69,6 @@ export interface FileEvaluationResult {
   id: string;
   filename: string;
   scores: CriteriaScore[];
-  overall_score: number;
   summary: string;
   grammar?: GrammarFeedback | null;
 }
@@ -86,7 +84,6 @@ export interface FileEvaluationResult {
     {
       "id": "9c22…",
       "filename": "carta.docx",
-      "overall_score": 78,
       "summary": "Grammar: 78%",
       "scores": [{ "criteria_name": "Grammar", "score": 78, "feedback": "" }],
       "grammar": {

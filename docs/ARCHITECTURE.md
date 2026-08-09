@@ -374,7 +374,6 @@ classDiagram
         +id: string
         +filename: string
         +scores: CriteriaScore[]
-        +overall_score: float
         +summary: string
         +grammar: GrammarFeedback | null
     }

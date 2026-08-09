@@ -79,7 +79,6 @@ class FileEvaluationResult(BaseModel):
     id: str
     filename: str
     scores: list[CriteriaScore]
-    overall_score: float
     summary: str
     grammar: GrammarFeedback | None = None
 

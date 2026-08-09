@@ -72,7 +72,7 @@ async def test_maps_grammar_issues_and_summary():
     assert result.scores[0].criteria_name == "Grammar"
     assert result.scores[0].score == 78
     assert result.scores[0].feedback == ""
-    assert result.overall_score == pytest.approx(78)
+    assert "overall_score" not in result.model_dump()
     assert len(provider.prompts) == 1
     assert '"grammar": {' in provider.prompts[0]
     assert "Issue found | Correction" not in provider.prompts[0]
@@ -99,7 +99,7 @@ async def test_evaluates_each_document_once_with_grammar():
         )
 
     assert [result.filename for result in response.results] == ["first.pdf", "second.pdf"]
-    assert [result.overall_score for result in response.results] == [78, 62]
+    assert [result.scores[0].score for result in response.results] == [78, 62]
     assert len(provider.prompts) == 2
 
 

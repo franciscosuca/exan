@@ -162,9 +162,9 @@ in the selected feedback language:
 2. Extract text from each file.
 3. Evaluate grammar using `grammar_evaluation_prompt`, returning structured
   issues and a summary.
-4. Use the grammar score as `overall_score`.
-5. Build `BatchEvaluationResponse`.
-6. Write one `batch-evaluation` run log and return the response.
+4. Build `BatchEvaluationResponse` with per-criterion scores and grammar
+  feedback.
+5. Write one `batch-evaluation` run log and return the response.
 
 The route performs exactly one provider call per file. Legacy multipart fields
 from older clients are ignored and do not alter the grammar-only workflow.

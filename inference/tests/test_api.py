@@ -237,5 +237,5 @@ def test_batch_evaluation_ignores_legacy_evaluation_fields():
         app.dependency_overrides.clear()
 
     assert response.status_code == 200
-    assert response.json()["results"][0]["overall_score"] == 88
+    assert "overall_score" not in response.json()["results"][0]
     provider.evaluate_text.assert_awaited_once()

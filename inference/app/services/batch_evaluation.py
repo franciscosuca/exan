@@ -103,14 +103,12 @@ class BatchEvaluationService:
                     f"Grammar evaluation failed for {document.filename}: {exc}"
                 ) from exc
 
-            overall = sum(score.score for score in scores) / len(scores) if scores else 0
             summary_parts = [f"{score.criteria_name}: {score.score:.0f}%" for score in scores]
             results.append(
                 FileEvaluationResult(
                     id=str(uuid.uuid4()),
                     filename=document.filename,
                     scores=scores,
-                    overall_score=overall,
                     summary=", ".join(summary_parts),
                     grammar=grammar_feedback,
                 )

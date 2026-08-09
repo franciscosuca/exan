@@ -24,45 +24,26 @@ export function BatchResults({ response }: BatchResultsProps) {
       {response.results.map((result) => (
         <article key={result.id} className="space-y-4">
           <header className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div className="flex min-w-0 items-start gap-3">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
-                  <FileText className="h-5 w-5" aria-hidden="true" />
-                </div>
-                <div className="min-w-0">
-                  <h3 className="wrap-break-word text-lg font-semibold text-gray-900">{result.filename}</h3>
-                  {processedDate && (
-                    <p className="mt-1 text-xs text-gray-500">
-                      <time dateTime={response.created_at}>
-                        {t('batchResults.processed', { date: processedDate })}
-                      </time>
-                    </p>
-                  )}
-                </div>
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 text-purple-600">
+                <FileText className="h-5 w-5" aria-hidden="true" />
               </div>
-              <div className="shrink-0 text-left sm:text-right">
-                <p className="text-3xl font-bold text-gray-900">{result.overall_score.toFixed(0)}%</p>
-                <p className="text-sm text-gray-500">{t('batchResults.overall')}</p>
+              <div className="min-w-0">
+                <h3 className="wrap-break-word text-lg font-semibold text-gray-900">{result.filename}</h3>
+                {processedDate && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    <time dateTime={response.created_at}>
+                      {t('batchResults.processed', { date: processedDate })}
+                    </time>
+                  </p>
+                )}
               </div>
-            </div>
-
-            <div className="mt-5 h-2 w-full rounded-full bg-gray-100">
-              <div
-                className={`h-2 rounded-full transition-all ${
-                  result.overall_score >= 70
-                    ? 'bg-green-500'
-                    : result.overall_score >= 50
-                      ? 'bg-amber-500'
-                      : 'bg-red-500'
-                }`}
-                style={{ width: `${result.overall_score}%` }}
-              />
             </div>
           </header>
 
           {result.scores.length > 0 && (
             <section
-              aria-label={t('batchResults.overall')}
+              aria-label={t('batchResults.scores')}
               className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
             >
               <div className="divide-y divide-gray-100">

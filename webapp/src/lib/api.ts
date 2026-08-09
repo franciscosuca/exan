@@ -77,7 +77,6 @@ export interface FileEvaluationResult {
   id: string;
   filename: string;
   scores: CriteriaScore[];
-  overall_score: number;
   summary: string;
   grammar?: GrammarFeedback | null;
 }

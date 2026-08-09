@@ -34,7 +34,6 @@ describe('BatchResults', () => {
         scores: [
           { criteria_name: 'Grammar', score: 78, feedback: 'Legacy grammar feedback' },
         ],
-        overall_score: 78,
         summary: 'Grammar: 78%',
         grammar: {
           issues: [{ issue: 'a apple', correction: 'an apple' }],
@@ -51,6 +50,7 @@ describe('BatchResults', () => {
     expect(screen.getByRole('heading', { name: 'How to Improve' })).toBeInTheDocument();
     expect(screen.getByText('Review article usage before singular nouns.')).toBeInTheDocument();
     expect(screen.queryByText('Legacy grammar feedback')).not.toBeInTheDocument();
+    expect(screen.queryByText('Overall')).not.toBeInTheDocument();
   });
 
   it('shows an explicit no-issues state for empty structured grammar feedback', () => {
@@ -58,7 +58,6 @@ describe('BatchResults', () => {
       createResponse({
         filename: 'clean.pdf',
         scores: [{ criteria_name: 'Grammar', score: 100, feedback: '' }],
-        overall_score: 100,
         summary: 'Grammar: 100%',
         grammar: { issues: [], summary: 'The grammar is clear and accurate.' },
       })
@@ -77,7 +76,6 @@ describe('BatchResults', () => {
           { criteria_name: 'Grammar', score: 70, feedback: 'Legacy grammar feedback' },
           { criteria_name: 'Argument Quality', score: 82, feedback: 'The argument is well supported.' },
         ],
-        overall_score: 76,
         summary: 'Grammar: 70%, Argument Quality: 82%',
       })
     );
@@ -93,7 +91,6 @@ describe('BatchResults', () => {
       createResponse({
         filename: 'multiple-issues.pdf',
         scores: [{ criteria_name: 'Grammar', score: 50, feedback: '' }],
-        overall_score: 50,
         summary: 'Grammar: 50%',
         grammar: {
           issues: [

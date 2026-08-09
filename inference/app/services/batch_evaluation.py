@@ -9,7 +9,7 @@ from pydantic import ValidationError
 
 from ..models import BatchEvaluationResponse, CriteriaScore, FileEvaluationResult, GrammarFeedback
 from ..providers import BaseProvider
-from ..providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
+from ..providers.prompts import grammar_evaluation_prompt
 from ..utils.file_processing import extract_text, get_mime_type
 from ..utils.run_logging import elapsed_ms, start_timer, write_run_log
 from . import UploadedDocument
@@ -44,10 +44,8 @@ class BatchEvaluationService:
         documents: Sequence[UploadedDocument],
         provider_name: str,
         language: str,
-        include_grammar: bool,
-        criteria: Sequence[Mapping[str, Any]],
     ) -> BatchEvaluationResponse:
-        """Evaluate each document against the selected criteria."""
+        """Evaluate each document for grammar."""
         try:
             provider = self.provider_factory(provider_name)
         except Exception as exc:
@@ -80,63 +78,30 @@ class BatchEvaluationService:
 
             scores: list[CriteriaScore] = []
             grammar_feedback: GrammarFeedback | None = None
-            if include_grammar:
-                try:
-                    prompt = grammar_evaluation_prompt(language)
-                    call_started = start_timer()
-                    result = await provider.evaluate_text(text, prompt)
-                    outputs.append(
-                        {
-                            "operation": "grammar",
-                            "filename": document.filename,
-                            "elapsed_ms": elapsed_ms(call_started),
-                            "output": result,
-                        }
+            try:
+                prompt = grammar_evaluation_prompt(language)
+                call_started = start_timer()
+                result = await provider.evaluate_text(text, prompt)
+                outputs.append(
+                    {
+                        "operation": "grammar",
+                        "filename": document.filename,
+                        "elapsed_ms": elapsed_ms(call_started),
+                        "output": result,
+                    }
+                )
+                grammar_score, grammar_feedback = _parse_grammar_result(result)
+                scores.append(
+                    CriteriaScore(
+                        criteria_name="Grammar",
+                        score=grammar_score,
+                        feedback=result.get("feedback", ""),
                     )
-                    grammar_score, grammar_feedback = _parse_grammar_result(result)
-                    scores.append(
-                        CriteriaScore(
-                            criteria_name="Grammar",
-                            score=grammar_score,
-                            feedback=result.get("feedback", ""),
-                        )
-                    )
-                except Exception as exc:
-                    raise BatchEvaluationError(
-                        f"Grammar evaluation failed for {document.filename}: {exc}"
-                    ) from exc
-
-            for criterion in criteria:
-                try:
-                    prompt = custom_criteria_evaluation_prompt(
-                        criteria_name=criterion["name"],
-                        description=criterion["description"],
-                        zero_description=criterion["zero_description"],
-                        hundred_description=criterion["hundred_description"],
-                        language=language,
-                    )
-                    call_started = start_timer()
-                    result = await provider.evaluate_text(text, prompt)
-                    outputs.append(
-                        {
-                            "operation": "custom_criteria",
-                            "criteria": criterion["name"],
-                            "filename": document.filename,
-                            "elapsed_ms": elapsed_ms(call_started),
-                            "output": result,
-                        }
-                    )
-                    scores.append(
-                        CriteriaScore(
-                            criteria_name=criterion["name"],
-                            score=float(result.get("score", 0)),
-                            feedback=result.get("feedback", ""),
-                        )
-                    )
-                except Exception as exc:
-                    raise BatchEvaluationError(
-                        f"Evaluation of '{criterion['name']}' failed for {document.filename}: {exc}"
-                    ) from exc
+                )
+            except Exception as exc:
+                raise BatchEvaluationError(
+                    f"Grammar evaluation failed for {document.filename}: {exc}"
+                ) from exc
 
             overall = sum(score.score for score in scores) / len(scores) if scores else 0
             summary_parts = [f"{score.criteria_name}: {score.score:.0f}%" for score in scores]
@@ -160,8 +125,6 @@ class BatchEvaluationService:
             "batch-evaluation",
             input_snapshot={
                 "language": language,
-                "include_grammar": include_grammar,
-                "custom_criteria": criteria,
                 "files": input_files,
             },
             outputs=outputs,

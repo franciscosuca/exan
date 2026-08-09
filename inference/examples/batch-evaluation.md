@@ -1,11 +1,10 @@
-# Batch evaluation example
+# Batch grammar evaluation example
 
-Evaluate one or more text documents using grammar and custom criteria:
+Evaluate one or more text documents for grammar:
 
 ```bash
 curl -X POST http://localhost:8000/api/batch/evaluate \
-  -F "provider=ollama" -F "language=en" -F "include_grammar=true" \
-  -F 'custom_criteria=[]' -F "files=@essay.pdf"
+  -F "provider=ollama" -F "language=en" -F "files=@essay.pdf"
 ```
 
 Each model output, timing, and compact request snapshot is persisted under
@@ -27,5 +26,4 @@ Markdown-formatted feedback:
 ```
 
 The webapp renders each issue as a row in the Detailed Findings table and the
-summary in the How to Improve panel. Custom criteria continue using their
-existing plain-text `feedback` field until that feature is removed.
+summary in the How to Improve panel. The overall score is the grammar score.

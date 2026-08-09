@@ -216,12 +216,11 @@ sequenceDiagram
     API-->>BE: Available providers
 
     U->>BE: Select provider and upload PDF/Word files
-    U->>BE: Configure grammar and custom criteria
+    U->>BE: Select grammar feedback language
     U->>BE: Click Evaluate
 
-    BE->>API: batchEvaluate(files, provider, language,<br/>includeGrammar, customCriteria)
-    API->>SVC: POST /api/batch/evaluate<br/>multipart: files[], provider, language,<br/>include_grammar, custom_criteria JSON
-    SVC->>SVC: Parse include_grammar and custom_criteria
+    BE->>API: batchEvaluate(files, provider, language)
+    API->>SVC: POST /api/batch/evaluate<br/>multipart: files[], provider, language
     SVC->>PR: get_provider(provider)
     PR-->>SVC: Provider instance
 
@@ -230,19 +229,10 @@ sequenceDiagram
         SVC->>FP: extract_text(content, mime)
         FP-->>SVC: Extracted document text
 
-        opt Grammar enabled
-            SVC->>SVC: grammar_evaluation_prompt(language)
-            SVC->>AI: evaluate_text(text, grammar prompt)
-            AI-->>SVC: {score, grammar: {issues[], summary}}
-        end
-
-        loop For each valid custom criterion
-            SVC->>SVC: custom_criteria_evaluation_prompt(...)
-            SVC->>AI: evaluate_text(text, criteria prompt)
-            AI-->>SVC: {score, feedback}
-        end
-
-        SVC->>SVC: Calculate overall score and summary
+        SVC->>SVC: grammar_evaluation_prompt(language)
+        SVC->>AI: evaluate_text(text, grammar prompt)
+        AI-->>SVC: {score, grammar: {issues[], summary}}
+        SVC->>SVC: Use grammar score for overall score and summary
     end
 
     SVC->>LOG: write_run_log(batch-evaluation, inputs, outputs, provider)
@@ -255,7 +245,8 @@ sequenceDiagram
 
 ## 4. Per-Feature Class Diagrams (PENDING TO READ)
 
-TODO: This shall be simplified by removing the custom criteria and the grading-tools.
+Batch evaluation is grammar-only; the remaining diagrams describe the active
+response contract and shared grading infrastructure.
 
 ### 4.1 Exam Comparison — Models & Classes
 
@@ -367,22 +358,10 @@ classDiagram
         +selectedProvider: string
         +files: File[]
         +language: string
-        +includeGrammar: boolean
-        +customCriteria: EvaluationCriteria[]
         +results: BatchEvaluationResponse
         +handleFiles(files)
         +handleEvaluate()
-        +addCriteria()
-        +updateCriteria(index, field, value)
-        +removeCriteria(index)
         +reset()
-    }
-
-    class EvaluationCriteria {
-        +name: string
-        +description: string
-        +zero_description: string
-        +hundred_description: string
     }
 
     class BatchEvaluationResponse {
@@ -434,10 +413,8 @@ classDiagram
 
     class prompts_BE {
         +grammar_evaluation_prompt(language) string
-        +custom_criteria_evaluation_prompt(name, desc, zero, hundred) string
     }
 
-    BatchEvaluation_FE --> EvaluationCriteria
     BatchEvaluation_FE --> BatchEvaluationResponse
     BatchEvaluationResponse --> FileEvaluationResult
     FileEvaluationResult --> CriteriaScore

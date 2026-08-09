@@ -1,4 +1,5 @@
-Consider removing the grading-tool and the custom criteria for batch evaluation.
+Batch evaluation is grammar-only; keep the grading workflow separate from
+grammar feedback.
 
 Scope should be:
 

@@ -3,7 +3,7 @@
 ## pre-requisites
 
 - Scope structured feedback exclusively to grammar evaluation.
-- Keep custom-criteria feedback behavior unchanged until its removal.
+- Preserve the existing score and feedback response fields.
 - Confirm grammar issue fields: `issue` and `correction`.
 - Confirm grammar summary is one plain-text string.
 - Preserve current score calculation and batch result identifiers.
@@ -28,8 +28,8 @@
 
 `BatchEvaluationResponse` keeps `id`, `results`, and `created_at`. Only
 `FileEvaluationResult` gains an optional `grammar` object holding the table rows
-and the summary. `CriteriaScore` is deliberately untouched, so custom criteria
-keep their plain-text `feedback` until that feature is removed.
+and the summary. `CriteriaScore` remains unchanged so existing score feedback
+fields remain compatible.
 
 ### backend — `inference/app/models/__init__.py`
 
@@ -205,14 +205,13 @@ then introduce TanStack Table only when interaction requirements justify it.
 - Backend: Add `GrammarFeedback` containing issues and summary.
 - Backend: Add optional `grammar` field to `FileEvaluationResult`.
 - Backend: Keep `BatchEvaluationResponse` top-level fields unchanged.
-- Backend: Leave `CriteriaScore` and custom-criteria feedback unchanged.
+- Backend: Leave `CriteriaScore` and score feedback unchanged.
 - Backend: Request issues and summary as JSON properties.
 - Backend: Configure Gemini with the grammar response schema.
 - Backend: Validate provider output before service-level mapping.
 - Backend: Reject malformed grammar responses with actionable errors.
 - Backend: Preserve grammar scores and overall-score calculations.
 - Backend: Test valid, empty, and malformed grammar feedback.
-- Backend: Assert custom criteria retain existing feedback behavior.
 - Frontend: Mirror grammar feedback interfaces in TypeScript.
 - Frontend: Mark `grammar` optional on `FileEvaluationResult`.
 - Frontend: Render grammar issues in a semantic table.
@@ -221,7 +220,7 @@ then introduce TanStack Table only when interaction requirements justify it.
 - Frontend: Render grammar summary beneath the issues table.
 - Frontend: Show an explicit no-issues state when empty.
 - Frontend: Fall back to feedback text when grammar missing.
-- Frontend: Keep custom-criteria feedback rendering unchanged.
+- Frontend: Keep score feedback rendering compatible.
 - Frontend: Test tables, summaries, empty issues, and fallback.
 - Documentation: Record the transitional grammar-only response contract.
 - Verification: Run backend tests and Ruff checks.

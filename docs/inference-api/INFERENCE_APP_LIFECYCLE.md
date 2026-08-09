@@ -155,24 +155,19 @@ for the MVP workflow but is not durable application storage.
 ## Batch Evaluation Lifecycle
 
 `POST /api/batch/evaluate` is independent of the exam comparison stores. It
-accepts one or more PDF or Word files, then evaluates every file against the
-selected criteria:
+accepts one or more PDF or Word files, then evaluates every file for grammar
+in the selected feedback language:
 
-1. Parse `include_grammar` and JSON-decode `custom_criteria`.
-2. Reject the request if no criterion is selected.
-3. Resolve one provider for the request.
-4. Extract text from each file.
-5. Optionally evaluate grammar using `grammar_evaluation_prompt`, returning
-  structured issues and a summary.
-6. Evaluate each custom criterion using
-   `custom_criteria_evaluation_prompt`.
-7. Average the criterion scores into `overall_score`.
-8. Build `BatchEvaluationResponse`.
-9. Write one `batch-evaluation` run log and return the response.
+1. Resolve one provider for the request.
+2. Extract text from each file.
+3. Evaluate grammar using `grammar_evaluation_prompt`, returning structured
+  issues and a summary.
+4. Use the grammar score as `overall_score`.
+5. Build `BatchEvaluationResponse`.
+6. Write one `batch-evaluation` run log and return the response.
 
-The route performs one provider call per enabled criterion per file. For
-example, two files with grammar enabled and two custom criteria produce six AI
-calls.
+The route performs exactly one provider call per file. Legacy multipart fields
+from older clients are ignored and do not alter the grammar-only workflow.
 
 ## Dependency Diagram
 

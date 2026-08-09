@@ -9,7 +9,7 @@ Rename the current workflows as follows:
 
 - Confirm canonical public endpoints: `/api/grammar-evaluation` and `/api/test-comparison`.
 - Decide whether old `/api/batch` and `/api/exam` remain aliases.
-- Decide whether custom criteria remain in grammar evaluation.
+- Grammar evaluation is the sole batch-evaluation mode.
 - Decide whether new log directories require migration or coexistence.
 
 ## files to change

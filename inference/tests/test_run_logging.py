@@ -40,16 +40,13 @@ def test_write_run_log_creates_batch_evaluation_record(tmp_path, monkeypatch):
     path = run_logging.write_run_log(
         "batch-evaluation",
         input_snapshot={"files": [{"filename": "essay.pdf", "text_preview": "Example"}]},
-        outputs=[
-            {"operation": "grammar", "output": {"score": 80}},
-            {"operation": "custom_criteria", "output": {"score": 70}},
-        ],
+        outputs=[{"operation": "grammar", "output": {"score": 80}}],
         elapsed=20,
         provider=SimpleNamespace(name="ollama", model="local"),
     )
 
     assert path.parent.parent == tmp_path / "batch-evaluation"
-    assert len(json.loads(path.read_text())["outputs"]) == 2
+    assert len(json.loads(path.read_text())["outputs"]) == 1
 
 
 def test_usage_is_kept_with_each_model_output(tmp_path, monkeypatch):
@@ -60,7 +57,7 @@ def test_usage_is_kept_with_each_model_output(tmp_path, monkeypatch):
         input_snapshot={},
         outputs=[
             {"operation": "grammar", "output": ProviderResponse({}, usage={"total": 3})},
-            {"operation": "custom", "output": ProviderResponse({}, usage={"total": 7})},
+            {"operation": "grammar", "output": ProviderResponse({}, usage={"total": 7})},
         ],
         elapsed=1,
         provider=SimpleNamespace(name="gpt", model="test"),

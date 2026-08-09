@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import get_batch_evaluation_service
 from app.main import app
+from app.services.batch_evaluation import BatchEvaluationService
 
 client = TestClient(app)
 
@@ -206,3 +208,34 @@ def test_unsupported_file_type():
         data={"provider": "gemini"},
     )
     assert response.status_code == 400
+
+
+def test_batch_evaluation_ignores_legacy_evaluation_fields():
+    """Legacy multipart controls do not alter grammar-only evaluation."""
+    from unittest.mock import AsyncMock
+
+    provider = AsyncMock()
+    provider.evaluate_text.return_value = {
+        "score": 88,
+        "grammar": {"issues": [], "summary": "No issues."},
+    }
+    service = BatchEvaluationService(lambda _: provider)
+    app.dependency_overrides[get_batch_evaluation_service] = lambda: service
+
+    try:
+        response = client.post(
+            "/api/batch/evaluate",
+            files=[("files", ("essay.pdf", io.BytesIO(_make_fake_pdf()), "application/pdf"))],
+            data={
+                "provider": "fake",
+                "language": "English",
+                "include_grammar": "false",
+                "custom_criteria": "not-json",
+            },
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert response.json()["results"][0]["overall_score"] == 88
+    provider.evaluate_text.assert_awaited_once()

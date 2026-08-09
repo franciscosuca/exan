@@ -42,7 +42,7 @@ def _service(provider: FakeProvider) -> BatchEvaluationService:
 
 
 @pytest.mark.asyncio
-async def test_maps_grammar_issues_and_summary_while_preserving_custom_feedback():
+async def test_maps_grammar_issues_and_summary():
     provider = FakeProvider(
         [
             {
@@ -54,23 +54,12 @@ async def test_maps_grammar_issues_and_summary_while_preserving_custom_feedback(
                     ],
                     "summary": "The text has two small errors.",
                 },
-            },
-            {"score": 65, "feedback": "The response needs clearer organization."},
+            }
         ]
     )
-    criteria = [
-        {
-            "name": "Clarity",
-            "description": "Clear writing",
-            "zero_description": "Unclear",
-            "hundred_description": "Clear",
-        }
-    ]
 
     with patch("app.services.batch_evaluation.write_run_log"):
-        response = await _service(provider).evaluate(
-            [_document()], "fake", "English", True, criteria
-        )
+        response = await _service(provider).evaluate([_document()], "fake", "English")
 
     result = response.results[0]
     assert result.grammar == GrammarFeedback(
@@ -80,11 +69,38 @@ async def test_maps_grammar_issues_and_summary_while_preserving_custom_feedback(
         ],
         summary="The text has two small errors.",
     )
+    assert result.scores[0].criteria_name == "Grammar"
+    assert result.scores[0].score == 78
     assert result.scores[0].feedback == ""
-    assert result.scores[1].feedback == "The response needs clearer organization."
-    assert result.overall_score == pytest.approx(71.5)
+    assert result.overall_score == pytest.approx(78)
+    assert len(provider.prompts) == 1
     assert '"grammar": {' in provider.prompts[0]
-    assert "Issue found | Correction" in provider.prompts[1]
+    assert "Issue found | Correction" not in provider.prompts[0]
+
+
+@pytest.mark.asyncio
+async def test_evaluates_each_document_once_with_grammar():
+    provider = FakeProvider(
+        [
+            {
+                "score": 78,
+                "grammar": {"issues": [], "summary": "First document."},
+            },
+            {
+                "score": 62,
+                "grammar": {"issues": [], "summary": "Second document."},
+            },
+        ]
+    )
+
+    with patch("app.services.batch_evaluation.write_run_log"):
+        response = await _service(provider).evaluate(
+            [_document("first.pdf"), _document("second.pdf")], "fake", "English"
+        )
+
+    assert [result.filename for result in response.results] == ["first.pdf", "second.pdf"]
+    assert [result.overall_score for result in response.results] == [78, 62]
+    assert len(provider.prompts) == 2
 
 
 @pytest.mark.asyncio
@@ -100,7 +116,7 @@ async def test_maps_empty_grammar_issue_list():
 
     with patch("app.services.batch_evaluation.write_run_log"):
         response = await _service(provider).evaluate(
-            [_document("empty-issues.pdf")], "fake", "English", True, []
+            [_document("empty-issues.pdf")], "fake", "English"
         )
 
     grammar = response.results[0].grammar
@@ -127,6 +143,4 @@ async def test_malformed_grammar_output_raises_batch_evaluation_error():
         BatchEvaluationError,
         match="Grammar evaluation failed for malformed.pdf: Malformed grammar response",
     ):
-        await _service(provider).evaluate(
-            [_document("malformed.pdf")], "fake", "English", True, []
-        )
+        await _service(provider).evaluate([_document("malformed.pdf")], "fake", "English")

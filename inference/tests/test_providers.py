@@ -6,7 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.providers import BaseProvider
-from app.providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
+from app.providers.prompts import grammar_evaluation_prompt
 from app.providers.registry import get_available_providers, get_provider
 
 
@@ -148,18 +148,6 @@ def test_grammar_prompt_requests_structured_response():
     assert '"feedback":' not in prompt
 
 
-def test_custom_criteria_prompt_preserves_plain_text_feedback_contract():
-    prompt = custom_criteria_evaluation_prompt(
-        "Clarity", "Clear writing", "Unclear", "Clear", "Spanish"
-    )
-
-    assert "Issue found | Correction" in prompt
-    assert "Include one table row per issue" in prompt
-    assert "Keep the entire bulleted summary under 100 words" in prompt
-    assert '"feedback": "The text demonstrates...' in prompt
-    assert '"grammar": {' not in prompt
-
-
 async def test_gemini_uses_schema_only_for_grammar_evaluation():
     from app.providers.gemini import GeminiProvider
 
@@ -175,15 +163,3 @@ async def test_gemini_uses_schema_only_for_grammar_evaluation():
     await provider.evaluate_text("Text", grammar_evaluation_prompt("Spanish"))
     grammar_config = client.models.generate_content.call_args.kwargs["config"]
     assert grammar_config.response_schema is not None
-
-    client.models.generate_content.return_value = SimpleNamespace(
-        text='{"score": 90, "feedback": "Clear."}',
-        usage=None,
-        usage_metadata=None,
-    )
-    await provider.evaluate_text(
-        "Text",
-        custom_criteria_evaluation_prompt("Clarity", "Clear", "Unclear", "Clear", "Spanish"),
-    )
-    custom_config = client.models.generate_content.call_args.kwargs["config"]
-    assert custom_config.response_schema is None

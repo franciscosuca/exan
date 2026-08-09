@@ -5,7 +5,9 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
-from ..models import BatchEvaluationResponse, CriteriaScore, FileEvaluationResult
+from pydantic import ValidationError
+
+from ..models import BatchEvaluationResponse, CriteriaScore, FileEvaluationResult, GrammarFeedback
 from ..providers import BaseProvider
 from ..providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
 from ..utils.file_processing import extract_text, get_mime_type
@@ -19,6 +21,16 @@ class UploadProcessingError(ValueError):
 
 class BatchEvaluationError(RuntimeError):
     """Raised when a provider cannot complete a batch evaluation."""
+
+
+def _parse_grammar_result(result: Mapping[str, Any]) -> tuple[float, GrammarFeedback]:
+    """Validate a grammar provider response before mapping it to API models."""
+    try:
+        score = float(result["score"])
+        grammar = GrammarFeedback.model_validate(result["grammar"])
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
+        raise ValueError(f"Malformed grammar response: {exc}") from exc
+    return score, grammar
 
 
 class BatchEvaluationService:
@@ -67,6 +79,7 @@ class BatchEvaluationService:
             )
 
             scores: list[CriteriaScore] = []
+            grammar_feedback: GrammarFeedback | None = None
             if include_grammar:
                 try:
                     prompt = grammar_evaluation_prompt(language)
@@ -80,10 +93,11 @@ class BatchEvaluationService:
                             "output": result,
                         }
                     )
+                    grammar_score, grammar_feedback = _parse_grammar_result(result)
                     scores.append(
                         CriteriaScore(
                             criteria_name="Grammar",
-                            score=float(result.get("score", 0)),
+                            score=grammar_score,
                             feedback=result.get("feedback", ""),
                         )
                     )
@@ -133,6 +147,7 @@ class BatchEvaluationService:
                     scores=scores,
                     overall_score=overall,
                     summary=", ".join(summary_parts),
+                    grammar=grammar_feedback,
                 )
             )
 

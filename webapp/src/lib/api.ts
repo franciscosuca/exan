@@ -70,12 +70,23 @@ export interface CriteriaScore {
   feedback: string;
 }
 
+export interface GrammarIssue {
+  issue: string;
+  correction: string;
+}
+
+export interface GrammarFeedback {
+  issues: GrammarIssue[];
+  summary: string;
+}
+
 export interface FileEvaluationResult {
   id: string;
   filename: string;
   scores: CriteriaScore[];
   overall_score: number;
   summary: string;
+  grammar?: GrammarFeedback | null;
 }
 
 export interface BatchEvaluationResponse {

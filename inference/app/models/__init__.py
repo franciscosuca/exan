@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
 class Question(BaseModel):
@@ -78,12 +78,23 @@ class CriteriaScore(BaseModel):
     feedback: str
 
 
+class GrammarIssue(BaseModel):
+    issue: str
+    correction: str
+
+
+class GrammarFeedback(BaseModel):
+    issues: list[GrammarIssue] = Field(default_factory=list)
+    summary: str = ""
+
+
 class FileEvaluationResult(BaseModel):
     id: str
     filename: str
     scores: list[CriteriaScore]
     overall_score: float
     summary: str
+    grammar: GrammarFeedback | None = None
 
 
 class BatchEvaluationResponse(BaseModel):

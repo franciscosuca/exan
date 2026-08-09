@@ -233,7 +233,7 @@ sequenceDiagram
         opt Grammar enabled
             SVC->>SVC: grammar_evaluation_prompt(language)
             SVC->>AI: evaluate_text(text, grammar prompt)
-            AI-->>BE: {score, feedback}
+            AI-->>SVC: {score, grammar: {issues[], summary}}
         end
 
         loop For each valid custom criterion
@@ -397,6 +397,17 @@ classDiagram
         +scores: CriteriaScore[]
         +overall_score: float
         +summary: string
+        +grammar: GrammarFeedback | null
+    }
+
+    class GrammarFeedback {
+        +issues: GrammarIssue[]
+        +summary: string
+    }
+
+    class GrammarIssue {
+        +issue: string
+        +correction: string
     }
 
     class CriteriaScore {
@@ -430,6 +441,8 @@ classDiagram
     BatchEvaluation_FE --> BatchEvaluationResponse
     BatchEvaluationResponse --> FileEvaluationResult
     FileEvaluationResult --> CriteriaScore
+    FileEvaluationResult --> GrammarFeedback
+    GrammarFeedback --> GrammarIssue
     BatchResults_FE --> BatchEvaluationResponse
     BaseProvider_BE ..> prompts_BE : uses prompts
     file_processing_BE ..> BaseProvider_BE : provides text to

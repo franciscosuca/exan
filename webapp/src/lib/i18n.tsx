@@ -113,6 +113,12 @@ const translations = {
     'batchResults.title': 'Evaluation Results',
     'batchResults.filesEvaluated': '{count} file(s) evaluated',
     'batchResults.overall': 'Overall',
+    'batchResults.processed': 'Processed {date}',
+    'batchResults.detailedFindings': 'Detailed Findings',
+    'batchResults.originalSentence': 'Original Sentence',
+    'batchResults.correctedSentence': 'Corrected Sentence',
+    'batchResults.noIssues': 'No grammar issues found.',
+    'batchResults.howToImprove': 'How to Improve',
 
     'fileDropzone.dropping': 'Drop files here...',
 
@@ -219,6 +225,12 @@ const translations = {
     'batchResults.title': 'Auswertungsergebnisse',
     'batchResults.filesEvaluated': '{count} Datei(en) ausgewertet',
     'batchResults.overall': 'Gesamt',
+    'batchResults.processed': 'Verarbeitet am {date}',
+    'batchResults.detailedFindings': 'Detaillierte Ergebnisse',
+    'batchResults.originalSentence': 'Originalsatz',
+    'batchResults.correctedSentence': 'Korrigierter Satz',
+    'batchResults.noIssues': 'Keine Grammatikfehler gefunden.',
+    'batchResults.howToImprove': 'So kannst du dich verbessern',
 
     'fileDropzone.dropping': 'Dateien hier ablegen...',
 

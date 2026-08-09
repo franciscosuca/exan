@@ -102,25 +102,31 @@ Evaluate on a scale of 0 to 100 where:
 
 Provide:
 1. A numeric score (0-100)
-2. Detailed feedback explaining the errors found and suggestions for improvement
+2. A grammar object containing:
+   - An issues array with one object for each issue. Each object must contain
+     the exact issue and its correction.
+   - A plain-text summary of the overall grammar assessment.
 
 Write the feedback entirely in {language}, regardless of the language of the text
-being evaluated. Use plain text only, without Markdown formatting, headings,
-asterisks, or code fences. Use this structure:
-
-Issue found | Correction
-<the exact error or issue> | <the corrected text or recommended correction>
-
-Summary:
-- <a complete sentence describing an improvement>
-
-Include one table row per issue. If there are no issues, say so in one row.
-Keep the entire bulleted summary under 100 words.
+being evaluated. Do not use Markdown formatting or tables, including Markdown
+table syntax, headings, bullets, asterisks, or code fences. The issues array is
+the issue list: include exactly one JSON object (one row) per issue and do not
+combine multiple issues in one object. If there are no issues, return an empty
+issues array as "issues": [] and summarize that no grammar issues were found.
+Keep the summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{
   "score": 85,
-  "feedback": "The text is mostly well-written with minor issues: ..."
+  "grammar": {{
+    "issues": [
+      {{
+        "issue": "the exact error or issue",
+        "correction": "the corrected text or recommended correction"
+      }}
+    ],
+    "summary": "The text is mostly well-written with minor issues."
+  }}
 }}
 
 Only return valid JSON, no other text.

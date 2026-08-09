@@ -1,6 +1,7 @@
 """Tests for provider implementations and the registry."""
 
-from unittest.mock import patch
+from types import SimpleNamespace
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -136,16 +137,53 @@ def test_provider_feedback_is_plain_readable_text():
     assert result["feedback"] == "Grammar:\n\n- Good flow.\n- Review commas."
 
 
-@pytest.mark.parametrize(
-    "prompt",
-    [
-        grammar_evaluation_prompt("Spanish"),
-        custom_criteria_evaluation_prompt(
-            "Clarity", "Clear writing", "Unclear", "Clear", "Spanish"
-        ),
-    ],
-)
-def test_batch_feedback_prompt_requests_structured_response(prompt):
+def test_grammar_prompt_requests_structured_response():
+    prompt = grammar_evaluation_prompt("Spanish")
+
+    assert '"grammar": {' in prompt
+    assert '"issues": [' in prompt
+    assert "one JSON object (one row) per issue" in prompt
+    assert "Do not use Markdown formatting or tables" in prompt
+    assert '"issues": []' in prompt
+    assert '"feedback":' not in prompt
+
+
+def test_custom_criteria_prompt_preserves_plain_text_feedback_contract():
+    prompt = custom_criteria_evaluation_prompt(
+        "Clarity", "Clear writing", "Unclear", "Clear", "Spanish"
+    )
+
     assert "Issue found | Correction" in prompt
     assert "Include one table row per issue" in prompt
     assert "Keep the entire bulleted summary under 100 words" in prompt
+    assert '"feedback": "The text demonstrates...' in prompt
+    assert '"grammar": {' not in prompt
+
+
+async def test_gemini_uses_schema_only_for_grammar_evaluation():
+    from app.providers.gemini import GeminiProvider
+
+    provider = GeminiProvider()
+    client = MagicMock()
+    client.models.generate_content.return_value = SimpleNamespace(
+        text='{"score": 90, "grammar": {"issues": [], "summary": "No issues."}}',
+        usage=None,
+        usage_metadata=None,
+    )
+    provider._client = client
+
+    await provider.evaluate_text("Text", grammar_evaluation_prompt("Spanish"))
+    grammar_config = client.models.generate_content.call_args.kwargs["config"]
+    assert grammar_config.response_schema is not None
+
+    client.models.generate_content.return_value = SimpleNamespace(
+        text='{"score": 90, "feedback": "Clear."}',
+        usage=None,
+        usage_metadata=None,
+    )
+    await provider.evaluate_text(
+        "Text",
+        custom_criteria_evaluation_prompt("Clarity", "Clear", "Unclear", "Clear", "Spanish"),
+    )
+    custom_config = client.models.generate_content.call_args.kwargs["config"]
+    assert custom_config.response_schema is None

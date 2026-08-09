@@ -162,7 +162,8 @@ selected criteria:
 2. Reject the request if no criterion is selected.
 3. Resolve one provider for the request.
 4. Extract text from each file.
-5. Optionally evaluate grammar using `grammar_evaluation_prompt`.
+5. Optionally evaluate grammar using `grammar_evaluation_prompt`, returning
+  structured issues and a summary.
 6. Evaluate each custom criterion using
    `custom_criteria_evaluation_prompt`.
 7. Average the criterion scores into `overall_score`.

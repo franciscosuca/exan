@@ -9,6 +9,32 @@ from ..config import settings
 from . import BaseProvider
 from .prompts import ANALYZE_STRUCTURE_PROMPT, EXTRACT_ANSWERS_PROMPT, grade_exam_prompt
 
+GRAMMAR_RESPONSE_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "score": {"type": "NUMBER"},
+        "grammar": {
+            "type": "OBJECT",
+            "properties": {
+                "issues": {
+                    "type": "ARRAY",
+                    "items": {
+                        "type": "OBJECT",
+                        "properties": {
+                            "issue": {"type": "STRING"},
+                            "correction": {"type": "STRING"},
+                        },
+                        "required": ["issue", "correction"],
+                    },
+                },
+                "summary": {"type": "STRING"},
+            },
+            "required": ["issues", "summary"],
+        },
+    },
+    "required": ["score", "grammar"],
+}
+
 
 class GeminiProvider(BaseProvider):
     name = "gemini"
@@ -36,6 +62,24 @@ class GeminiProvider(BaseProvider):
             text = text.split("\n", 1)[1]
             text = text.rsplit("```", 1)[0]
         return json.loads(text)
+
+    @staticmethod
+    def _is_grammar_prompt(prompt: str) -> bool:
+        return '"grammar": {' in prompt and '"issues": [' in prompt
+
+    @staticmethod
+    def _supports_response_schema() -> bool:
+        fields = getattr(types.GenerateContentConfig, "model_fields", None)
+        if fields is None:
+            fields = getattr(types.GenerateContentConfig, "__fields__", {})
+        return "response_schema" in fields
+
+    #TODO: add this method to the BaseProvider interface and implement it in other providers
+    def _evaluation_config(self, prompt: str) -> types.GenerateContentConfig:
+        config_kwargs: dict[str, object] = {"response_mime_type": "application/json"}
+        if self._is_grammar_prompt(prompt) and self._supports_response_schema():
+            config_kwargs["response_schema"] = GRAMMAR_RESPONSE_SCHEMA
+        return types.GenerateContentConfig(**config_kwargs)
 
     async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         contents = self._build_content(image_data, mime_types, ANALYZE_STRUCTURE_PROMPT)
@@ -82,8 +126,6 @@ class GeminiProvider(BaseProvider):
         response = self.client.models.generate_content(
             model=self.model,
             contents=full_prompt,
-            config=types.GenerateContentConfig(
-                response_mime_type="application/json",
-            ),
+            config=self._evaluation_config(prompt),
         )
         return self._with_metadata(self._parse_json(response.text), response)

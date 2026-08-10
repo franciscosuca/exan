@@ -41,47 +41,24 @@ export function BatchResults({ response }: BatchResultsProps) {
             </div>
           </header>
 
-          {result.scores.length > 0 && (
+          {result.scores.filter(
+            (score) => !result.grammar || score.criteria_name.toLowerCase() !== 'grammar'
+          ).length > 0 && (
             <section
               aria-label={t('batchResults.scores')}
               className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
             >
               <div className="divide-y divide-gray-100">
-                {result.scores.map((score) => (
+                {result.scores
+                  .filter((score) => !result.grammar || score.criteria_name.toLowerCase() !== 'grammar')
+                  .map((score) => (
                   <div key={score.criteria_name} className="p-4 sm:p-6">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                      <span className="wrap-break-word text-sm font-semibold text-gray-800">
-                        {score.criteria_name}
-                      </span>
-                      <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          score.score >= 70
-                            ? 'bg-green-100 text-green-700'
-                            : score.score >= 50
-                              ? 'bg-amber-100 text-amber-700'
-                              : 'bg-red-100 text-red-700'
-                        }`}
-                      >
-                        {score.score.toFixed(0)}%
-                      </span>
-                    </div>
-                    <div className="mb-2 h-1.5 w-full rounded-full bg-gray-100">
-                      <div
-                        className={`h-1.5 rounded-full ${
-                          score.score >= 70
-                            ? 'bg-green-400'
-                            : score.score >= 50
-                              ? 'bg-amber-400'
-                              : 'bg-red-400'
-                        }`}
-                        style={{ width: `${score.score}%` }}
-                      />
-                    </div>
-                    {(!result.grammar || score.criteria_name.toLowerCase() !== 'grammar') && (
-                      <p className="whitespace-pre-wrap wrap-break-word text-sm text-gray-600">
-                        {score.feedback}
-                      </p>
-                    )}
+                    <span className="wrap-break-word text-sm font-semibold text-gray-800">
+                      {score.criteria_name}
+                    </span>
+                    <p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-gray-600">
+                      {score.feedback}
+                    </p>
                   </div>
                 ))}
               </div>

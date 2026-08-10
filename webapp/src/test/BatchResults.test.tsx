@@ -45,8 +45,9 @@ describe('BatchResults', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Original Sentence' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Corrected Sentence' })).toBeInTheDocument();
-    expect(screen.getByText('a apple')).toBeInTheDocument();
-    expect(screen.getByText('an apple')).toBeInTheDocument();
+    expect(screen.getAllByRole('cell')[0]).toHaveTextContent('a apple');
+    expect(screen.getAllByRole('cell')[1]).toHaveTextContent('an apple');
+    expect(screen.queryByText('78%')).not.toBeInTheDocument();
     expect(screen.getAllByRole('mark')).toHaveLength(2);
     expect(screen.getByRole('heading', { name: 'How to Improve' })).toBeInTheDocument();
     expect(screen.getByText('Review article usage before singular nouns.')).toBeInTheDocument();
@@ -104,7 +105,9 @@ describe('BatchResults', () => {
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
-    expect(screen.getByText('She go home.')).toBeInTheDocument();
-    expect(screen.getByText('They were ready.')).toBeInTheDocument();
+    expect(screen.getAllByRole('cell')[0]).toHaveTextContent('She go home.');
+    expect(screen.getAllByRole('cell')[1]).toHaveTextContent('She goes home.');
+    expect(screen.getAllByRole('cell')[2]).toHaveTextContent('They was ready.');
+    expect(screen.getAllByRole('cell')[3]).toHaveTextContent('They were ready.');
   });
 });

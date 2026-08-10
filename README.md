@@ -138,6 +138,10 @@ The app will be available at `http://localhost:3000`. The inference API runs on 
 
 Docker Compose covers local and self-hosted runs. For the first beta release on a cloud provider, see [First release deployment options](docs/deployment/DEPLOYMENT_OPTIONS.md), which compares Cloud Run, Compute Engine, GKE, Firebase, and third-party PaaS, and records the recommended topology and automation.
 
+### Desktop and Local LLM Distribution
+
+To install Exan on macOS or Windows and run inference against a model on the same machine, see [Local and desktop distribution options](docs/desktop/DESKTOP_OPTIONS.md), which compares a PWA, Electron, and Tauri, explains why a hosted page cannot reach a local LLM, and records the recommended phased migration.
+
 ## Running Tests
 
 ### Inference
@@ -195,6 +199,7 @@ compatibility aliases with the same operations and response contracts.
 ├── db/                 # Mongo connection helper + init script
 ├── docs/
 │   ├── deployment/DEPLOYMENT_OPTIONS.md  # Beta deployment platform analysis
+│   ├── desktop/DESKTOP_OPTIONS.md        # PWA and desktop (Electron/Tauri) analysis
 │   └── MODEL_TRAINING.md  # Guide for fine-tuning custom models
 ├── docker-compose.yml  # One-command deployment
 └── README.md

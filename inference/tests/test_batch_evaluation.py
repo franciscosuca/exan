@@ -49,8 +49,8 @@ async def test_maps_grammar_issues_and_summary():
                 "score": 78,
                 "grammar": {
                     "issues": [
-                        {"issue": "teh", "correction": "the"},
-                        {"issue": "their going", "correction": "they're going"},
+                        {"original_text": "teh", "corrected_text": "the"},
+                        {"original_text": "their going", "corrected_text": "they're going"},
                     ],
                     "summary": "The text has two small errors.",
                 },
@@ -64,8 +64,8 @@ async def test_maps_grammar_issues_and_summary():
     result = response.results[0]
     assert result.grammar == GrammarFeedback(
         issues=[
-            {"issue": "teh", "correction": "the"},
-            {"issue": "their going", "correction": "they're going"},
+            {"original_text": "teh", "corrected_text": "the"},
+            {"original_text": "their going", "corrected_text": "they're going"},
         ],
         summary="The text has two small errors.",
     )
@@ -75,7 +75,24 @@ async def test_maps_grammar_issues_and_summary():
     assert "overall_score" not in result.model_dump()
     assert len(provider.prompts) == 1
     assert '"grammar": {' in provider.prompts[0]
+    assert '"original_text":' in provider.prompts[0]
+    assert '"corrected_text":' in provider.prompts[0]
     assert "Issue found | Correction" not in provider.prompts[0]
+
+
+@pytest.mark.asyncio
+async def test_uses_correction_and_summary_languages_separately():
+    provider = FakeProvider(
+        [{"score": 90, "grammar": {"issues": [], "summary": "Résumé."}}]
+    )
+
+    with patch("app.services.batch_evaluation.write_run_log"):
+        await _service(provider).evaluate(
+            [_document()], "fake", "German", summary_language="French"
+        )
+
+    assert "in German" in provider.prompts[0]
+    assert "Write the summary\nin French" in provider.prompts[0]
 
 
 @pytest.mark.asyncio

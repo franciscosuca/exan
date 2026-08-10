@@ -36,7 +36,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
   const [files, setFiles] = useState<File[]>([]);
   // Default the grammar-check language to the current webpage language, so
   // AI answers follow the language the user is browsing in.
-  const [language, setLanguage] = useState<string>(uiLanguage);
+  const [correctionLanguage, setCorrectionLanguage] = useState<string>(uiLanguage);
   const [results, setResults] = useState<BatchEvaluationResponse | null>(null);
 
   useEffect(() => {
@@ -74,7 +74,8 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
       const response = await batchEvaluate(
         files,
         selectedProvider,
-        language
+        correctionLanguage,
+        uiLanguage
       );
       setResults(response);
     } catch (e: unknown) {
@@ -197,8 +198,8 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5">
               <label className="mb-1 block text-sm text-gray-600">{t('batchEvaluation.language')}</label>
               <select
-                value={language}
-                onChange={(e) => setLanguage(e.target.value)}
+                value={correctionLanguage}
+                onChange={(e) => setCorrectionLanguage(e.target.value)}
                 className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm"
               >
                 {LANGUAGES.map((lang) => (

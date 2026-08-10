@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class Question(BaseModel):
@@ -66,8 +66,23 @@ class CriteriaScore(BaseModel):
 
 
 class GrammarIssue(BaseModel):
-    issue: str
-    correction: str
+    """A single finding, with an unambiguous before/after representation.
+
+    ``issue`` and ``correction`` are accepted when reading older provider
+    responses, but are deliberately not part of the new response shape.
+    """
+
+    original_text: str
+    corrected_text: str
+
+    @model_validator(mode="before")
+    @classmethod
+    def migrate_legacy_fields(cls, value: object) -> object:
+        if isinstance(value, dict):
+            value = dict(value)
+            value.setdefault("original_text", value.get("issue"))
+            value.setdefault("corrected_text", value.get("correction"))
+        return value
 
 
 class GrammarFeedback(BaseModel):

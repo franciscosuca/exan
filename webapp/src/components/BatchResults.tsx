@@ -116,12 +116,20 @@ export function BatchResults({ response }: BatchResultsProps) {
                       </thead>
                       <tbody>
                         {result.grammar.issues.map((issue, index) => (
-                          <tr key={`${issue.issue}-${index}`} className="border-b border-gray-100 last:border-b-0">
+                          <tr key={`${issue.original_text}-${index}`} className="border-b border-gray-100 last:border-b-0">
                             <td className="whitespace-pre-wrap wrap-break-word px-4 py-3 align-top text-gray-700">
-                              {issue.issue}
+                              <DiffText
+                                text={issue.original_text}
+                                comparison={issue.corrected_text}
+                                variant="original"
+                              />
                             </td>
                             <td className="whitespace-pre-wrap wrap-break-word px-4 py-3 align-top text-gray-700">
-                              {issue.correction}
+                              <DiffText
+                                text={issue.corrected_text}
+                                comparison={issue.original_text}
+                                variant="corrected"
+                              />
                             </td>
                           </tr>
                         ))}
@@ -154,6 +162,73 @@ export function BatchResults({ response }: BatchResultsProps) {
       ))}
     </div>
   );
+}
+
+interface DiffTextProps {
+  text: string;
+  comparison: string;
+  variant: 'original' | 'corrected';
+}
+
+function DiffText({ text, comparison, variant }: DiffTextProps) {
+  const tokens = tokenize(text);
+  const words = tokens.filter((token) => !/^\s+$/.test(token));
+  const comparisonWords = tokenize(comparison).filter((token) => !/^\s+$/.test(token));
+  const unchangedIndexes = new Set(
+    longestCommonSubsequenceIndexes(words, comparisonWords, variant === 'original' ? 0 : 1)
+  );
+  let wordIndex = 0;
+
+  return <>{tokens.map((token, index) => (
+    /^\s+$/.test(token) || unchangedIndexes.has(wordIndex++)
+      ? token
+      : (
+        <mark
+          key={`${variant}-${index}`}
+          className={variant === 'original' ? 'bg-red-100 text-red-900' : 'bg-green-100 text-green-900'}
+        >
+          {token}
+        </mark>
+      )
+  ))}</>;
+}
+
+function tokenize(text: string): string[] {
+  return text.match(/\s+|[^\s]+/g) ?? [];
+}
+
+function longestCommonSubsequenceIndexes(
+  left: string[],
+  right: string[],
+  side: 0 | 1
+): number[] {
+  const table = Array.from({ length: left.length + 1 }, () =>
+    Array<number>(right.length + 1).fill(0)
+  );
+
+  for (let row = 1; row <= left.length; row += 1) {
+    for (let column = 1; column <= right.length; column += 1) {
+      table[row][column] = left[row - 1] === right[column - 1]
+        ? table[row - 1][column - 1] + 1
+        : Math.max(table[row - 1][column], table[row][column - 1]);
+    }
+  }
+
+  const result: number[] = [];
+  let row = left.length;
+  let column = right.length;
+  while (row > 0 && column > 0) {
+    if (left[row - 1] === right[column - 1]) {
+      result.unshift(side === 0 ? row - 1 : column - 1);
+      row -= 1;
+      column -= 1;
+    } else if (table[row - 1][column] >= table[row][column - 1]) {
+      row -= 1;
+    } else {
+      column -= 1;
+    }
+  }
+  return result;
 }
 
 function formatProcessedDate(createdAt: string, language: 'de' | 'en'): string | null {

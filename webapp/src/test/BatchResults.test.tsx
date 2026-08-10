@@ -27,7 +27,7 @@ describe('BatchResults', () => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
   });
 
-  it('renders structured grammar rows and summary without legacy grammar feedback', () => {
+  it('renders structured grammar rows and summary with word-level highlighting', () => {
     renderResults(
       createResponse({
         filename: 'essay.docx',
@@ -36,7 +36,7 @@ describe('BatchResults', () => {
         ],
         summary: 'Grammar: 78%',
         grammar: {
-          issues: [{ issue: 'a apple', correction: 'an apple' }],
+          issues: [{ original_text: 'a apple', corrected_text: 'an apple' }],
           summary: 'Review article usage before singular nouns.',
         },
       })
@@ -47,6 +47,7 @@ describe('BatchResults', () => {
     expect(screen.getByRole('columnheader', { name: 'Corrected Sentence' })).toBeInTheDocument();
     expect(screen.getByText('a apple')).toBeInTheDocument();
     expect(screen.getByText('an apple')).toBeInTheDocument();
+    expect(screen.getAllByRole('mark')).toHaveLength(2);
     expect(screen.getByRole('heading', { name: 'How to Improve' })).toBeInTheDocument();
     expect(screen.getByText('Review article usage before singular nouns.')).toBeInTheDocument();
     expect(screen.queryByText('Legacy grammar feedback')).not.toBeInTheDocument();
@@ -94,8 +95,8 @@ describe('BatchResults', () => {
         summary: 'Grammar: 50%',
         grammar: {
           issues: [
-            { issue: 'She go home.', correction: 'She goes home.' },
-            { issue: 'They was ready.', correction: 'They were ready.' },
+            { original_text: 'She go home.', corrected_text: 'She goes home.' },
+            { original_text: 'They was ready.', corrected_text: 'They were ready.' },
           ],
           summary: 'Review subject-verb agreement.',
         },

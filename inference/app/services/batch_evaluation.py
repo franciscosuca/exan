@@ -43,9 +43,18 @@ class BatchEvaluationService:
         self,
         documents: Sequence[UploadedDocument],
         provider_name: str,
-        language: str,
+        language: str = "en",
+        summary_language: str | None = None,
+        correction_language: str | None = None,
     ) -> BatchEvaluationResponse:
-        """Evaluate each document for grammar."""
+        """Evaluate each document for grammar.
+
+        ``language`` is retained for callers of the original API and means
+        the language used for corrections and issues.  The explicit
+        ``correction_language`` takes precedence when supplied.
+        """
+        correction_language = correction_language or language
+        summary_language = summary_language or correction_language
         try:
             provider = self.provider_factory(provider_name)
         except Exception as exc:
@@ -79,7 +88,7 @@ class BatchEvaluationService:
             scores: list[CriteriaScore] = []
             grammar_feedback: GrammarFeedback | None = None
             try:
-                prompt = grammar_evaluation_prompt(language)
+                prompt = grammar_evaluation_prompt(correction_language, summary_language)
                 call_started = start_timer()
                 result = await provider.evaluate_text(text, prompt)
                 outputs.append(
@@ -122,7 +131,9 @@ class BatchEvaluationService:
         write_run_log(
             "batch-evaluation",
             input_snapshot={
-                "language": language,
+                "language": correction_language,
+                "correction_language": correction_language,
+                "summary_language": summary_language,
                 "files": input_files,
             },
             outputs=outputs,

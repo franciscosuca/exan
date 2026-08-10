@@ -143,6 +143,8 @@ def test_grammar_prompt_requests_structured_response():
     assert '"grammar": {' in prompt
     assert '"issues": [' in prompt
     assert "one JSON object (one row) per issue" in prompt
+    assert '"original_text":' in prompt
+    assert '"corrected_text":' in prompt
     assert "Do not use Markdown formatting or tables" in prompt
     assert '"issues": []' in prompt
     assert '"feedback":' not in prompt

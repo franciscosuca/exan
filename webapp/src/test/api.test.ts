@@ -6,7 +6,7 @@ describe('batchEvaluate', () => {
     vi.restoreAllMocks();
   });
 
-  it('submits only grammar evaluation fields', async () => {
+  it('submits separate correction and summary languages', async () => {
     const response = {
       id: 'batch-id',
       results: [],
@@ -18,13 +18,15 @@ describe('batchEvaluate', () => {
     } as Response);
     const file = new File(['essay'], 'essay.pdf', { type: 'application/pdf' });
 
-    await batchEvaluate([file], 'ollama', 'en');
+    await batchEvaluate([file], 'ollama', 'es', 'de');
 
     const request = fetchMock.mock.calls[0]?.[1];
     const form = request?.body as FormData;
     expect(form.getAll('files')).toHaveLength(1);
     expect(form.get('provider')).toBe('ollama');
-    expect(form.get('language')).toBe('en');
+    expect(form.get('correction_language')).toBe('es');
+    expect(form.get('summary_language')).toBe('de');
+    expect(form.get('language')).toBeNull();
     expect(form.get('include_grammar')).toBeNull();
     expect(form.get('custom_criteria')).toBeNull();
   });

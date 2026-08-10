@@ -4,6 +4,8 @@ This document evaluates hosting options for the **first beta deployment** of Exa
 
 It expands [Deployment and networking](../scanning/ARCHITECTURE_OPTIONS.md#deployment-and-networking) from the architecture options with concrete platforms and costs.
 
+For the complementary question — shipping Exan as an installable macOS or Windows application that runs inference against a model on the user's own machine — see [Local and desktop distribution options](../desktop/DESKTOP_OPTIONS.md).
+
 ## Table of Contents
 
 - [Summary](#summary)

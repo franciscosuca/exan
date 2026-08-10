@@ -34,7 +34,7 @@ It is the local-first counterpart to [First release deployment options](../deplo
 - **The PWA is the fastest deliverable, but only over a local origin.** Installed from `http://localhost:3000`, the PWA is same-origin with a local `inference` service and needs no browser exceptions at all. Installed from a public HTTPS origin and pointed at `http://localhost:11434`, it depends on three moving browser policies (mixed content, local network access permissions, and the provider's own CORS allowlist) for the product's core promise. That is a bad foundation, so **Option 2 is not the primary path**.
 - **Electron is not a rewrite.** `webapp/` is a plain Vite SPA and loads unchanged in either shell. The real work — supervising the Python process, replacing `auth/` + MongoDB with local identity, packaging, signing, and auto-update — is roughly 80–90 % of the effort and is *shell-agnostic*. That makes the Electron-vs-Tauri decision cheap and reversible, which is why it should not block starting.
 - **Fastest desktop stack:** Electron + `electron-vite` + `electron-builder`, with `inference/` frozen by PyInstaller. One JavaScript toolchain, no new language, and the most heavily documented notarization and auto-update path.
-- **Most optimal desktop stack:** Tauri v2 + `@tauri-apps/cli` + the *same* PyInstaller binary as a sidecar. Roughly an order of magnitude smaller shell, lower idle memory, a capability-scoped IPC surface, and one codebase producing macOS (Apple silicon and Intel), Windows, and Linux artifacts.
+- **Most optimal desktop stack:** Tauri v2 (stable since October 2024) + `@tauri-apps/cli` + the *same* PyInstaller binary as a sidecar. A shell measured in single-digit megabytes instead of ~166 MB, a capability-scoped IPC surface, and one codebase producing macOS (Apple silicon and Intel), Windows, and Linux artifacts. Note that the size advantage is real while the *memory* advantage is commonly overstated — see [Option 4](#option-4-tauri-v2-desktop-app-recommended-target).
 - **One codebase for every desktop platform is achievable with either shell.** Both build from a single `desktop/` project plus the shared `webapp/` UI. Options that fail this requirement (SwiftUI + WinUI, or any framework that discards React) are rejected in [Option 5](#option-5-native-app-per-platform).
 - **The long-term prize is deleting Python from the client.** Porting `inference/` document processing and provider calls to TypeScript would remove the sidecar, the freeze step, and most of the installer size, leaving one language and one artifact. It is a significant piece of work and is explicitly **not** required for v1 — see [Phase 4](#phase-4-optional-remove-the-python-sidecar).
 
@@ -99,8 +99,8 @@ Option 1 preserves the codebase. Option 2 requires re-implementing the inference
 
 - **It does not solve distribution.** The user still has to install and start the backend. Without Phase 2's installer this only helps people who already run Docker or the dev toolchain, which is not the target audience of the issue.
 - Service worker caching must exclude `/api/*`; caching a grading response would be a correctness bug.
-- An installed PWA cannot spawn or supervise the Python process, manage models, or read files outside the picker — the capabilities that make a desktop build worth doing.
-- Desktop install support is uneven across browsers (Chromium-based browsers are the reliable target), and installed-PWA behaviour on macOS is comparatively recent.
+- **A PWA can never launch a local process.** There is no web platform API to start an executable, by design, so the PWA can neither start the Python service nor start Ollama for the user. It can only talk to something already running.
+- Desktop install support is uneven: Chromium-based browsers are the reliable target, Safari gained "Add to Dock" only in Safari 17 / macOS Sonoma, and Firefox desktop does not support manifest-based install at all. The File System Access API is likewise Chromium-only, so richer file handling cannot be assumed.
 - Offline caching of the shell does not make the app work offline; that depends on the local model being present.
 
 **Verdict:** the fastest way to give users something installable, and a prerequisite for everything else. Ship it, but do not present it as the answer to "install Exan and connect it to my LLM".
@@ -117,8 +117,11 @@ Option 1 preserves the codebase. Option 2 requires re-implementing the inference
 
 **Cons**
 
-- **Three browser policies stand in the way, and none of them are ours.** A secure page requesting an insecure URL is subject to mixed-content rules that treat loopback inconsistently across engines; Chromium is adding explicit local network access restrictions with a user permission prompt for exactly this pattern; and the request is cross-origin, so it also needs the model server's consent.
-- **The user must reconfigure their model runtime.** Ollama only accepts browser origins listed in `OLLAMA_ORIGINS`, so every user must set an environment variable and restart the service before the product works. LM Studio requires its equivalent CORS toggle. "Install the app and it just works" is not achievable.
+- **Three browser policies stand in the way, and none of them are ours.**
+  - *Mixed content:* Chromium and Firefox exempt `localhost` and `127.0.0.0/8` as "potentially trustworthy" origins, so a secure page may call them. **Safari does not** — WebKit treats a loopback URL from an HTTPS page as blocked mixed content, so this option is dead on arrival in Safari.
+  - *Local network access:* Chromium has replaced the older Private Network Access preflight design with a permission-based **Local Network Access** model, in which reaching loopback from a public page requires an explicit user permission grant. The pattern this option depends on is precisely the one being restricted.
+  - *Provider CORS:* the request is cross-origin, so the model server must consent too.
+- **The user must reconfigure their model runtime.** Ollama's default `OLLAMA_ORIGINS` allow-list covers loopback origins plus `app://*`, `file://*`, and `tauri://*` — desktop shells, not hosted web origins. Every user would have to set `OLLAMA_ORIGINS=https://exan.example.com` and restart Ollama. LM Studio ships CORS **disabled**, requiring its "Enable CORS" setting or `lms server start --cors`. "Install the app and it just works" is not achievable.
 - **It abandons `inference/`.** PDF-to-image rendering (PyMuPDF), `.docx` extraction, prompt templates, JSON repair, and run logging would have to be re-implemented in TypeScript before a single exam could be graded this way — the same rewrite as [Phase 4](#phase-4-optional-remove-the-python-sidecar), but with none of the packaging benefits and with the browser's memory limits applied to multi-page PDF rasterisation.
 - **No fallback.** If a browser tightens loopback access, the product breaks for everyone at once, remotely, with no version pinning.
 - Cloud providers still need a key path, so the hosted backend does not actually go away.
@@ -132,37 +135,40 @@ Option 1 preserves the codebase. Option 2 requires re-implementing the inference
 **Pros**
 
 - **One language and one toolchain.** Everything is TypeScript, which matches the repo's existing `tsx`/Vite/Bun setup; no third language enters the build.
-- **Deterministic rendering.** Chromium is bundled, so the Tailwind 4 UI renders identically on both platforms and on old OS versions, and there is a single browser target to test against.
+- **Deterministic rendering.** Chromium is bundled, so the Tailwind 4 UI renders identically on every supported platform regardless of the user's OS or browser version, and there is a single browser target to test against.
 - **The most mature packaging ecosystem:** `electron-builder` handles DMG/NSIS/AppImage, macOS notarization, Windows signing, and delta auto-updates via `electron-updater` with well-trodden recipes.
 - Full Node.js in the main process — child process supervision, file system access, `safeStorage` for API keys, and native dialogs are all first-party.
 - Largest hiring/knowledge pool and the most StackOverflow answers per problem, which matters for a one-maintainer project.
 
 **Cons**
 
-- **Ships an entire browser.** A minimal Electron app is on the order of 100 MB before the Python sidecar; idle memory is measured in hundreds of megabytes.
+- **Ships an entire browser.** Tauri's published benchmark measures a packaged Electron hello-world at roughly **166 MB** against ~3 MB for the equivalent Tauri binary — before the Python sidecar is added.
 - **Security posture is opt-in.** `nodeIntegration`, `contextIsolation`, `sandbox`, CSP, and `will-navigate`/`setWindowOpenHandler` guards must all be configured correctly; the defaults have historically been permissive.
-- Chromium and Node upgrades arrive on Electron's fast release cadence, and staying current is ongoing maintenance rather than a one-off.
+- **The sidecar must be unpacked from the ASAR archive.** `child_process.spawn` cannot execute a binary inside an `.asar`, so the frozen service has to be shipped through `extraResources` or `asar.unpack`, and that path resolved differently in development and production.
+- Chromium and Node upgrades arrive on Electron's fast release cadence, and staying current is ongoing maintenance rather than a one-off. Current Electron releases also drop older systems (macOS 13+, Windows 10+), so the "runs everywhere" advantage over a system WebView is narrower than it looks.
 - Ships a second JavaScript runtime alongside the Python one, so the installer carries two interpreters for an app whose UI is a three-step form.
 
 **Verdict:** the **fastest credible desktop delivery**, and a perfectly defensible permanent choice. Pick it if the priority is a signed installer in testers' hands with the least new knowledge required.
 
 ### Option 4: Tauri v2 desktop app (recommended target)
 
-**Shape:** A `desktop/` project built with `@tauri-apps/cli`. The window renders the same `webapp/` build in the platform WebView (WebView2 on Windows, WKWebView on macOS, WebKitGTK on Linux). The frozen `inference` binary is declared as a Tauri **sidecar**, so the CLI copies it into the bundle per target triple and the app spawns it under a capability-scoped permission.
+**Shape:** A `desktop/` project built with `@tauri-apps/cli` (Tauri v2 has been stable since October 2024). The window renders the same `webapp/` build in the platform WebView (WebView2 on Windows, WKWebView on macOS 10.15+, WebKitGTK 4.1 on Linux). The frozen `inference` binary is declared in `bundle.externalBin` as a Tauri **sidecar**, so the CLI copies the target-triple-suffixed binary into the bundle and the app spawns it under an explicit capability.
 
 **Pros**
 
-- **Dramatically smaller and lighter shell.** The WebView is the operating system's, so the shell itself is single-digit megabytes rather than ~100 MB, and idle memory is a fraction of Electron's. With a multi-gigabyte model on disk this is not the decisive argument, but it is real for download, update, and disk footprint.
+- **Dramatically smaller shell.** The WebView belongs to the operating system, so the shell is single-digit megabytes against Electron's ~166 MB hello-world. With a multi-gigabyte model on disk that is not the decisive argument, but it is real for download, update, and disk footprint.
 - **Security by construction.** The frontend has no Node, no filesystem, and no process API unless a capability explicitly grants it; the IPC surface is an allowlist rather than an opt-out.
-- **First-class sidecar support** — exactly the primitive this architecture needs — plus official plugins for the updater, dialogs, filesystem, shell, and secure storage.
+- **First-class sidecar support** — exactly the primitive this architecture needs — plus official plugins for the updater, dialogs, filesystem, shell, and secure storage, and documented Developer ID signing and `notarytool` notarization for the whole bundle.
+- **Ollama already trusts it.** `tauri://*` is in Ollama's default origin allow-list, so even a future direct browser-to-model call needs no user configuration — the exact opposite of [Option 2](#option-2-pwa-on-a-public-origin-calling-the-local-llm-from-the-browser).
 - Cross-compilation targets and CI recipes for macOS (Apple silicon and Intel, including universal binaries), Windows, and Linux from one project.
 - Rust exposure stays small: the sidecar spawn, a couple of commands, and configuration. It is not a Rust application with a React skin.
 
 **Cons**
 
 - **A third language in the repository.** Rust and `cargo` must be installed locally and in CI, and any native dependency issue is debugged in a language nobody here writes daily.
-- **Two rendering engines to support.** WKWebView on macOS tracks the OS's WebKit version, so a user on an old, unpatched macOS can get a different — and with Tailwind CSS 4's modern-baseline features, potentially broken — UI. Chromium-only assumptions in the current CSS have to be validated on Safari's engine.
-- Windows requires the WebView2 runtime; it is present on current Windows 11 and widely deployed on Windows 10, but the installer should still carry the evergreen bootstrapper.
+- **Two rendering engines to support.** WKWebView on macOS tracks the OS's WebKit version, so a user on an old, unpatched macOS can get a different — and with Tailwind CSS 4's Safari 16.4 baseline, potentially broken — UI. Chromium-only assumptions in the current CSS have to be validated on Safari's engine.
+- **The memory advantage is largely folklore.** The only published side-by-side (Tauri's own benchmark suite, Linux hello-world) shows ~406 MB peak RSS for Tauri against ~476 MB for Electron — roughly 15 %, not an order of magnitude. Choose Tauri for size and security, not for a memory miracle.
+- Windows requires the WebView2 runtime. It is included in Windows 11 and widely present on Windows 10, but Microsoft does not guarantee it, so the installer should carry the evergreen bootstrapper (Tauri exposes `webviewInstallMode` for this).
 - Smaller ecosystem and fewer worked examples than Electron; plugin gaps are solved by writing Rust.
 - Slower first build (`cargo` compilation) and an extra cache to manage in CI.
 
@@ -212,12 +218,14 @@ Option 1 preserves the codebase. Option 2 requires re-implementing the inference
 | Backend installed for the user | **No** | N/A | Yes | Yes | Yes | Via Docker |
 | Depends on browser policy | No | **Yes, heavily** | No | No | No | No |
 | Needs `OLLAMA_ORIGINS` set by user | No | **Yes** | No | No | No | No |
-| Shell footprint | ~0 | ~0 | ~100 MB | Single-digit MB | Smallest | GBs |
+| Shell footprint | ~0 | ~0 | ~166 MB | ~3 MB | Smallest | GBs |
 | New language required | None | None | None | Rust (small) | Swift/C#/Dart | None |
 | Code signing required | No | No | Yes | Yes | Yes | Yes |
 | Auto-update story | Browser | Browser | `electron-updater` | Updater plugin | Per platform | None |
 | Relative effort | **Days** | Weeks + rewrite | Weeks | Weeks + toolchain | Months | Days |
 | **Verdict** | **Phase 1** | Later opt-in only | Fast fallback | **Recommended** | Rejected | Dev only |
+
+Shell footprints are Tauri's published hello-world benchmark figures and exclude the Python sidecar, which will dominate both. Verify them against a real build before quoting them anywhere else.
 
 ## Is Electron "Basically a Rewrite"?
 
@@ -249,11 +257,18 @@ This is the real cost of the desktop build, and it is identical for Electron and
 
 | Approach | How it works | Pros | Cons | Fit |
 |----------|--------------|------|------|-----|
-| **PyInstaller** (recommended) | Freezes `app/` plus dependencies into a one-folder or one-file bundle per platform | Mature, handles native wheels, well-documented signing workflow, ships a plain executable that both shells can spawn | Hidden-import and data-file tuning for native packages; must build on each target OS; one-file mode extracts to a temp dir at start-up and is slower | **Yes** |
-| **Standalone CPython** (`uv python install` / python-build-standalone) | Ship a relocatable interpreter plus a virtual environment | Simple, no freezing magic, closest to the development environment, easy to debug | Larger and more files; needs careful relocation and hardened-runtime handling on macOS | Good fallback |
-| **Nuitka** | Compiles to C and then to a native binary | Fastest start-up, hardest to trivially inspect | Longest builds, more packaging edge cases with native extensions | If start-up becomes a problem |
+| **PyInstaller** (recommended) | Freezes `app/` plus dependencies into a one-folder or one-file bundle per platform | Mature; ships a first-party Pillow hook that collects the image plugins, and picks up PyMuPDF's prebuilt extension modules automatically; ad-hoc signs collected binaries and switches to the hardened runtime when given a signing identity | Hidden-import and data-file tuning is still occasionally needed; must build on each target OS; one-file mode extracts to a temp directory at start-up and is slower | **Yes** |
+| **Standalone CPython** (`uv python install` / `astral-sh/python-build-standalone`) | Ship a relocatable interpreter plus a virtual environment | Actively maintained, no freezing magic, closest to the development environment, easy to debug | Larger and more files; needs careful relocation and hardened-runtime handling on macOS | Good fallback |
+| **Nuitka** | Compiles to C and then to a native binary | Fastest start-up, standalone/onefile/macOS-app modes | Longest builds, more packaging edge cases with native extensions | If start-up becomes a problem |
+| **PyOxidizer** | Embeds the interpreter in a Rust binary | Conceptually the neatest fit for Tauri | Effectively dormant — no releases or commits in a long time | No |
 | **Require Python on the user's machine** | Call the system interpreter | Trivial build | Unacceptable for teachers; version and dependency drift | No |
 | **Port `inference/` to TypeScript** | Delete the sidecar entirely | One language, one artifact, smallest install, no freeze step | Re-implements PDF rasterisation, `.docx` extraction, prompts, and parsing; loses the Python AI SDK ecosystem | [Phase 4](#phase-4-optional-remove-the-python-sidecar) |
+
+Three packaging details are easy to miss, and each costs a day when it is discovered late:
+
+- **Electron:** the frozen binary must live *outside* the ASAR archive (`extraResources` or `asar.unpack`), because `child_process.spawn` cannot execute a file inside an `.asar`.
+- **Tauri:** the binary is declared in `bundle.externalBin` and must be named with the Rust target triple, and the app needs an explicit shell/sidecar capability to launch it.
+- **macOS, both shells:** every embedded Mach-O — the interpreter and each bundled `.so`/`.dylib` — has to be signed with the Developer ID before the app is notarized. Ship a real signing identity from the first packaged build; ad-hoc and self-signed identities fail library validation at run time.
 
 Regardless of approach, the sidecar contract should be:
 
@@ -275,7 +290,7 @@ The issue asks for both. They are different answers, and the gap between them is
 
 **Most optimal**
 
-[Option 4](#option-4-tauri-v2-desktop-app-recommended-target) — Tauri v2 + `@tauri-apps/cli` + the same PyInstaller binary as a sidecar. Best installer size, lowest memory, strictest default security model, and one project producing every desktop target. The cost is a Rust toolchain in CI and validating the UI on WKWebView as well as Chromium.
+[Option 4](#option-4-tauri-v2-desktop-app-recommended-target) — Tauri v2 + `@tauri-apps/cli` + the same PyInstaller binary as a sidecar. Best installer size, the strictest default security model, no user-side Ollama configuration ever needed, and one project producing every desktop target. The cost is a Rust toolchain in CI and validating the UI on WKWebView as well as Chromium. Do not choose it expecting a large memory saving; that part of Tauri's reputation is not supported by the published measurements.
 
 **How to choose**
 
@@ -304,9 +319,9 @@ The issue asks for both. They are different answers, and the gap between them is
 
 ### Phase 2: Package `inference/` as a standalone binary
 
-1. Add a PyInstaller spec and a build script producing a binary per target triple.
+1. Add a PyInstaller spec and a build script that produces one binary per platform, named for the Rust target triple if the shell is Tauri.
 2. Add the `--host 127.0.0.1 --port 0` + port-reporting + shared-secret start-up contract.
-3. Verify PyMuPDF, Pillow, and `python-docx` work from the frozen bundle on macOS and Windows, with the existing `pytest` suite run against the packaged binary.
+3. Verify PyMuPDF (pin ≥ 1.24.13), Pillow, and `python-docx` work from the frozen bundle in windowed mode on macOS and Windows, with the existing `pytest` suite run against the packaged binary.
 4. Record the resulting size and cold-start time; both feed the Phase 4 decision.
 
 ### Phase 3: Desktop shell
@@ -314,7 +329,7 @@ The issue asks for both. They are different answers, and the gap between them is
 1. Create `desktop/` with the chosen shell (Tauri v2 recommended; Electron if speed dominates).
 2. Load the `webapp/` build, spawn and supervise the sidecar, and pass the port and secret to the renderer through the shell's secure bridge.
 3. Replace the login gate with a local profile; store cloud API keys in the OS keychain.
-4. Add a GitHub Actions matrix (macOS arm64 + x64, Windows x64) that builds, signs, notarizes, and publishes artifacts, extending the existing `build-and-release.yml` release flow rather than replacing it.
+4. Add a GitHub Actions matrix (macOS Apple silicon and Intel, Windows x64) with pinned runner labels that builds, signs, notarizes, and publishes artifacts, extending the existing `build-and-release.yml` release flow rather than replacing it.
 5. Ship the updater, an "offline mode" indicator, and a first-run check that detects Ollama or LM Studio and links to their installers.
 
 ### Phase 4 (optional): Remove the Python sidecar
@@ -325,12 +340,12 @@ Only if Phase 2 shows the installer is unacceptably large or the frozen build pr
 
 | Concern | What it means for Exan |
 |---------|------------------------|
-| **Code signing** | macOS distribution outside the App Store needs a paid Apple Developer account, a Developer ID certificate, hardened runtime, and notarization — bundled interpreters are exactly what notarization scrutinises. Windows needs a code-signing certificate whose key lives in hardware or a cloud signing service; unsigned installers trigger SmartScreen warnings that a teacher will not click through. Budget for both before promising a release date. |
+| **Code signing** | macOS distribution outside the App Store needs a paid Apple Developer Program membership (currently $99/year), a Developer ID certificate, the hardened runtime, and notarization — bundled interpreters are exactly what notarization scrutinises. On Windows, OV certificates are still usable, but since the 2023 CA/Browser Forum baseline change *every* code-signing key must live in a hardware module or a cloud signing service, and an OV certificate no longer buys instant SmartScreen reputation. Certificate lifetimes and policy identifiers are being tightened on a published schedule, so confirm terms with the CA at purchase time. Budget for both platforms before promising a release date. |
 | **Auto-update** | Both shells have first-party updaters backed by signed release feeds. Do this in Phase 3, not later: an un-updatable desktop app strands users on a broken build. |
-| **CI** | Desktop artifacts must be built on their own OS. Add a matrix job on macOS (Apple silicon and Intel runners) and Windows alongside the current `webapp-tests` and `inference-tests` jobs, and keep signing secrets out of pull-request builds. |
+| **CI** | Desktop artifacts must be built on their own OS. Add a matrix job alongside the current `webapp-tests` and `inference-tests` jobs, pinning explicit runner labels rather than `*-latest`: Apple silicon runners are the default macOS image, an Intel macOS build needs the explicit Intel label (a class of runner on a deprecation path), and Windows has both x64 and arm64 images. Keep signing secrets out of pull-request builds. |
 | **Security** | The desktop threat model replaces "authenticate every HTTP request" with "do not expose anything beyond loopback". Bind to `127.0.0.1`, require the per-launch secret, keep `contextIsolation`/capabilities strict, set a CSP that only permits the local API and configured provider hosts, and keep API keys in the OS keychain rather than a `.env` file next to the binary. |
-| **Model management** | Exan should detect Ollama/LM Studio and guide installation rather than bundle a runtime: a vision-capable model is a multi-gigabyte download and bundling one would dwarf the app. Show model presence, RAM guidance, and a link to pull the model. |
-| **Hardware reality** | Local vision models need substantial RAM, and grading is far slower on a laptop than on a hosted API. Set expectations in the UI, keep cloud providers available as the fast path, and make long-running grading cancellable. |
+| **Model management** | Detect Ollama/LM Studio and guide installation rather than bundling a runtime. Bundling is *possible* — Ollama is MIT-licensed, publishes a standalone archive intended for embedding, and installs per-user on Windows without administrator rights — but the model, not the runtime, is the problem: a 7B vision model is roughly a 6 GB download on its own. Show model presence, RAM guidance, and a link to pull the model. |
+| **Hardware reality** | Local vision models are memory-hungry — community reports put a 7B vision model at well over 10 GB resident once context is allocated, so 16 GB of RAM or unified memory is a realistic floor — and grading is far slower on a laptop than on a hosted API. Set expectations in the UI, keep cloud providers available as the fast path, make long-running grading cancellable, and detect machines that cannot run a model at all. |
 | **Licensing** | Confirm the licence and redistribution terms of anything shipped in the installer — the frozen Python dependencies in particular — before publishing binaries. |
 | **The hosted build stays** | Nothing here removes the cloud path. `webapp/` serves both, and the desktop build is a second consumer of the same UI and the same inference service. |
 
@@ -352,12 +367,13 @@ The desktop target neutralises most of the [beta blockers](../deployment/DEPLOYM
 
 ## Risks and Open Questions
 
-- **Frozen-bundle size and start-up time are unknown** until Phase 2 measures them; they determine whether Phase 4 is optional or necessary.
-- **PyMuPDF and Pillow under PyInstaller** are the most likely packaging friction points and should be spiked before committing to a date.
-- **WKWebView compatibility** with the Tailwind 4 CSS baseline needs verification on the oldest macOS version we intend to support; this is the main technical reason to choose Electron instead.
+- **Frozen-bundle size and start-up time are unknown** until Phase 2 measures them; they determine whether Phase 4 is optional or necessary. Do not plan around a guessed figure — MuPDF's native library alone is substantial.
+- **PyMuPDF and Pillow under PyInstaller** are the most likely packaging friction points. Both are known-workable — Pillow has a first-party hook and PyMuPDF's windowed-mode start-up crash was fixed in 1.24.13 — but pin those minimum versions and spike the build before committing to a date.
+- **WKWebView compatibility** with Tailwind CSS 4's Safari 16.4 baseline (macOS Ventura 13.3 and later, as a safe floor) needs verification on the oldest macOS we intend to support. This is the main technical argument for Electron — though current Electron releases require macOS 13 anyway, which narrows the gap considerably.
 - **Signing cost and lead time** (Apple enrolment, Windows certificate issuance and identity validation) are calendar risks, not engineering ones. Start them in parallel with Phase 2.
 - **Which auth model survives on desktop** is a product decision: fully local single-user, or optional sign-in that syncs settings with the hosted deployment.
 - **Support burden** shifts from a server we control to laptops we do not; add opt-in diagnostics before the first public build.
+- **Browser and platform policy is moving under this analysis.** Chromium's local network access rules, code-signing baseline requirements, and hosted-runner images are all changing on published schedules; the conclusions above are stable, but the specifics need re-checking at implementation time.
 
 ## Rollout Checklist
 

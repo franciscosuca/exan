@@ -53,6 +53,13 @@ export interface ProviderConfig {
   is_local: boolean;
 }
 
+export interface ProviderModel {
+  id: string;
+  name: string;
+  display_name: string;
+  supported_actions: string[];
+}
+
 // --- Batch Evaluation Types ---
 
 export interface GrammarIssue {
@@ -93,14 +100,29 @@ export async function getProviders(): Promise<ProviderConfig[]> {
   return res.json();
 }
 
+export async function getProviderModels(provider: string): Promise<ProviderModel[]> {
+  const requestUrl = `${API_BASE}/providers/${encodeURIComponent(provider)}/models`;
+  const res = await fetch(requestUrl);
+  if (!res.ok) {
+    await throwResponseError(res, {
+      fallbackMessage: 'Failed to fetch models',
+      method: 'GET',
+      requestUrl,
+    });
+  }
+  return res.json();
+}
+
 export async function uploadExamTemplate(
   file: File,
   provider: string,
-  criteria?: string
+  criteria: string | undefined,
+  model: string
 ): Promise<ExamStructure> {
   const form = new FormData();
   form.append('file', file);
   form.append('provider', provider);
+  form.append('model', model);
   const normalizedCriteria = criteria?.trim();
   if (normalizedCriteria) {
     form.append('criteria', normalizedCriteria);
@@ -121,12 +143,14 @@ export async function uploadExamTemplate(
 export async function uploadAnswerKey(
   file: File,
   examId: string,
-  provider: string
+  provider: string,
+  model: string
 ): Promise<AnswerKey> {
   const form = new FormData();
   form.append('file', file);
   form.append('exam_id', examId);
   form.append('provider', provider);
+  form.append('model', model);
 
   const requestUrl = `${API_BASE}/exam/answer-key`;
   const res = await fetch(requestUrl, { method: 'POST', body: form });
@@ -140,15 +164,34 @@ export async function uploadAnswerKey(
   return res.json();
 }
 
+export async function updateAnswerKey(examId: string, answers: Answer[]): Promise<AnswerKey> {
+  const requestUrl = `${API_BASE}/exam/answer-key/${encodeURIComponent(examId)}`;
+  const res = await fetch(requestUrl, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ answers }),
+  });
+  if (!res.ok) {
+    await throwResponseError(res, {
+      fallbackMessage: 'Failed to save answer key',
+      method: 'PUT',
+      requestUrl,
+    });
+  }
+  return res.json();
+}
+
 export async function compareStudentExams(
   files: File[],
   examId: string,
-  provider: string
+  provider: string,
+  model: string
 ): Promise<ComparisonResult[]> {
   const form = new FormData();
   files.forEach((f) => form.append('files', f));
   form.append('exam_id', examId);
   form.append('provider', provider);
+  form.append('model', model);
 
   const requestUrl = `${API_BASE}/exam/compare`;
   const res = await fetch(requestUrl, { method: 'POST', body: form });
@@ -166,11 +209,13 @@ export async function batchEvaluate(
   files: File[],
   provider: string,
   correctionLanguage: string,
-  summaryLanguage: string
+  summaryLanguage: string,
+  model: string
 ): Promise<BatchEvaluationResponse> {
   const form = new FormData();
   files.forEach((f) => form.append('files', f));
   form.append('provider', provider);
+  form.append('model', model);
   form.append('correction_language', correctionLanguage);
   form.append('summary_language', summaryLanguage);
 

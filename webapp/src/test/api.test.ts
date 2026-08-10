@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { batchEvaluate, compareStudentExams, uploadExamTemplate } from '../lib/api';
+import {
+  batchEvaluate,
+  compareStudentExams,
+  updateAnswerKey,
+  uploadExamTemplate,
+} from '../lib/api';
 
 describe('compareStudentExams', () => {
   afterEach(() => {
@@ -29,7 +34,7 @@ describe('compareStudentExams', () => {
     } as Response);
     const file = new File(['exam'], 'alice.pdf', { type: 'application/pdf' });
 
-    await compareStudentExams([file], 'exam-id', 'ollama');
+    await compareStudentExams([file], 'exam-id', 'ollama', 'gemini-2.5-flash');
 
     const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
     expect(requestUrl).toBe('/api/exam/compare');
@@ -38,6 +43,7 @@ describe('compareStudentExams', () => {
     expect(form.getAll('files')).toHaveLength(1);
     expect(form.get('exam_id')).toBe('exam-id');
     expect(form.get('provider')).toBe('ollama');
+    expect(form.get('model')).toBe('gemini-2.5-flash');
   });
 });
 
@@ -58,7 +64,7 @@ describe('batchEvaluate', () => {
     } as Response);
     const file = new File(['essay'], 'essay.pdf', { type: 'application/pdf' });
 
-    await batchEvaluate([file], 'ollama', 'es', 'de');
+    await batchEvaluate([file], 'ollama', 'es', 'de', 'gemini-2.5-flash');
 
     const request = fetchMock.mock.calls[0]?.[1];
     const form = request?.body as FormData;
@@ -69,6 +75,7 @@ describe('batchEvaluate', () => {
     expect(form.get('language')).toBeNull();
     expect(form.get('include_grammar')).toBeNull();
     expect(form.get('custom_criteria')).toBeNull();
+      expect(form.get('model')).toBe('gemini-2.5-flash');
   });
 
   it('submits the optional exam question scope', async () => {
@@ -85,11 +92,40 @@ describe('batchEvaluate', () => {
     } as Response);
     const file = new File(['exam'], 'exam.pdf', { type: 'application/pdf' });
 
-    await uploadExamTemplate(file, 'ollama', '  B1 and B3 only  ');
+    await uploadExamTemplate(file, 'ollama', '  B1 and B3 only  ', 'gemini-2.5-flash');
 
     const request = fetchMock.mock.calls[0]?.[1];
     const form = request?.body as FormData;
     expect(form.get('provider')).toBe('ollama');
+    expect(form.get('model')).toBe('gemini-2.5-flash');
     expect(form.get('criteria')).toBe('B1 and B3 only');
+  });
+});
+
+describe('updateAnswerKey', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('puts edited answers as JSON', async () => {
+    const response = {
+      id: 'answer-key-id',
+      exam_id: 'exam-id',
+      answers: [{ question_number: 'B1', correct_answer: 'A' }],
+      created_at: '2026-08-10T00:00:00Z',
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response);
+    const answers = [{ question_number: 'B1', correct_answer: 'A' }];
+
+    await updateAnswerKey('exam-id', answers);
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
+    expect(requestUrl).toBe('/api/exam/answer-key/exam-id');
+    expect(requestInit?.method).toBe('PUT');
+    expect(requestInit?.headers).toEqual({ 'Content-Type': 'application/json' });
+    expect(JSON.parse(requestInit?.body as string)).toEqual({ answers });
   });
 });

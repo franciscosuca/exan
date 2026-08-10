@@ -32,7 +32,7 @@ async def test_exam_criteria_is_carried_through_the_workflow(monkeypatch) -> Non
         ]
     }
     repository = ExamRepository()
-    service = ExamComparisonService(repository, lambda _: provider)
+    service = ExamComparisonService(repository, lambda *_: provider)
     monkeypatch.setattr(
         exam_comparison,
         "process_upload",
@@ -41,7 +41,12 @@ async def test_exam_criteria_is_carried_through_the_workflow(monkeypatch) -> Non
     monkeypatch.setattr(exam_comparison, "write_run_log", lambda *args, **kwargs: None)
 
     template = UploadedDocument(b"template", "exam.pdf", "application/pdf")
-    exam = await service.upload_exam_template(template, "stub", "  B1 and B3 only  ")
+    exam = await service.upload_exam_template(
+        template,
+        "stub",
+        "test-model",
+        "  B1 and B3 only  ",
+    )
 
     assert exam.criteria == "B1 and B3 only"
     assert provider.analyze_exam_structure.call_args.args[2] == "B1 and B3 only"
@@ -53,6 +58,7 @@ async def test_exam_criteria_is_carried_through_the_workflow(monkeypatch) -> Non
         UploadedDocument(b"answer key", "key.pdf", "application/pdf"),
         exam.id,
         "stub",
+        "test-model",
     )
 
     assert provider.extract_answers.call_args.args[2] == "B1 and B3 only"
@@ -64,6 +70,7 @@ async def test_exam_criteria_is_carried_through_the_workflow(monkeypatch) -> Non
         [UploadedDocument(b"student", "student.pdf", "application/pdf")],
         exam.id,
         "stub",
+        "test-model",
     )
 
     comparison_exam = provider.compare_exam.call_args.args[2]

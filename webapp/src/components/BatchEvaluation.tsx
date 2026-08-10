@@ -4,8 +4,10 @@ import { ProviderSelector } from './ProviderSelector';
 import { BatchResults } from './BatchResults';
 import {
   getProviders,
+  getProviderModels,
   batchEvaluate,
   type ProviderConfig,
+  type ProviderModel,
   type BatchEvaluationResponse,
 } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
@@ -30,6 +32,10 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
   const { t, language: uiLanguage } = useLanguage();
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [selectedProvider, setSelectedProvider] = useState('');
+  const [models, setModels] = useState<ProviderModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState('');
+  const [modelsLoading, setModelsLoading] = useState(false);
+  const [modelsError, setModelsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,11 +49,34 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
     getProviders()
       .then((p) => {
         setProviders(p);
-        const first = p.find((x) => x.available);
-        if (first) setSelectedProvider(first.provider);
       })
       .catch(() => setError(t('common.cannotConnect')));
   }, [t]);
+
+  const handleProviderSelect = (provider: string) => {
+    setSelectedProvider(provider);
+    setSelectedModel('');
+    setModels([]);
+    setModelsError(null);
+
+    if (provider !== 'gemini') return;
+
+    setModelsLoading(true);
+    getProviderModels(provider)
+      .then(setModels)
+      .catch((e: unknown) => {
+        setModelsError(e instanceof Error ? e.message : t('common.modelLoadError'));
+      })
+      .finally(() => setModelsLoading(false));
+  };
+
+  const canUseWorkflow = selectedProvider === 'gemini' && selectedModel.trim().length > 0;
+
+  const requireSelection = () => {
+    if (canUseWorkflow) return true;
+    setError(t('common.selectionRequired'));
+    return false;
+  };
 
   const reset = () => {
     setFiles([]);
@@ -56,6 +85,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
   };
 
   const handleFiles = (newFiles: File[]) => {
+    if (!requireSelection()) return;
     setFiles((prev) => [...prev, ...newFiles]);
   };
 
@@ -64,6 +94,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
   };
 
   const handleEvaluate = async () => {
+    if (!requireSelection()) return;
     if (files.length === 0) {
       setError(t('batchEvaluation.noFiles'));
       return;
@@ -75,7 +106,8 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
         files,
         selectedProvider,
         correctionLanguage,
-        uiLanguage
+        uiLanguage,
+        selectedModel
       );
       setResults(response);
     } catch (e: unknown) {
@@ -130,8 +162,39 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
         <ProviderSelector
           providers={providers}
           selected={selectedProvider}
-          onSelect={setSelectedProvider}
+          onSelect={handleProviderSelect}
         />
+        {selectedProvider && (
+          <div className="mt-4">
+            <label htmlFor="batch-model" className="mb-2 block text-sm font-medium text-gray-700">
+              {t('common.aiModel')}
+            </label>
+            {modelsLoading && <p className="text-sm text-gray-500">{t('common.loadingModels')}</p>}
+            {modelsError && (
+              <p className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                {t('common.modelLoadError')}: {modelsError}
+              </p>
+            )}
+            {!modelsLoading && !modelsError && models.length === 0 && (
+              <p className="text-sm text-amber-700">{t('common.noModels')}</p>
+            )}
+            {!modelsLoading && !modelsError && models.length > 0 && (
+              <select
+                id="batch-model"
+                value={selectedModel}
+                onChange={(event) => setSelectedModel(event.target.value)}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+              >
+                <option value="">{t('common.selectModel')}</option>
+                {models.map((model) => (
+                  <option key={model.id} value={model.id}>
+                    {model.display_name}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
+        )}
       </div>
 
       {error && (
@@ -157,6 +220,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             </p>
             <FileDropzone
               onFiles={handleFiles}
+              disabled={!canUseWorkflow}
               accept={{
                 'application/pdf': ['.pdf'],
                 'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
@@ -214,7 +278,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
           {/* Submit */}
           <button
             onClick={handleEvaluate}
-            disabled={files.length === 0}
+            disabled={!canUseWorkflow || files.length === 0}
             className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {t('batchEvaluation.evaluate', { count: files.length, plural: files.length !== 1 ? 's' : '' })}

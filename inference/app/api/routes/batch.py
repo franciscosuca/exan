@@ -18,6 +18,7 @@ router = APIRouter(prefix="/api/batch")
 async def batch_evaluate(
     files: list[UploadFile] = File(...),
     provider: str = Form("gemini"),
+    model: str = Form(...),
     language: str = Form("en"),
     correction_language: str | None = Form(None),
     summary_language: str | None = Form(None),
@@ -42,6 +43,7 @@ async def batch_evaluate(
         return await service.evaluate(
             documents=documents,
             provider_name=provider,
+            model=model,
             language=language,
             summary_language=summary_language,
             correction_language=correction_language,

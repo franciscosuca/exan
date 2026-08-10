@@ -5,7 +5,7 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from typing import Any
 
-from ..models import AnswerKey, ComparisonResult, ExamStructure, StudentAnswer
+from ..models import AnswerKey, AnswerKeyUpdateItem, ComparisonResult, ExamStructure, StudentAnswer
 from ..providers import BaseProvider
 from ..repositories.exam_repository import ExamRepository
 from ..utils.file_processing import get_mime_type, process_upload
@@ -39,7 +39,7 @@ class ExamComparisonService:
     def __init__(
         self,
         repository: ExamRepository,
-        provider_factory: Callable[[str], BaseProvider],
+        provider_factory: Callable[[str, str], BaseProvider],
     ) -> None:
         self.repository = repository
         self.provider_factory = provider_factory
@@ -68,13 +68,14 @@ class ExamComparisonService:
         self,
         document: UploadedDocument,
         provider_name: str,
+        model: str,
         criteria: str | None = None,
     ) -> ExamStructure:
         """Analyze and store an empty exam template."""
         image_data, mime_types = self._images(document)
         normalized_criteria = self._normalize_criteria(criteria)
         try:
-            provider = self.provider_factory(provider_name)
+            provider = self.provider_factory(provider_name, model)
             if normalized_criteria is None:
                 result = await provider.analyze_exam_structure(image_data, mime_types)
             else:
@@ -102,6 +103,7 @@ class ExamComparisonService:
         document: UploadedDocument,
         exam_id: str,
         provider_name: str,
+        model: str,
     ) -> AnswerKey:
         """Analyze and store an answer key for an existing exam."""
         exam_data = self.repository.get_exam(exam_id)
@@ -113,7 +115,7 @@ class ExamComparisonService:
         )
         image_data, mime_types = self._images(document)
         try:
-            provider = self.provider_factory(provider_name)
+            provider = self.provider_factory(provider_name, model)
             if criteria is None:
                 result = await provider.extract_answers(image_data, mime_types)
             else:
@@ -138,11 +140,40 @@ class ExamComparisonService:
         self.repository.save_answer_key(exam_id, answer_key.model_dump(), raw_result)
         return answer_key
 
+    async def update_answer_key(
+        self,
+        exam_id: str,
+        answers: Sequence[AnswerKeyUpdateItem],
+    ) -> AnswerKey:
+        """Persist user corrections for an already extracted answer key."""
+        if self.repository.get_exam(exam_id) is None:
+            raise ExamNotFoundError("Exam not found")
+        if self.repository.get_answer_key(exam_id) is None:
+            raise AnswerKeyNotFoundError("Answer key not uploaded yet")
+
+        normalized_answers = [answer.model_dump() for answer in answers]
+        raw_answers = [
+            {
+                "question_number": answer.question_number,
+                "correct_answer": answer.correct_answer,
+            }
+            for answer in answers
+        ]
+        updated_record = self.repository.update_answer_key(
+            exam_id,
+            normalized_answers,
+            raw_answers,
+        )
+        if updated_record is None:
+            raise AnswerKeyNotFoundError("Answer key not uploaded yet")
+        return AnswerKey(**updated_record["key"])
+
     async def compare_student_exams(
         self,
         documents: Sequence[UploadedDocument],
         exam_id: str,
         provider_name: str,
+        model: str,
     ) -> list[ComparisonResult]:
         """Compare student documents against the stored exam and answer key."""
         exam_data = self.repository.get_exam(exam_id)
@@ -159,7 +190,7 @@ class ExamComparisonService:
         raw_answer_key_result = self._with_criteria(answer_key_data["raw_result"], criteria)
 
         try:
-            provider = self.provider_factory(provider_name)
+            provider = self.provider_factory(provider_name, model)
         except Exception as exc:
             raise ComparisonError(f"Comparison failed: {exc}") from exc
 

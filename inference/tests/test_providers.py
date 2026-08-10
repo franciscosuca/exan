@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from app.providers import BaseProvider
+from app.providers.gemini import GeminiProvider, list_gemini_models
 from app.providers.prompts import grammar_evaluation_prompt
 from app.providers.registry import get_available_providers, get_provider
 
@@ -16,7 +17,7 @@ def test_get_provider_gemini(mock_settings):
     mock_settings.gemini_api_key = "test-key"
     from app.providers.gemini import GeminiProvider
 
-    provider = get_provider("gemini")
+    provider = get_provider("gemini", "gemini-2.5-flash")
     assert isinstance(provider, GeminiProvider)
 
 
@@ -24,7 +25,7 @@ def test_get_provider_claude():
     """get_provider returns ClaudeProvider."""
     from app.providers.claude import ClaudeProvider
 
-    provider = get_provider("claude")
+    provider = get_provider("claude", "gemini-2.5-flash")
     assert isinstance(provider, ClaudeProvider)
 
 
@@ -32,7 +33,7 @@ def test_get_provider_gpt():
     """get_provider returns GPTProvider."""
     from app.providers.gpt import GPTProvider
 
-    provider = get_provider("gpt")
+    provider = get_provider("gpt", "gemini-2.5-flash")
     assert isinstance(provider, GPTProvider)
 
 
@@ -40,7 +41,7 @@ def test_get_provider_ollama():
     """get_provider returns OllamaProvider."""
     from app.providers.ollama import OllamaProvider
 
-    provider = get_provider("ollama")
+    provider = get_provider("ollama", "gemini-2.5-flash")
     assert isinstance(provider, OllamaProvider)
 
 
@@ -48,19 +49,55 @@ def test_get_provider_lmstudio():
     """get_provider returns LMStudioProvider."""
     from app.providers.lmstudio import LMStudioProvider
 
-    provider = get_provider("lmstudio")
+    provider = get_provider("lmstudio", "gemini-2.5-flash")
     assert isinstance(provider, LMStudioProvider)
 
 
 def test_get_provider_unknown_raises():
     """get_provider raises ValueError for unknown provider."""
     with pytest.raises(ValueError, match="Unknown provider"):
-        get_provider("nonexistent")
+        get_provider("nonexistent", "gemini-2.5-flash")
+
+
+def test_gemini_requires_selected_model():
+    """Gemini cannot be constructed without the user's selected model."""
+    with pytest.raises(ValueError, match="Gemini model is required"):
+        GeminiProvider("")
+
+
+@patch("app.providers.gemini.get_gemini_client")
+def test_list_gemini_models_filters_embeddings_and_normalizes_names(mock_get_client):
+    """The catalogue includes generation models and excludes embeddings."""
+    mock_get_client.return_value.models.list.return_value = [
+        SimpleNamespace(
+            name="models/gemini-3.5-flash",
+            display_name="Gemini 3.5 Flash",
+            supported_generation_methods=["generateContent"],
+        ),
+        SimpleNamespace(
+            name="models/gemma-4-26b",
+            display_name="Gemma 4 26B",
+            supported_actions=["generateContent"],
+        ),
+        SimpleNamespace(
+            name="models/gemini-embedding-2",
+            display_name="Gemini Embedding 2",
+            supported_generation_methods=["embedContent"],
+        ),
+    ]
+
+    models = list_gemini_models()
+
+    assert [model["id"] for model in models] == ["gemini-3.5-flash", "gemma-4-26b"]
+    assert [model["display_name"] for model in models] == [
+        "Gemini 3.5 Flash",
+        "Gemma 4 26B",
+    ]
 
 
 def test_ollama_implements_base():
     """Ollama provider implements BaseProvider interface."""
-    provider = get_provider("ollama")
+    provider = get_provider("ollama", "gemini-2.5-flash")
     assert isinstance(provider, BaseProvider)
     assert hasattr(provider, "analyze_exam_structure")
     assert hasattr(provider, "extract_answers")
@@ -114,7 +151,7 @@ def test_get_available_providers_shape(mock_settings, mock_get):
 
 def test_gpt_preserves_multimodal_data_urls():
     """GPT sends images as OpenAI-compatible data URLs."""
-    provider = get_provider("gpt")
+    provider = get_provider("gpt", "gemini-2.5-flash")
 
     content = provider._build_content([b"image"], ["image/png"], "Inspect")
 
@@ -154,7 +191,7 @@ def test_grammar_prompt_requests_structured_response():
 async def test_gemini_uses_schema_only_for_grammar_evaluation():
     from app.providers.gemini import GeminiProvider
 
-    provider = GeminiProvider()
+    provider = GeminiProvider("gemini-2.5-flash")
     client = MagicMock()
     client.models.generate_content.return_value = SimpleNamespace(
         text='{"grammar": {"issues": [], "summary": "No issues."}}',

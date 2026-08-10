@@ -49,6 +49,12 @@ const translations = {
     'common.startOver': 'Start Over',
     'common.reset': 'Reset',
     'common.aiProvider': 'AI Provider',
+    'common.aiModel': 'AI Model',
+    'common.selectModel': 'Select a model',
+    'common.loadingModels': 'Loading models...',
+    'common.noModels': 'No text-generation models are available.',
+    'common.modelLoadError': 'Could not load models',
+    'common.selectionRequired': 'Select an AI provider and model before continuing.',
     'common.cannotConnect': 'Cannot connect to backend. Is the server running?',
     'common.noProviders':
       'No AI providers available. Please configure at least one provider in the backend.',
@@ -75,6 +81,27 @@ const translations = {
     'examComparison.step2.dropLabel': 'Drop answer key here',
     'examComparison.step2.dropDescription': 'PDF or image with correct answers',
     'examComparison.step2.error': 'Failed to process answer key',
+    'examComparison.step2.reviewTitle': 'Review extracted answers',
+    'examComparison.step2.reviewDescription':
+      'Check the answers extracted by the provider. You can edit question numbers and correct answers before continuing.',
+    'examComparison.step2.extracted': '{count} answer(s) extracted',
+    'examComparison.step2.incompleteTitle': 'Some answers are missing',
+    'examComparison.step2.incompleteDescription':
+      'Only {extracted} of {expected} answers were detected. Try a clearer document or another model, or add the missing answer rows manually.',
+    'examComparison.step2.missingQuestions':
+      'No answer was detected for question(s) {questions}. Try a clearer document or another model, or add the missing answer rows manually.',
+    'examComparison.step2.retry': 'Retry answer-key upload',
+    'examComparison.step2.tableCaption': 'Extracted answer key',
+    'examComparison.step2.questionNumberHeader': 'Question number',
+    'examComparison.step2.correctAnswerHeader': 'Correct answer',
+    'examComparison.step2.questionNumberLabel': 'Question number for answer {number}',
+    'examComparison.step2.correctAnswerLabel': 'Correct answer for row {number}',
+    'examComparison.step2.noAnswers': 'No answers detected. Add a row manually or retry the upload.',
+    'examComparison.step2.addAnswer': 'Add missing answer',
+    'examComparison.step2.continue': 'Continue to student exams',
+    'examComparison.step2.completeAnswers':
+      'Enter a question number and correct answer for every row before continuing.',
+    'examComparison.step2.saveError': 'Failed to save the edited answer key',
     'examComparison.step3.title': 'Step 3: Upload Student Exams',
     'examComparison.step3.description':
       'Upload one or more completed exams from students. Each file will be compared individually.',
@@ -155,6 +182,12 @@ const translations = {
     'common.startOver': 'Neu beginnen',
     'common.reset': 'Zurücksetzen',
     'common.aiProvider': 'KI-Anbieter',
+    'common.aiModel': 'KI-Modell',
+    'common.selectModel': 'Modell auswählen',
+    'common.loadingModels': 'Modelle werden geladen...',
+    'common.noModels': 'Keine Modelle für Textgenerierung verfügbar.',
+    'common.modelLoadError': 'Modelle konnten nicht geladen werden',
+    'common.selectionRequired': 'Wähle zuerst einen KI-Anbieter und ein Modell aus.',
     'common.cannotConnect': 'Verbindung zum Server nicht möglich. Läuft der Server?',
     'common.noProviders':
       'Keine KI-Anbieter verfügbar. Bitte konfiguriere mindestens einen Anbieter im Backend.',
@@ -181,6 +214,27 @@ const translations = {
     'examComparison.step2.dropLabel': 'Lösungsschlüssel hier ablegen',
     'examComparison.step2.dropDescription': 'PDF oder Bild mit korrekten Antworten',
     'examComparison.step2.error': 'Verarbeitung des Lösungsschlüssels fehlgeschlagen',
+    'examComparison.step2.reviewTitle': 'Erkannte Antworten prüfen',
+    'examComparison.step2.reviewDescription':
+      'Prüfe die vom Anbieter erkannten Antworten. Du kannst Fragennummern und korrekte Antworten vor dem Fortfahren bearbeiten.',
+    'examComparison.step2.extracted': '{count} Antwort(en) erkannt',
+    'examComparison.step2.incompleteTitle': 'Einige Antworten fehlen',
+    'examComparison.step2.incompleteDescription':
+      'Es wurden nur {extracted} von {expected} Antworten erkannt. Versuche ein klareres Dokument oder ein anderes Modell oder füge die fehlenden Antwortzeilen manuell hinzu.',
+    'examComparison.step2.missingQuestions':
+      'Für folgende Frage(n) wurde keine Antwort erkannt: {questions}. Versuche ein klareres Dokument oder ein anderes Modell oder füge die fehlenden Antwortzeilen manuell hinzu.',
+    'examComparison.step2.retry': 'Lösungsschlüssel erneut hochladen',
+    'examComparison.step2.tableCaption': 'Erkannter Lösungsschlüssel',
+    'examComparison.step2.questionNumberHeader': 'Fragennummer',
+    'examComparison.step2.correctAnswerHeader': 'Korrekte Antwort',
+    'examComparison.step2.questionNumberLabel': 'Fragennummer für Antwort {number}',
+    'examComparison.step2.correctAnswerLabel': 'Korrekte Antwort für Zeile {number}',
+    'examComparison.step2.noAnswers': 'Keine Antworten erkannt. Füge eine Zeile hinzu oder wiederhole den Upload.',
+    'examComparison.step2.addAnswer': 'Fehlende Antwort hinzufügen',
+    'examComparison.step2.continue': 'Zu den Schülerprüfungen weiter',
+    'examComparison.step2.completeAnswers':
+      'Gib für jede Zeile eine Fragennummer und eine korrekte Antwort ein, bevor du fortfährst.',
+    'examComparison.step2.saveError': 'Der bearbeitete Lösungsschlüssel konnte nicht gespeichert werden',
     'examComparison.step3.title': 'Schritt 3: Schülerprüfungen hochladen',
     'examComparison.step3.description':
       'Lade eine oder mehrere ausgefüllte Prüfungen von Schülern hoch. Jede Datei wird einzeln verglichen.',

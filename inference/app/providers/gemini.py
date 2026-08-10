@@ -42,14 +42,16 @@ GRAMMAR_RESPONSE_SCHEMA = {
 class GeminiProvider(BaseProvider):
     name = "gemini"
 
-    def __init__(self):
+    def __init__(self, model: str):
+        if not isinstance(model, str) or not model.strip():
+            raise ValueError("A Gemini model is required")
         self._client = None
-        self.model = "gemini-2.5-flash"
+        self.model = model
 
     @property
     def client(self):
         if self._client is None:
-            self._client = genai.Client(api_key=settings.gemini_api_key)
+            self._client = get_gemini_client()
         return self._client
 
     def _build_content(self, image_data: list[bytes], mime_types: list[str], prompt: str):
@@ -150,3 +152,57 @@ class GeminiProvider(BaseProvider):
             config=self._evaluation_config(prompt),
         )
         return self._with_metadata(self._parse_json(response.text), response)
+
+
+def get_gemini_client():
+    """Create the configured Gemini API client."""
+    return genai.Client(api_key=settings.gemini_api_key)
+
+
+def _model_field(model: object, field: str, default: object = None) -> object:
+    if isinstance(model, dict):
+        return model.get(field, default)
+    return getattr(model, field, default)
+
+
+def _supports_content_generation(actions: list[str]) -> bool:
+    normalized = {action.replace("_", "").lower() for action in actions}
+    return "generatecontent" in normalized or "textgeneration" in normalized
+
+
+def _normalize_model_name(name: str) -> str:
+    return name.removeprefix("models/")
+
+
+def list_gemini_models() -> list[dict]:
+    """Return Gemini models that can generate text or content."""
+    catalogue: list[dict] = []
+    client = get_gemini_client()
+    for model in client.models.list():
+        raw_name = _model_field(model, "name")
+        if not isinstance(raw_name, str) or not raw_name:
+            continue
+
+        raw_actions = _model_field(model, "supported_actions")
+        if raw_actions is None:
+            raw_actions = _model_field(model, "supported_generation_methods", [])
+        raw_actions = raw_actions or []
+        if isinstance(raw_actions, str):
+            raw_actions = [raw_actions]
+        supported_actions = [str(action) for action in raw_actions]
+        if not _supports_content_generation(supported_actions):
+            continue
+
+        model_id = _normalize_model_name(raw_name)
+        if not model_id:
+            continue
+        display_name = _model_field(model, "display_name") or model_id
+        catalogue.append(
+            {
+                "id": model_id,
+                "name": model_id,
+                "display_name": str(display_name),
+                "supported_actions": supported_actions,
+            }
+        )
+    return catalogue

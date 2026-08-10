@@ -35,13 +35,14 @@ def _parse_grammar_result(result: Mapping[str, Any]) -> GrammarFeedback:
 class BatchEvaluationService:
     """Orchestrate batch evaluation without depending on HTTP routing."""
 
-    def __init__(self, provider_factory: Callable[[str], BaseProvider]) -> None:
+    def __init__(self, provider_factory: Callable[[str, str], BaseProvider]) -> None:
         self.provider_factory = provider_factory
 
     async def evaluate(
         self,
         documents: Sequence[UploadedDocument],
         provider_name: str,
+        model: str,
         language: str = "en",
         summary_language: str | None = None,
         correction_language: str | None = None,
@@ -55,7 +56,7 @@ class BatchEvaluationService:
         correction_language = correction_language or language
         summary_language = summary_language or correction_language
         try:
-            provider = self.provider_factory(provider_name)
+            provider = self.provider_factory(provider_name, model)
         except Exception as exc:
             raise BatchEvaluationError(f"Batch evaluation failed: {exc}") from exc
 

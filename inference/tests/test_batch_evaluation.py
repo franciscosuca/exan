@@ -38,7 +38,7 @@ def _document(filename: str = "document.pdf") -> UploadedDocument:
 
 
 def _service(provider: FakeProvider) -> BatchEvaluationService:
-    return BatchEvaluationService(lambda _: provider)
+    return BatchEvaluationService(lambda _provider, _model: provider)
 
 
 @pytest.mark.asyncio
@@ -85,7 +85,7 @@ async def test_uses_correction_and_summary_languages_separately():
 
     with patch("app.services.batch_evaluation.write_run_log"):
         await _service(provider).evaluate(
-            [_document()], "fake", "German", summary_language="French"
+            [_document()], "fake", "gemini-2.5-flash", "German", summary_language="French"
         )
 
     assert "in German" in provider.prompts[0]

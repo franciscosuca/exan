@@ -24,16 +24,20 @@ describe('ProviderSelector', () => {
     renderWithLanguage(
       <ProviderSelector providers={PROVIDERS} selected="gemini" onSelect={() => {}} />
     );
+
+    expect(screen.getByRole('button', { name: /gemini/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /ollama/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /local/i })).not.toBeInTheDocument();
     expect(screen.getByText('gemini')).toBeInTheDocument();
-    expect(screen.getByText('ollama')).toBeInTheDocument();
+    expect(screen.queryByText('ollama')).not.toBeInTheDocument();
     expect(screen.queryByText('claude')).not.toBeInTheDocument();
   });
 
-  it('shows "local" badge for local providers', () => {
+  it('does not render local providers', () => {
     renderWithLanguage(
       <ProviderSelector providers={PROVIDERS} selected="gemini" onSelect={() => {}} />
     );
-    expect(screen.getByText('local')).toBeInTheDocument();
+    expect(screen.queryByText('local')).not.toBeInTheDocument();
   });
 
   it('calls onSelect when clicking a provider', async () => {
@@ -43,8 +47,8 @@ describe('ProviderSelector', () => {
       <ProviderSelector providers={PROVIDERS} selected="gemini" onSelect={onSelect} />
     );
 
-    await user.click(screen.getByText('ollama'));
-    expect(onSelect).toHaveBeenCalledWith('ollama');
+    await user.click(screen.getByText('gemini'));
+    expect(onSelect).toHaveBeenCalledWith('gemini');
   });
 
   it('shows warning when no providers are available', () => {

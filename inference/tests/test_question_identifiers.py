@@ -59,7 +59,7 @@ def test_question_identifiers_preserve_numeric_values_and_accept_labels() -> Non
 async def test_answer_key_endpoint_accepts_alphanumeric_question_numbers(monkeypatch) -> None:
     repository = ExamRepository()
     repository.save_exam("exam-1", {"id": "exam-1"}, {})
-    service = ExamComparisonService(repository, lambda _: AnswerKeyProvider())
+    service = ExamComparisonService(repository, lambda *_: AnswerKeyProvider())
 
     monkeypatch.setattr(
         ExamComparisonService,
@@ -72,7 +72,7 @@ async def test_answer_key_endpoint_accepts_alphanumeric_question_numbers(monkeyp
             response = await client.post(
                 "/api/exam/answer-key",
                 files={"file": ("answer-key.png", b"content", "image/png")},
-                data={"exam_id": "exam-1", "provider": "stub"},
+                data={"exam_id": "exam-1", "provider": "stub", "model": "test-model"},
             )
     finally:
         app.dependency_overrides.pop(get_exam_comparison_service, None)
@@ -85,7 +85,7 @@ async def test_comparison_accepts_alphanumeric_question_numbers(monkeypatch) -> 
     repository = ExamRepository()
     repository.save_exam("exam-1", {"id": "exam-1"}, {})
     repository.save_answer_key("exam-1", {"answers": []}, {})
-    service = ExamComparisonService(repository, lambda _: ComparisonProvider())
+    service = ExamComparisonService(repository, lambda *_: ComparisonProvider())
     monkeypatch.setattr(
         exam_comparison,
         "process_upload",
@@ -96,6 +96,7 @@ async def test_comparison_accepts_alphanumeric_question_numbers(monkeypatch) -> 
         [UploadedDocument(b"content", "student.png", "image/png")],
         "exam-1",
         "stub",
+        "test-model",
     )
 
     assert results[0].answers[0].question_number == "B3a"

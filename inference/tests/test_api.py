@@ -95,7 +95,7 @@ def test_upload_exam_template(mock_get_provider):
     response = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini", "criteria": "B1 and B3 only"},
+        data={"provider": "gemini", "model": "test-model", "criteria": "B1 and B3 only"},
     )
 
     assert response.status_code == 200
@@ -122,7 +122,7 @@ def test_upload_answer_key(mock_get_provider):
     resp1 = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model"},
     )
     exam_id = resp1.json()["id"]
 
@@ -130,7 +130,7 @@ def test_upload_answer_key(mock_get_provider):
     resp2 = client.post(
         "/api/exam/answer-key",
         files={"file": ("key.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"exam_id": exam_id, "provider": "gemini"},
+        data={"exam_id": exam_id, "provider": "gemini", "model": "test-model"},
     )
     assert resp2.status_code == 200
     data = resp2.json()
@@ -145,7 +145,7 @@ def test_upload_answer_key_missing_exam():
     response = client.post(
         "/api/exam/answer-key",
         files={"file": ("key.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"exam_id": "nonexistent", "provider": "gemini"},
+        data={"exam_id": "nonexistent", "provider": "gemini", "model": "test-model"},
     )
     assert response.status_code == 404
 
@@ -174,21 +174,21 @@ def test_compare_student_exams(mock_get_provider):
     resp1 = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model"},
     )
     exam_id = resp1.json()["id"]
 
     client.post(
         "/api/exam/answer-key",
         files={"file": ("key.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"exam_id": exam_id, "provider": "gemini"},
+        data={"exam_id": exam_id, "provider": "gemini", "model": "test-model"},
     )
 
     # Compare
     resp3 = client.post(
         "/api/exam/compare",
         files=[("files", ("student1.pdf", io.BytesIO(pdf), "application/pdf"))],
-        data={"exam_id": exam_id, "provider": "gemini"},
+        data={"exam_id": exam_id, "provider": "gemini", "model": "test-model"},
     )
     assert resp3.status_code == 200
     results = resp3.json()
@@ -213,7 +213,7 @@ def test_compare_missing_answer_key():
     response = client.post(
         "/api/exam/compare",
         files=[("files", ("student.pdf", io.BytesIO(b"fake"), "application/pdf"))],
-        data={"exam_id": "nonexistent", "provider": "gemini"},
+        data={"exam_id": "nonexistent", "provider": "gemini", "model": "test-model"},
     )
     assert response.status_code == 404
 
@@ -223,7 +223,7 @@ def test_unsupported_file_type():
     response = client.post(
         "/api/exam/template",
         files={"file": ("notes.txt", io.BytesIO(b"hello"), "text/plain")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model"},
     )
     assert response.status_code == 400
 
@@ -237,7 +237,7 @@ def test_batch_evaluation_ignores_legacy_evaluation_fields():
         "score": 88,
         "grammar": {"issues": [], "summary": "No issues."},
     }
-    service = BatchEvaluationService(lambda _: provider)
+    service = BatchEvaluationService(lambda *_: provider)
     app.dependency_overrides[get_batch_evaluation_service] = lambda: service
 
     try:
@@ -246,6 +246,7 @@ def test_batch_evaluation_ignores_legacy_evaluation_fields():
             files=[("files", ("essay.pdf", io.BytesIO(_make_fake_pdf()), "application/pdf"))],
             data={
                 "provider": "fake",
+                "model": "test-model",
                 "language": "English",
                 "include_grammar": "false",
                 "custom_criteria": "not-json",

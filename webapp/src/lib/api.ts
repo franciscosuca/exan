@@ -1,5 +1,7 @@
 const API_BASE = '/api';
 
+export type QuestionNumber = number | string;
+
 export interface ExamStructure {
   id: string;
   filename: string;
@@ -8,7 +10,7 @@ export interface ExamStructure {
 }
 
 export interface Question {
-  number: number;
+  number: QuestionNumber;
   text: string;
   type: 'multiple_choice' | 'open_ended' | 'true_false' | 'fill_in_blank';
   options?: string[];
@@ -23,7 +25,7 @@ export interface AnswerKey {
 }
 
 export interface Answer {
-  question_number: number;
+  question_number: QuestionNumber;
   correct_answer: string;
   points: number;
 }
@@ -40,7 +42,7 @@ export interface GradingResult {
 }
 
 export interface StudentAnswer {
-  question_number: number;
+  question_number: QuestionNumber;
   student_answer: string;
   correct_answer: string;
   is_correct: boolean;

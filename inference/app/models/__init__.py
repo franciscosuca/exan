@@ -1,8 +1,10 @@
 from pydantic import BaseModel, Field, model_validator
 
+QuestionNumber = int | str
+
 
 class Question(BaseModel):
-    number: int
+    number: QuestionNumber
     text: str
     type: str  # multiple_choice, open_ended, true_false, fill_in_blank
     options: list[str] | None = None
@@ -17,7 +19,7 @@ class ExamStructure(BaseModel):
 
 
 class Answer(BaseModel):
-    question_number: int
+    question_number: QuestionNumber
     correct_answer: str
     points: float
 
@@ -30,7 +32,7 @@ class AnswerKey(BaseModel):
 
 
 class StudentAnswer(BaseModel):
-    question_number: int
+    question_number: QuestionNumber
     student_answer: str
     correct_answer: str
     is_correct: bool

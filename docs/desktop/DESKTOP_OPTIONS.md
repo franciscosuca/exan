@@ -32,7 +32,7 @@ It is the local-first counterpart to [First release deployment options](../deplo
 
 - **The local LLM constraint decides everything.** Ollama (`:11434`) and LM Studio (`:1234`) listen on the *user's* loopback interface. Whatever calls them must run on the user's machine. Inside a Cloud Run container, `localhost` is the container — not the teacher's laptop — so no amount of hosted-frontend work reaches a local model.
 - **The PWA is the fastest deliverable, but only over a local origin.** Installed from `http://localhost:3000`, the PWA is same-origin with a local `inference` service and needs no browser exceptions at all. Installed from a public HTTPS origin and pointed at `http://localhost:11434`, it depends on three moving browser policies (mixed content, local network access permissions, and the provider's own CORS allowlist) for the product's core promise. That is a bad foundation, so **Option 2 is not the primary path**.
-- **Electron is not a rewrite.** `webapp/` is a plain Vite SPA and loads unchanged in either shell. The real work — supervising the Python process, replacing `auth/` + MongoDB with local identity, packaging, signing, and auto-update — is roughly 80–90 % of the effort and is *shell-agnostic*. That makes the Electron-vs-Tauri decision cheap and reversible, which is why it should not block starting.
+- **Electron is not a rewrite.** `webapp/` is a plain Vite SPA and loads unchanged in either shell. The real work — supervising the Python process, replacing `auth/` + MongoDB with local identity, packaging, signing, and auto-update — is the bulk of the effort and is largely *shell-agnostic*. That makes the Electron-vs-Tauri decision cheap and reversible, which is why it should not block starting.
 - **Fastest desktop stack:** Electron + `electron-vite` + `electron-builder`, with `inference/` frozen by PyInstaller. One JavaScript toolchain, no new language, and the most heavily documented notarization and auto-update path.
 - **Most optimal desktop stack:** Tauri v2 (stable since October 2024) + `@tauri-apps/cli` + the *same* PyInstaller binary as a sidecar. A shell measured in single-digit megabytes instead of ~166 MB, a capability-scoped IPC surface, and one codebase producing macOS (Apple silicon and Intel), Windows, and Linux artifacts. Note that the size advantage is real while the *memory* advantage is commonly overstated — see [Option 4](#option-4-tauri-v2-desktop-app-recommended-target).
 - **One codebase for every desktop platform is achievable with either shell.** Both build from a single `desktop/` project plus the shared `webapp/` UI. Options that fail this requirement (SwiftUI + WinUI, or any framework that discards React) are rejected in [Option 5](#option-5-native-app-per-platform).
@@ -97,7 +97,7 @@ Option 1 preserves the codebase. Option 2 requires re-implementing the inference
 
 **Cons**
 
-- **It does not solve distribution.** The user still has to install and start the backend. Without Phase 2's installer this only helps people who already run Docker or the dev toolchain, which is not the target audience of the issue.
+- **It does not solve distribution.** The user still has to install and start the backend. Until the Phase 3 installer exists this only helps people who already run Docker or the dev toolchain, which is not the target audience of the issue.
 - Service worker caching must exclude `/api/*`; caching a grading response would be a correctness bug.
 - **A PWA can never launch a local process.** There is no web platform API to start an executable, by design, so the PWA can neither start the Python service nor start Ollama for the user. It can only talk to something already running.
 - Desktop install support is uneven: Chromium-based browsers are the reliable target, Safari gained "Add to Dock" only in Safari 17 / macOS Sonoma, and Firefox desktop does not support manifest-based install at all. The File System Access API is likewise Chromium-only, so richer file handling cannot be assumed.
@@ -159,7 +159,7 @@ Option 1 preserves the codebase. Option 2 requires re-implementing the inference
 - **Dramatically smaller shell.** The WebView belongs to the operating system, so the shell is single-digit megabytes against Electron's ~166 MB hello-world. With a multi-gigabyte model on disk that is not the decisive argument, but it is real for download, update, and disk footprint.
 - **Security by construction.** The frontend has no Node, no filesystem, and no process API unless a capability explicitly grants it; the IPC surface is an allowlist rather than an opt-out.
 - **First-class sidecar support** — exactly the primitive this architecture needs — plus official plugins for the updater, dialogs, filesystem, shell, and secure storage, and documented Developer ID signing and `notarytool` notarization for the whole bundle.
-- **Ollama already trusts it.** `tauri://*` is in Ollama's default origin allow-list, so even a future direct browser-to-model call needs no user configuration — the exact opposite of [Option 2](#option-2-pwa-on-a-public-origin-calling-the-local-llm-from-the-browser).
+- **Desktop shell origins are already trusted by Ollama.** Its default allow-list includes `tauri://*`, `app://*`, and `file://*` alongside loopback, so a shell — unlike a hosted page — is a first-class client. (On Windows a Tauri production build is served from `http://tauri.localhost`, which is *not* covered by the defaults; with the recommended sidecar architecture that is moot, because the Python service, not the WebView, calls the model.)
 - Cross-compilation targets and CI recipes for macOS (Apple silicon and Intel, including universal binaries), Windows, and Linux from one project.
 - Rust exposure stays small: the sidecar spawn, a couple of commands, and configuration. It is not a Rust application with a React skin.
 
@@ -249,7 +249,7 @@ What genuinely has to be built, in either shell:
 | Window, menus, deep links, native dialogs | `desktop/` | **Yes** |
 | Installer, signing, notarization, auto-update, CI matrix | `desktop/` + `.github/workflows/` | Partly |
 
-Only three rows are genuinely shell-specific, and they are the smallest ones. **The shell choice is roughly 10–20 % of the work and is reversible**, which is precisely why it should not delay Phase 1 — and why "start with Electron, move to Tauri later" is a legitimate strategy rather than wasted effort.
+Only two rows are fully shell-specific and two more are partly so; everything else — freezing the service, local-first identity, the settings surface, and the loopback contract — carries over unchanged if the shell is swapped. **The shell choice is the smaller and more reversible half of the decision**, which is precisely why it should not delay Phase 1, and why "start with Electron, move to Tauri later" is a legitimate strategy rather than wasted effort. The one partly shell-specific item that is genuinely expensive is the release pipeline (installer, signing, notarization, auto-update), so redoing it is the real cost of changing shells later.
 
 ## Packaging the Python Inference Service
 
@@ -290,7 +290,7 @@ The issue asks for both. They are different answers, and the gap between them is
 
 **Most optimal**
 
-[Option 4](#option-4-tauri-v2-desktop-app-recommended-target) — Tauri v2 + `@tauri-apps/cli` + the same PyInstaller binary as a sidecar. Best installer size, the strictest default security model, no user-side Ollama configuration ever needed, and one project producing every desktop target. The cost is a Rust toolchain in CI and validating the UI on WKWebView as well as Chromium. Do not choose it expecting a large memory saving; that part of Tauri's reputation is not supported by the published measurements.
+[Option 4](#option-4-tauri-v2-desktop-app-recommended-target) — Tauri v2 + `@tauri-apps/cli` + the same PyInstaller binary as a sidecar. Best installer size, the strictest default security model, and one project producing every desktop target. The cost is a Rust toolchain in CI and validating the UI on WKWebView as well as Chromium. Do not choose it expecting a large memory saving; that part of Tauri's reputation is not supported by the published measurements.
 
 **How to choose**
 

@@ -5,7 +5,9 @@ from unittest.mock import AsyncMock, patch
 
 from fastapi.testclient import TestClient
 
+from app.api.dependencies import get_batch_evaluation_service
 from app.main import app
+from app.services.batch_evaluation import BatchEvaluationService
 
 client = TestClient(app)
 
@@ -63,14 +65,13 @@ MOCK_STRUCTURE = {
             "text": "What is 2+2?",
             "type": "multiple_choice",
             "options": ["A) 3", "B) 4", "C) 5", "D) 6"],
-            "points": 1,
         }
     ]
 }
 
-MOCK_ANSWERS = {"answers": [{"question_number": 1, "answer": "B", "points": 1}]}
+MOCK_ANSWERS = {"answers": [{"question_number": 1, "answer": "B"}]}
 
-MOCK_GRADING = {
+MOCK_COMPARISON = {
     "student_name": "Test Student",
     "answers": [
         {
@@ -78,8 +79,6 @@ MOCK_GRADING = {
             "student_answer": "B",
             "correct_answer": "B",
             "is_correct": True,
-            "points_earned": 1,
-            "points_possible": 1,
         }
     ],
 }
@@ -96,7 +95,7 @@ def test_upload_exam_template(mock_get_provider):
     response = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model", "criteria": "B1 and B3 only"},
     )
 
     assert response.status_code == 200
@@ -104,6 +103,9 @@ def test_upload_exam_template(mock_get_provider):
     assert data["filename"] == "exam.pdf"
     assert len(data["questions"]) == 1
     assert data["questions"][0]["number"] == 1
+    assert data["criteria"] == "B1 and B3 only"
+    mock_provider.analyze_exam_structure.assert_awaited_once()
+    assert mock_provider.analyze_exam_structure.call_args.args[2] == "B1 and B3 only"
     assert data["id"]  # non-empty UUID
 
 
@@ -120,7 +122,7 @@ def test_upload_answer_key(mock_get_provider):
     resp1 = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model"},
     )
     exam_id = resp1.json()["id"]
 
@@ -128,12 +130,13 @@ def test_upload_answer_key(mock_get_provider):
     resp2 = client.post(
         "/api/exam/answer-key",
         files={"file": ("key.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"exam_id": exam_id, "provider": "gemini"},
+        data={"exam_id": exam_id, "provider": "gemini", "model": "test-model"},
     )
     assert resp2.status_code == 200
     data = resp2.json()
     assert data["exam_id"] == exam_id
     assert len(data["answers"]) == 1
+    assert set(data["answers"][0]) == {"question_number", "correct_answer"}
 
 
 def test_upload_answer_key_missing_exam():
@@ -142,18 +145,27 @@ def test_upload_answer_key_missing_exam():
     response = client.post(
         "/api/exam/answer-key",
         files={"file": ("key.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"exam_id": "nonexistent", "provider": "gemini"},
+        data={"exam_id": "nonexistent", "provider": "gemini", "model": "test-model"},
     )
     assert response.status_code == 404
 
 
+def test_failed_http_response_logs_response_detail(caplog):
+    """Failed validation responses include their body in inference logs."""
+    with caplog.at_level("ERROR", logger="app.main"):
+        response = client.post("/api/exam/answer-key")
+
+    assert response.status_code == 422
+    assert "Field required" in caplog.text
+
+
 @patch("app.main.get_provider")
-def test_grade_student_exams(mock_get_provider):
-    """POST /api/exam/grade returns grading results."""
+def test_compare_student_exams(mock_get_provider):
+    """POST /api/exam/compare returns answer comparisons."""
     mock_provider = AsyncMock()
     mock_provider.analyze_exam_structure.return_value = MOCK_STRUCTURE
     mock_provider.extract_answers.return_value = MOCK_ANSWERS
-    mock_provider.grade_exam.return_value = MOCK_GRADING
+    mock_provider.compare_exam.return_value = MOCK_COMPARISON
     mock_get_provider.return_value = mock_provider
 
     pdf = _make_fake_pdf()
@@ -162,38 +174,46 @@ def test_grade_student_exams(mock_get_provider):
     resp1 = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model"},
     )
     exam_id = resp1.json()["id"]
 
     client.post(
         "/api/exam/answer-key",
         files={"file": ("key.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"exam_id": exam_id, "provider": "gemini"},
+        data={"exam_id": exam_id, "provider": "gemini", "model": "test-model"},
     )
 
-    # Grade
+    # Compare
     resp3 = client.post(
-        "/api/exam/grade",
+        "/api/exam/compare",
         files=[("files", ("student1.pdf", io.BytesIO(pdf), "application/pdf"))],
-        data={"exam_id": exam_id, "provider": "gemini"},
+        data={"exam_id": exam_id, "provider": "gemini", "model": "test-model"},
     )
     assert resp3.status_code == 200
     results = resp3.json()
     assert len(results) == 1
     assert results[0]["student_name"] == "Test Student"
-    assert results[0]["percentage"] == 100.0
+    assert set(results[0]) == {"id", "exam_id", "student_name", "filename", "answers"}
+    assert set(results[0]["answers"][0]) == {
+        "question_number",
+        "student_answer",
+        "correct_answer",
+        "is_correct",
+    }
+    assert not {"points", "score", "percentage"}.intersection(results[0])
+    assert not {"points", "score", "percentage"}.intersection(results[0]["answers"][0])
     assert results[0]["answers"][0]["is_correct"] is True
 
 
-def test_grade_missing_answer_key():
-    """POST /api/exam/grade returns 400 if answer key not uploaded."""
+def test_compare_missing_answer_key():
+    """POST /api/exam/compare returns 400 if answer key not uploaded."""
     # We need an exam that exists but has no answer key
     # Use the providers endpoint to ensure the app is working
     response = client.post(
-        "/api/exam/grade",
+        "/api/exam/compare",
         files=[("files", ("student.pdf", io.BytesIO(b"fake"), "application/pdf"))],
-        data={"exam_id": "nonexistent", "provider": "gemini"},
+        data={"exam_id": "nonexistent", "provider": "gemini", "model": "test-model"},
     )
     assert response.status_code == 404
 
@@ -203,6 +223,38 @@ def test_unsupported_file_type():
     response = client.post(
         "/api/exam/template",
         files={"file": ("notes.txt", io.BytesIO(b"hello"), "text/plain")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "model": "test-model"},
     )
     assert response.status_code == 400
+
+
+def test_batch_evaluation_ignores_legacy_evaluation_fields():
+    """Legacy multipart controls do not alter grammar-only evaluation."""
+    from unittest.mock import AsyncMock
+
+    provider = AsyncMock()
+    provider.evaluate_text.return_value = {
+        "score": 88,
+        "grammar": {"issues": [], "summary": "No issues."},
+    }
+    service = BatchEvaluationService(lambda *_: provider)
+    app.dependency_overrides[get_batch_evaluation_service] = lambda: service
+
+    try:
+        response = client.post(
+            "/api/batch/evaluate",
+            files=[("files", ("essay.pdf", io.BytesIO(_make_fake_pdf()), "application/pdf"))],
+            data={
+                "provider": "fake",
+                "model": "test-model",
+                "language": "English",
+                "include_grammar": "false",
+                "custom_criteria": "not-json",
+            },
+        )
+    finally:
+        app.dependency_overrides.clear()
+
+    assert response.status_code == 200
+    assert "overall_score" not in response.json()["results"][0]
+    provider.evaluate_text.assert_awaited_once()

@@ -1,3 +1,5 @@
+import { throwResponseError } from "./lib/response-error";
+
 const API_BASE = "/api";
 
 export interface AuthResponse {
@@ -13,15 +15,19 @@ export async function login(
   username: string,
   password: string
 ): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/login`, {
+  const requestUrl = `${API_BASE}/auth/login`;
+  const res = await fetch(requestUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password }),
   });
 
   if (!res.ok) {
-    const err: AuthError = await res.json();
-    throw new Error(err.error);
+    await throwResponseError(res, {
+      fallbackMessage: "Login failed",
+      method: "POST",
+      requestUrl,
+    });
   }
 
   return res.json();
@@ -32,15 +38,19 @@ export async function register(
   password: string,
   repeatPassword: string
 ): Promise<AuthResponse> {
-  const res = await fetch(`${API_BASE}/auth/register`, {
+  const requestUrl = `${API_BASE}/auth/register`;
+  const res = await fetch(requestUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ username, password, repeatPassword }),
   });
 
   if (!res.ok) {
-    const err: AuthError = await res.json();
-    throw new Error(err.error);
+    await throwResponseError(res, {
+      fallbackMessage: "Registration failed",
+      method: "POST",
+      requestUrl,
+    });
   }
 
   return res.json();

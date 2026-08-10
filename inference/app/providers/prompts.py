@@ -8,7 +8,6 @@ For each question, determine:
 2. The full question text
 3. The question type: "multiple_choice", "open_ended", "true_false", or "fill_in_blank"
 4. For multiple choice: list all available options (A, B, C, D, etc.)
-5. Points value if shown
 
 Return your analysis as JSON with this exact structure:
 {
@@ -17,8 +16,7 @@ Return your analysis as JSON with this exact structure:
       "number": 1,
       "text": "What is the capital of France?",
       "type": "multiple_choice",
-      "options": ["A) Paris", "B) London", "C) Berlin", "D) Madrid"],
-      "points": 2
+      "options": ["A) Paris", "B) London", "C) Berlin", "D) Madrid"]
     }
   ]
 }
@@ -32,15 +30,13 @@ For each answered question, identify:
 1. The question number
 2. The answer given (the selected option letter for multiple choice,
 or the written text for open-ended)
-3. Points value if shown
 
 Return your extraction as JSON with this exact structure:
 {
   "answers": [
     {
       "question_number": 1,
-      "answer": "A",
-      "points": 2
+      "answer": "A"
     }
   ]
 }
@@ -48,8 +44,53 @@ Return your extraction as JSON with this exact structure:
 Only return valid JSON, no other text."""
 
 
-def grade_exam_prompt(exam_structure: dict, answer_key: dict) -> str:
-    return f"""You are an expert exam grader. Look at this completed student exam and grade it.
+def _scope_instructions(criteria: str | None, *, persisted: bool = False) -> str:
+    normalized = criteria.strip() if criteria else ""
+    if not normalized:
+        return ""
+
+    criteria_label = "persisted user criteria" if persisted else "user criteria"
+    return (
+        "\n\nMANDATORY EVALUATION SCOPE:\n"
+        f"The {criteria_label} is exactly:\n"
+        "----- BEGIN USER CRITERIA -----\n"
+        f"{normalized}\n"
+        "----- END USER CRITERIA -----\n"
+        "This scope is mandatory. Identify only the sections and questions requested "
+        "by the criteria. Ignore all other visible content, even if it appears in the "
+        "uploaded document. Do not include, extract, or compare any out-of-scope section "
+        "or question."
+    )
+
+
+def analyze_exam_structure_prompt(criteria: str | None = None) -> str:
+    """Build the structure prompt with an optional mandatory question scope."""
+    return ANALYZE_STRUCTURE_PROMPT + _scope_instructions(criteria)
+
+
+def extract_answers_prompt(criteria: str | None = None) -> str:
+    """Build the answer-extraction prompt with an optional mandatory scope."""
+    return EXTRACT_ANSWERS_PROMPT + _scope_instructions(criteria)
+
+
+def compare_exam_prompt(exam_structure: dict, answer_key: dict) -> str:
+    criteria = exam_structure.get("criteria") or answer_key.get("criteria")
+    has_scope = bool(criteria and criteria.strip())
+    scope_instructions = _scope_instructions(criteria, persisted=True)
+    question_instruction = (
+        "For each in-scope question only:" if has_scope else "For each question in the exam:"
+    )
+    output_scope_instruction = (
+        "\nOnly include comparison results for questions in the mandatory scope. Do not "
+        "output any question outside the persisted criteria."
+        if has_scope
+        else ""
+    )
+
+    return f"""You are an expert at comparing exam answers. Look at this completed student exam
+  and compare it to the answer key.
+
+{scope_instructions}
 
 The exam structure is:
 {exam_structure}
@@ -57,7 +98,7 @@ The exam structure is:
 The correct answer key is:
 {answer_key}
 
-For each question in the exam:
+{question_instruction}
 1. Identify what the student answered
 2. Compare it to the correct answer
 3. Determine if it is correct
@@ -67,7 +108,7 @@ word-for-word identical, just semantically correct.
 
 Also try to identify the student's name if it appears on the exam.
 
-Return your grading as JSON with this exact structure:
+Return your comparison as JSON with this exact structure:
 {{
   "student_name": "John Doe",
   "answers": [
@@ -75,73 +116,60 @@ Return your grading as JSON with this exact structure:
       "question_number": 1,
       "student_answer": "A",
       "correct_answer": "A",
-      "is_correct": true,
-      "points_earned": 2,
-      "points_possible": 2
+      "is_correct": true
     }}
   ]
 }}
 
+{output_scope_instruction}
 Only return valid JSON, no other text."""
 
 
 # --- Batch Evaluation Prompts ---
 
 
-def grammar_evaluation_prompt(language: str) -> str:
-    return f"""You are an expert language and grammar evaluator for {language}.
+def grammar_evaluation_prompt(
+    correction_language: str | None = None,
+    summary_language: str | None = None,
+    *,
+    language: str | None = None,
+) -> str:
+    """Build the grammar prompt while accepting the legacy ``language`` name."""
+    correction_language = correction_language or language or "en"
+    summary_language = summary_language or correction_language
+    return f"""You are an expert language and grammar evaluator.
 
 Analyze the following text for grammatical correctness, spelling, punctuation,
-sentence structure, and overall writing quality in {language}.
-
-Evaluate on a scale of 0 to 100 where:
-- 0% means the text is completely unintelligible, full of errors in every
-  sentence, and impossible to understand
-- 100% means the text is perfectly written with flawless grammar, spelling,
-  punctuation, and natural flow
+sentence structure, and overall writing quality in {correction_language}.
 
 Provide:
-1. A numeric score (0-100)
-2. Detailed feedback explaining the errors found and suggestions for improvement
+1. A grammar object containing:
+   - An issues array with one object for each issue. Each object must contain
+    "original_text" (the exact original sentence or text) and
+    "corrected_text" (the complete corrected sentence or text).
+   - A plain-text summary of the overall grammar assessment.
+
+Write every issue and correction in {correction_language}. Write the summary
+in {summary_language}. Do not translate the original text merely to produce a
+finding: preserve it exactly, except for the corresponding corrected text.
+Do not use Markdown formatting or tables, including Markdown
+table syntax, headings, bullets, asterisks, or code fences. The issues array is
+the issue list: include exactly one JSON object (one row) per issue and do not
+combine multiple issues in one object. If there are no issues, return an empty
+issues array as "issues": [] and summarize that no grammar issues were found.
+Keep the summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{
-  "score": 85,
-  "feedback": "The text is mostly well-written with minor issues: ..."
-}}
-
-Only return valid JSON, no other text.
-
-TEXT TO EVALUATE:
-"""
-
-
-def custom_criteria_evaluation_prompt(
-    criteria_name: str,
-    description: str,
-    zero_description: str,
-    hundred_description: str,
-) -> str:
-    return f"""You are an expert evaluator.
-Evaluate the following text based on this specific criteria:
-
-CRITERIA: {criteria_name}
-DESCRIPTION: {description}
-
-SCORING GUIDE:
-- 0% (lowest score): {zero_description}
-- 100% (highest score): {hundred_description}
-
-Evaluate the text on a scale of 0 to 100 based strictly on the criteria above.
-
-Provide:
-1. A numeric score (0-100)
-2. Detailed feedback explaining your assessment and how the text could improve
-
-Return your evaluation as JSON with this exact structure:
-{{
-  "score": 75,
-  "feedback": "The text demonstrates..."
+  "grammar": {{
+    "issues": [
+      {{
+        "original_text": "the complete original sentence or text",
+        "corrected_text": "the complete corrected sentence or text"
+      }}
+    ],
+    "summary": "The text is mostly well-written with minor issues."
+  }}
 }}
 
 Only return valid JSON, no other text.

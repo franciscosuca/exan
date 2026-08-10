@@ -5,9 +5,11 @@ from collections.abc import Callable, Sequence
 from datetime import datetime, timezone
 from typing import Any, Mapping
 
-from ..models import BatchEvaluationResponse, CriteriaScore, FileEvaluationResult
+from pydantic import ValidationError
+
+from ..models import BatchEvaluationResponse, FileEvaluationResult, GrammarFeedback
 from ..providers import BaseProvider
-from ..providers.prompts import custom_criteria_evaluation_prompt, grammar_evaluation_prompt
+from ..providers.prompts import grammar_evaluation_prompt
 from ..utils.file_processing import extract_text, get_mime_type
 from ..utils.run_logging import elapsed_ms, start_timer, write_run_log
 from . import UploadedDocument
@@ -21,23 +23,40 @@ class BatchEvaluationError(RuntimeError):
     """Raised when a provider cannot complete a batch evaluation."""
 
 
+def _parse_grammar_result(result: Mapping[str, Any]) -> GrammarFeedback:
+    """Validate a grammar provider response before mapping it to API models."""
+    try:
+        grammar = GrammarFeedback.model_validate(result["grammar"])
+    except (KeyError, TypeError, ValueError, ValidationError) as exc:
+        raise ValueError(f"Malformed grammar response: {exc}") from exc
+    return grammar
+
+
 class BatchEvaluationService:
     """Orchestrate batch evaluation without depending on HTTP routing."""
 
-    def __init__(self, provider_factory: Callable[[str], BaseProvider]) -> None:
+    def __init__(self, provider_factory: Callable[[str, str], BaseProvider]) -> None:
         self.provider_factory = provider_factory
 
     async def evaluate(
         self,
         documents: Sequence[UploadedDocument],
         provider_name: str,
-        language: str,
-        include_grammar: bool,
-        criteria: Sequence[Mapping[str, Any]],
+        model: str,
+        language: str = "en",
+        summary_language: str | None = None,
+        correction_language: str | None = None,
     ) -> BatchEvaluationResponse:
-        """Evaluate each document against the selected criteria."""
+        """Evaluate each document for grammar.
+
+        ``language`` is retained for callers of the original API and means
+        the language used for corrections and issues.  The explicit
+        ``correction_language`` takes precedence when supplied.
+        """
+        correction_language = correction_language or language
+        summary_language = summary_language or correction_language
         try:
-            provider = self.provider_factory(provider_name)
+            provider = self.provider_factory(provider_name, model)
         except Exception as exc:
             raise BatchEvaluationError(f"Batch evaluation failed: {exc}") from exc
 
@@ -66,72 +85,31 @@ class BatchEvaluationService:
                 }
             )
 
-            scores: list[CriteriaScore] = []
-            if include_grammar:
-                try:
-                    prompt = grammar_evaluation_prompt(language)
-                    call_started = start_timer()
-                    result = await provider.evaluate_text(text, prompt)
-                    outputs.append(
-                        {
-                            "operation": "grammar",
-                            "filename": document.filename,
-                            "elapsed_ms": elapsed_ms(call_started),
-                            "output": result,
-                        }
-                    )
-                    scores.append(
-                        CriteriaScore(
-                            criteria_name="Grammar",
-                            score=float(result.get("score", 0)),
-                            feedback=result.get("feedback", ""),
-                        )
-                    )
-                except Exception as exc:
-                    raise BatchEvaluationError(
-                        f"Grammar evaluation failed for {document.filename}: {exc}"
-                    ) from exc
+            grammar_feedback: GrammarFeedback | None = None
+            try:
+                prompt = grammar_evaluation_prompt(correction_language, summary_language)
+                call_started = start_timer()
+                result = await provider.evaluate_text(text, prompt)
+                outputs.append(
+                    {
+                        "operation": "grammar",
+                        "filename": document.filename,
+                        "elapsed_ms": elapsed_ms(call_started),
+                        "output": result,
+                    }
+                )
+                grammar_feedback = _parse_grammar_result(result)
+            except Exception as exc:
+                raise BatchEvaluationError(
+                    f"Grammar evaluation failed for {document.filename}: {exc}"
+                ) from exc
 
-            for criterion in criteria:
-                try:
-                    prompt = custom_criteria_evaluation_prompt(
-                        criteria_name=criterion["name"],
-                        description=criterion["description"],
-                        zero_description=criterion["zero_description"],
-                        hundred_description=criterion["hundred_description"],
-                    )
-                    call_started = start_timer()
-                    result = await provider.evaluate_text(text, prompt)
-                    outputs.append(
-                        {
-                            "operation": "custom_criteria",
-                            "criteria": criterion["name"],
-                            "filename": document.filename,
-                            "elapsed_ms": elapsed_ms(call_started),
-                            "output": result,
-                        }
-                    )
-                    scores.append(
-                        CriteriaScore(
-                            criteria_name=criterion["name"],
-                            score=float(result.get("score", 0)),
-                            feedback=result.get("feedback", ""),
-                        )
-                    )
-                except Exception as exc:
-                    raise BatchEvaluationError(
-                        f"Evaluation of '{criterion['name']}' failed for {document.filename}: {exc}"
-                    ) from exc
-
-            overall = sum(score.score for score in scores) / len(scores) if scores else 0
-            summary_parts = [f"{score.criteria_name}: {score.score:.0f}%" for score in scores]
             results.append(
                 FileEvaluationResult(
                     id=str(uuid.uuid4()),
                     filename=document.filename,
-                    scores=scores,
-                    overall_score=overall,
-                    summary=", ".join(summary_parts),
+                    summary=grammar_feedback.summary,
+                    grammar=grammar_feedback,
                 )
             )
 
@@ -143,9 +121,9 @@ class BatchEvaluationService:
         write_run_log(
             "batch-evaluation",
             input_snapshot={
-                "language": language,
-                "include_grammar": include_grammar,
-                "custom_criteria": criteria,
+                "language": correction_language,
+                "correction_language": correction_language,
+                "summary_language": summary_language,
                 "files": input_files,
             },
             outputs=outputs,

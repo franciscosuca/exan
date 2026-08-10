@@ -11,7 +11,7 @@ The original MVP concentrated all five HTTP routes and their workflow logic in
 - multipart upload and form-field parsing
 - file conversion and text extraction
 - provider resolution and AI calls
-- Pydantic response construction and score calculation
+- Pydantic response construction
 - in-memory exam and answer-key dictionaries
 - run-log creation and HTTP error conversion
 
@@ -27,10 +27,10 @@ routers. The application is split into these ownership boundaries:
 | --- | --- |
 | `app/api/routes/providers.py` | Provider discovery HTTP endpoint. |
 | `app/api/routes/exams.py` | Exam upload HTTP concerns and error-to-HTTP translation. |
-| `app/api/routes/batch.py` | Batch form parsing, criteria validation, and HTTP errors. |
+| `app/api/routes/batch.py` | Batch form parsing and HTTP errors. |
 | `app/api/dependencies.py` | Constructs injectable repositories and workflow services. |
-| `app/services/exam_comparison.py` | Template, answer-key, and grading orchestration. |
-| `app/services/batch_evaluation.py` | Text extraction, criteria evaluation, scoring, and logging. |
+| `app/services/exam_comparison.py` | Template, answer-key, and answer-comparison orchestration. |
+| `app/services/batch_evaluation.py` | Text extraction, grammar evaluation, and logging. |
 | `app/repositories/exam_repository.py` | In-memory exam and answer-key storage. |
 | `app/utils/` | File processing and run logging primitives. |
 | `app/providers/` | Provider contract, registry, adapters, and prompts. |
@@ -79,9 +79,7 @@ Errors are converted to HTTP responses close to the operation that failed:
 | --- | --- |
 | Unsupported or invalid upload | `400` |
 | Unknown `exam_id` | `404` |
-| Grade requested before an answer key | `400` |
-| Invalid batch criteria JSON | `400` |
-| No selected batch criteria | `400` |
+| Comparison requested before an answer key | `400` |
 | Provider or AI operation failure | `500` |
 
 ## Exam Comparison Lifecycle
@@ -112,18 +110,18 @@ flowchart TD
     KeyModel --> KeyStore[ExamRepository stores key and raw result]
     KeyStore --> KeyResponse[Return answer key]
 
-    KeyResponse --> Grade[POST /api/exam/grade]
-    Grade --> GradeGate{exam_id and answer key exist?}
-    GradeGate -->|No exam| GradeNotFound[404 Exam not found]
-    GradeGate -->|No key| KeyMissing[400 Answer key not uploaded yet]
-    GradeGate -->|Ready| StudentLoop[For each uploaded student file]
+    KeyResponse --> Compare[POST /api/exam/compare]
+    Compare --> CompareGate{exam_id and answer key exist?}
+    CompareGate -->|No exam| CompareNotFound[404 Exam not found]
+    CompareGate -->|No key| KeyMissing[400 Answer key not uploaded yet]
+    CompareGate -->|Ready| StudentLoop[For each uploaded student file]
     StudentLoop --> StudentProcess[Convert PDF or validate image]
-    StudentProcess --> GradeAI[Provider grades images using stored structure and key]
-    GradeAI --> StudentModel[Build StudentAnswer and GradingResult]
+    StudentProcess --> CompareAI[Provider compares images using stored structure and key]
+    CompareAI --> StudentModel[Build StudentAnswer and ComparisonResult]
     StudentModel --> StudentMore{More student files?}
     StudentMore -->|Yes| StudentLoop
-    StudentMore -->|No| GradeLog[Write exam-comparison run log]
-    GradeLog --> GradeResponse[Return GradingResult list]
+    StudentMore -->|No| CompareLog[Write exam-comparison run log]
+    CompareLog --> CompareResponse[Return ComparisonResult list]
 ```
 
 ### What persists between steps
@@ -146,7 +144,7 @@ The repository stores the equivalent record:
 
 Answer-key upload must receive that same `exam_id`. It stores the normalized
 `AnswerKey` and the original provider response by calling the repository.
-Grading then passes both raw provider results back to `grade_exam` so the
+Comparison then passes both raw provider results back to `compare_exam` so the
 provider can compare the student document against the same exam context.
 
 The repository instance owns dictionaries internally, so it remains suitable
@@ -155,23 +153,19 @@ for the MVP workflow but is not durable application storage.
 ## Batch Evaluation Lifecycle
 
 `POST /api/batch/evaluate` is independent of the exam comparison stores. It
-accepts one or more PDF or Word files, then evaluates every file against the
-selected criteria:
+accepts one or more PDF or Word files, then evaluates every file for grammar
+in the selected feedback language:
 
-1. Parse `include_grammar` and JSON-decode `custom_criteria`.
-2. Reject the request if no criterion is selected.
-3. Resolve one provider for the request.
-4. Extract text from each file.
-5. Optionally evaluate grammar using `grammar_evaluation_prompt`.
-6. Evaluate each custom criterion using
-   `custom_criteria_evaluation_prompt`.
-7. Average the criterion scores into `overall_score`.
-8. Build `BatchEvaluationResponse`.
-9. Write one `batch-evaluation` run log and return the response.
+1. Resolve one provider for the request.
+2. Extract text from each file.
+3. Evaluate grammar using `grammar_evaluation_prompt`, returning structured
+  issues and a summary.
+4. Build `BatchEvaluationResponse` with structured grammar feedback and a
+  summary derived from the grammar response.
+5. Write one `batch-evaluation` run log and return the response.
 
-The route performs one provider call per enabled criterion per file. For
-example, two files with grammar enabled and two custom criteria produce six AI
-calls.
+The route performs exactly one provider call per file. Legacy multipart fields
+from older clients are ignored and do not alter the grammar-only workflow.
 
 ## Dependency Diagram
 
@@ -220,14 +214,14 @@ flowchart LR
 | `inference/app/main.py` | Creates the app, installs CORS, and registers routers. |
 | `inference/app/api/routes/*.py` | Owns HTTP inputs, response models, and service-error translation. |
 | `inference/app/api/dependencies.py` | Constructs the shared in-memory repository and workflow services. |
-| `inference/app/services/*.py` | Owns workflow ordering, provider calls, totals, and run-log inputs. |
+| `inference/app/services/*.py` | Owns workflow ordering, provider calls, and run-log inputs. |
 | `inference/app/repositories/exam_repository.py` | Owns in-memory exam and answer-key records. |
 | `inference/app/utils/file_processing.py` | Detects supported types, renders PDFs, validates images, and extracts text. |
 | `inference/app/models/__init__.py` | Defines response and nested result contracts through Pydantic. |
 | `inference/app/providers/registry.py` | Maps a provider name to its implementation and reports availability. |
 | `inference/app/providers/__init__.py` | Defines the shared async provider methods. |
 | `inference/app/providers/*.py` | Calls a cloud or local model and parses its JSON response. |
-| `inference/app/providers/prompts.py` | Supplies the structure, grading, grammar, and custom-criteria instructions. |
+| `inference/app/providers/prompts.py` | Supplies the structure, comparison, and grammar instructions. |
 | `inference/app/config.py` | Loads API keys, model names, and local provider URLs. |
 | `inference/app/utils/run_logging.py` | Records inputs, outputs, provider metadata, token usage, and elapsed time. |
 | `logs/` | Receives completed comparison and batch-evaluation JSON records. |
@@ -239,8 +233,8 @@ flowchart LR
 | `GET /api/providers` | None | `routes/providers.py -> registry.py` | Provider availability list |
 | `POST /api/exam/template` | One PDF or image, provider | `routes/exams.py -> ExamComparisonService -> file_processing.py -> provider` | `ExamStructure` |
 | `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `AnswerKey` |
-| `POST /api/exam/grade` | One or more PDFs/images, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `GradingResult[]` |
-| `POST /api/batch/evaluate` | PDFs/Word files, provider, criteria | `routes/batch.py -> BatchEvaluationService -> prompts -> provider` | `BatchEvaluationResponse` |
+| `POST /api/exam/compare` | One or more PDFs/images, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `ComparisonResult[]` |
+| `POST /api/batch/evaluate` | PDFs/Word files, provider, feedback languages | `routes/batch.py -> BatchEvaluationService -> prompts -> provider` | `BatchEvaluationResponse` |
 
 ## Operational Notes
 
@@ -248,8 +242,8 @@ flowchart LR
   by configuration and local endpoint probes.
 - PDFs used by exam comparison become one image per page; PDFs used by batch
   evaluation remain text extraction inputs.
-- A provider instance is selected once per route request. Batch files and
-  criteria reuse that instance for all calls in the request.
+- A provider instance is selected once per route request. Batch files reuse
+  that instance for all calls in the request.
 - A run log is written only after all files and evaluations in the route have
   completed successfully. An exception raised earlier returns an HTTP error
   before the final log write.

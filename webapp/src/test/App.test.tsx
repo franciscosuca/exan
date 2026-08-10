@@ -19,7 +19,7 @@ vi.mock('../lib/api', () => ({
   ]),
   uploadExamTemplate: vi.fn(),
   uploadAnswerKey: vi.fn(),
-  uploadStudentExams: vi.fn(),
+  compareStudentExams: vi.fn(),
   batchEvaluate: vi.fn(),
 }));
 
@@ -87,7 +87,7 @@ describe('App', () => {
       renderApp();
       fireEvent.click(screen.getByText('Batch Evaluation'));
       expect(screen.getByText('Upload Exams')).toBeInTheDocument();
-      expect(screen.getByText('Evaluation Criteria')).toBeInTheDocument();
+      expect(screen.getByText('Grammar Evaluation')).toBeInTheDocument();
     });
 
     it('returns to landing page when clicking Exan logo', async () => {

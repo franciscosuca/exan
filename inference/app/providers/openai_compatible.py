@@ -6,7 +6,11 @@ import json
 from openai import OpenAI
 
 from . import BaseProvider
-from .prompts import ANALYZE_STRUCTURE_PROMPT, EXTRACT_ANSWERS_PROMPT, grade_exam_prompt
+from .prompts import (
+    analyze_exam_structure_prompt,
+    compare_exam_prompt,
+    extract_answers_prompt,
+)
 
 
 class OpenAICompatibleProvider(BaseProvider):
@@ -41,22 +45,40 @@ class OpenAICompatibleProvider(BaseProvider):
             text = text.rsplit("```", 1)[0]
         return json.loads(text)
 
-    async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
-        content = self._build_content(image_data, mime_types, ANALYZE_STRUCTURE_PROMPT)
+    async def analyze_exam_structure(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
+        content = self._build_content(
+            image_data,
+            mime_types,
+            analyze_exam_structure_prompt(criteria),
+        )
         return self._complete(content)
 
-    async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
-        content = self._build_content(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
+    async def extract_answers(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
+        content = self._build_content(
+            image_data,
+            mime_types,
+            extract_answers_prompt(criteria),
+        )
         return self._complete(content)
 
-    async def grade_exam(
+    async def compare_exam(
         self,
         student_images: list[bytes],
         student_mime_types: list[str],
         exam_structure: dict,
         answer_key: dict,
     ) -> dict:
-        prompt = grade_exam_prompt(exam_structure, answer_key)
+        prompt = compare_exam_prompt(exam_structure, answer_key)
         content = self._build_content(student_images, student_mime_types, prompt)
         return self._complete(content)
 

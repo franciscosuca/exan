@@ -12,11 +12,11 @@ from ..services.exam_comparison import ExamComparisonService
 _exam_repository = ExamRepository()
 
 
-def get_provider(name: str) -> BaseProvider:
+def get_provider(name: str, model: str) -> BaseProvider:
     """Resolve a provider through the application registry."""
     from .. import main
 
-    return main.get_provider(name)
+    return main.get_provider(name, model)
 
 
 def get_exam_repository() -> ExamRepository:
@@ -24,7 +24,7 @@ def get_exam_repository() -> ExamRepository:
     return _exam_repository
 
 
-def get_provider_factory() -> Callable[[str], BaseProvider]:
+def get_provider_factory() -> Callable[[str, str], BaseProvider]:
     """Return the provider resolver used by workflow services."""
     return get_provider
 

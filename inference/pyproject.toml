@@ -1,7 +1,7 @@
 [project]
 name = "exan-backend"
 version = "0.1.0"
-description = "AI-powered exam scanning and grading API"
+description = "AI-powered exam scanning and comparison API"
 requires-python = ">=3.11"
 dependencies = [
     "fastapi>=0.115.0",

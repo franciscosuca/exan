@@ -15,6 +15,7 @@ It expands [Deployment and networking](../scanning/ARCHITECTURE_OPTIONS.md#deplo
   - [Option 4: Firebase only](#option-4-firebase-only)
   - [Option 5: Non-GCP PaaS (Render, Railway, Fly.io)](#option-5-non-gcp-paas-render-railway-flyio)
 - [Comparison Table](#comparison-table)
+- [Cost Estimate](#cost-estimate)
 - [Containers or Kubernetes Pods?](#containers-or-kubernetes-pods)
 - [Infrastructure Automation](#infrastructure-automation)
 - [Blockers to Resolve Before the Beta](#blockers-to-resolve-before-the-beta)
@@ -99,7 +100,7 @@ The two properties that drive the decision are the inference service's *in-memor
 
 **Cons**
 
-- The most expensive option: a cluster management fee plus continuously billed pod resources and a load balancer, none of which scale to zero.
+- The most expensive option: a cluster management fee plus continuously billed pod resources and a load balancer, none of which scale to zero — roughly **$85/month** for the current four services before any traffic, as broken down in [Cost Estimate](#cost-estimate).
 - Highest operational surface: manifests or Helm charts, ingress, certificate management, secrets, and cluster upgrades.
 - Solves scaling problems Exan does not have yet — beta traffic is a handful of testers.
 - Self-hosting MongoDB on Kubernetes adds backup and failover work that Atlas provides out of the box.
@@ -149,6 +150,51 @@ The two properties that drive the decision are the inference service's *in-memor
 | Persistent MongoDB | Atlas | Local volume | StatefulSet or Atlas | Firestore rewrite | Add-on or Atlas |
 | Path to scale | Good | Poor | Best | Limited | Good |
 | **Beta verdict** | **Recommended** | Fast fallback | Premature | Frontend only | Viable alternative |
+
+## Cost Estimate
+
+Approximate `us-central1` list prices for a **beta-sized** deployment of the four services in [What We Are Deploying](#what-we-are-deploying). These are planning figures, not quotes — Google restructured Autopilot pricing in late 2025, so confirm every rate in the [Google Cloud pricing calculator](https://cloud.google.com/products/calculator) before committing.
+
+### GKE, with the current architecture
+
+Sizing all four services as pods with modest resource requests — `webapp` 0.25 vCPU / 0.5 GiB, `auth-server` 0.25 vCPU / 0.5 GiB, `inference` 0.5 vCPU / 1 GiB, `mongodb` 0.5 vCPU / 2 GiB — gives **1.5 vCPU and 4 GiB** of requests running 24/7 (~730 h/month).
+
+| Line item | Basis | Monthly |
+|-----------|-------|---------|
+| Cluster management fee | $0.10/cluster/hour, charged on every cluster in any mode | $73 |
+| GKE free-tier credit | $74.40/month per billing account, covers **one** Autopilot or zonal Standard cluster | −$73 |
+| Autopilot pod vCPU | 1.5 vCPU × ~$0.0445/vCPU-hour | ~$49 |
+| Autopilot pod memory | 4 GiB × ~$0.0049/GiB-hour | ~$14 |
+| External HTTP(S) load balancer | $0.025/hour per forwarding rule + data processing | ~$18 |
+| Persistent disk for MongoDB | 20 GiB balanced at ~$0.10/GiB-month | ~$2 |
+| **Total (Autopilot, one cluster)** | | **~$85/month** |
+
+Realistic variations:
+
+- **Second environment.** A staging cluster loses the free-tier credit, so the second cluster adds its own $73 fee: **~$160/month** for the pair.
+- **GKE Standard** instead of Autopilot: two `e2-standard-2` nodes at ~$49 each = ~$98, plus the load balancer, boot disks, and the same cluster fee treatment → **~$120/month**, and now we also own node upgrades and bin-packing.
+- **MongoDB Atlas instead of an in-cluster StatefulSet** removes the disk line but adds $0 (M0 free tier) to ~$57/month (M10) — while removing the backup, failover, and upgrade work.
+- **Growth.** Costs scale roughly linearly with pod requests: doubling `inference` to 1 vCPU / 2 GiB adds ~$20/month.
+
+The important property is the **floor**: even with zero beta traffic, GKE bills roughly $85/month because pods and the load balancer run continuously. Nothing in the current architecture scales to zero.
+
+### The recommended stack, for comparison
+
+| Line item | Basis | Monthly |
+|-----------|-------|---------|
+| Cloud Run (`inference` + `auth-server`) | Scale to zero; the free tier covers ~2M requests, 180k vCPU-seconds, and 360k GiB-seconds | $0 for a small beta |
+| Firebase Hosting | Free tier covers 10 GB storage and 360 MB/day transfer | $0 |
+| MongoDB Atlas M0 | Free forever, 512 MB, auto-pauses when idle | $0 |
+| Artifact Registry | A few GB of images at ~$0.10/GB-month | <$1 |
+| **Total** | | **~$0–5/month** |
+
+A beta that runs, say, 200 grading requests per month at 30 seconds and 1 vCPU / 2 GiB each consumes ~6,000 vCPU-seconds and ~12,000 GiB-seconds — a few percent of the Cloud Run free tier. Cost only becomes meaningful once real traffic arrives, and then it grows with usage rather than with wall-clock time.
+
+Note that this stack is **not three vendors to wire together**: Cloud Run, Firebase Hosting, Artifact Registry, and Secret Manager all live in the *same* GCP project and one bill, and Hosting reaches Cloud Run through a `rewrites` entry in `firebase.json` rather than through networking we configure. MongoDB Atlas is the only third party, and it can be replaced with Firestore or a self-managed MongoDB if a single-vendor bill matters more than staying on the current driver.
+
+### Where the money goes
+
+Against roughly $85/month for GKE, the AI provider calls themselves will likely dominate the bill for a beta of this size. Paying a fixed cluster fee to orchestrate four containers that see intermittent traffic buys availability and scaling guarantees the beta does not need yet — which is the cost argument behind [Containers or Kubernetes Pods?](#containers-or-kubernetes-pods).
 
 ## Containers or Kubernetes Pods?
 

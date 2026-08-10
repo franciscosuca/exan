@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 from pydantic import ValidationError
 
-from ..models import BatchEvaluationResponse, CriteriaScore, FileEvaluationResult, GrammarFeedback
+from ..models import BatchEvaluationResponse, FileEvaluationResult, GrammarFeedback
 from ..providers import BaseProvider
 from ..providers.prompts import grammar_evaluation_prompt
 from ..utils.file_processing import extract_text, get_mime_type
@@ -23,14 +23,13 @@ class BatchEvaluationError(RuntimeError):
     """Raised when a provider cannot complete a batch evaluation."""
 
 
-def _parse_grammar_result(result: Mapping[str, Any]) -> tuple[float, GrammarFeedback]:
+def _parse_grammar_result(result: Mapping[str, Any]) -> GrammarFeedback:
     """Validate a grammar provider response before mapping it to API models."""
     try:
-        score = float(result["score"])
         grammar = GrammarFeedback.model_validate(result["grammar"])
     except (KeyError, TypeError, ValueError, ValidationError) as exc:
         raise ValueError(f"Malformed grammar response: {exc}") from exc
-    return score, grammar
+    return grammar
 
 
 class BatchEvaluationService:
@@ -85,7 +84,6 @@ class BatchEvaluationService:
                 }
             )
 
-            scores: list[CriteriaScore] = []
             grammar_feedback: GrammarFeedback | None = None
             try:
                 prompt = grammar_evaluation_prompt(correction_language, summary_language)
@@ -99,26 +97,17 @@ class BatchEvaluationService:
                         "output": result,
                     }
                 )
-                grammar_score, grammar_feedback = _parse_grammar_result(result)
-                scores.append(
-                    CriteriaScore(
-                        criteria_name="Grammar",
-                        score=grammar_score,
-                        feedback=result.get("feedback", ""),
-                    )
-                )
+                grammar_feedback = _parse_grammar_result(result)
             except Exception as exc:
                 raise BatchEvaluationError(
                     f"Grammar evaluation failed for {document.filename}: {exc}"
                 ) from exc
 
-            summary_parts = [f"{score.criteria_name}: {score.score:.0f}%" for score in scores]
             results.append(
                 FileEvaluationResult(
                     id=str(uuid.uuid4()),
                     filename=document.filename,
-                    scores=scores,
-                    summary=", ".join(summary_parts),
+                    summary=grammar_feedback.summary,
                     grammar=grammar_feedback,
                 )
             )

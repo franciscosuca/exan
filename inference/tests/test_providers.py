@@ -148,6 +148,7 @@ def test_grammar_prompt_requests_structured_response():
     assert "Do not use Markdown formatting or tables" in prompt
     assert '"issues": []' in prompt
     assert '"feedback":' not in prompt
+    assert '"score"' not in prompt
 
 
 async def test_gemini_uses_schema_only_for_grammar_evaluation():
@@ -156,7 +157,7 @@ async def test_gemini_uses_schema_only_for_grammar_evaluation():
     provider = GeminiProvider()
     client = MagicMock()
     client.models.generate_content.return_value = SimpleNamespace(
-        text='{"score": 90, "grammar": {"issues": [], "summary": "No issues."}}',
+        text='{"grammar": {"issues": [], "summary": "No issues."}}',
         usage=None,
         usage_metadata=None,
     )
@@ -165,3 +166,5 @@ async def test_gemini_uses_schema_only_for_grammar_evaluation():
     await provider.evaluate_text("Text", grammar_evaluation_prompt("Spanish"))
     grammar_config = client.models.generate_content.call_args.kwargs["config"]
     assert grammar_config.response_schema is not None
+    assert "score" not in grammar_config.response_schema["properties"]
+    assert grammar_config.response_schema["required"] == ["grammar"]

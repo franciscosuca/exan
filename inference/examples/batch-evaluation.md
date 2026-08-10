@@ -15,10 +15,9 @@ Markdown-formatted feedback:
 
 ```json
 {
-  "score": 78,
   "grammar": {
     "issues": [
-      { "issue": "de la manara", "correction": "de la manera" }
+      { "original_text": "de la manara", "corrected_text": "de la manera" }
     ],
     "summary": "El texto presenta un error ortografico."
   }
@@ -26,4 +25,4 @@ Markdown-formatted feedback:
 ```
 
 The webapp renders each issue as a row in the Detailed Findings table and the
-summary in the How to Improve panel. The overall score is the grammar score.
+summary in the How to Improve panel.

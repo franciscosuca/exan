@@ -31,10 +31,7 @@ describe('BatchResults', () => {
     renderResults(
       createResponse({
         filename: 'essay.docx',
-        scores: [
-          { criteria_name: 'Grammar', score: 78, feedback: 'Legacy grammar feedback' },
-        ],
-        summary: 'Grammar: 78%',
+        summary: 'Review article usage before singular nouns.',
         grammar: {
           issues: [{ original_text: 'a apple', corrected_text: 'an apple' }],
           summary: 'Review article usage before singular nouns.',
@@ -47,11 +44,9 @@ describe('BatchResults', () => {
     expect(screen.getByRole('columnheader', { name: 'Corrected Sentence' })).toBeInTheDocument();
     expect(screen.getAllByRole('cell')[0]).toHaveTextContent('a apple');
     expect(screen.getAllByRole('cell')[1]).toHaveTextContent('an apple');
-    expect(screen.queryByText('78%')).not.toBeInTheDocument();
     expect(screen.getAllByRole('mark')).toHaveLength(2);
     expect(screen.getByRole('heading', { name: 'How to Improve' })).toBeInTheDocument();
     expect(screen.getByText('Review article usage before singular nouns.')).toBeInTheDocument();
-    expect(screen.queryByText('Legacy grammar feedback')).not.toBeInTheDocument();
     expect(screen.queryByText('Overall')).not.toBeInTheDocument();
   });
 
@@ -59,8 +54,7 @@ describe('BatchResults', () => {
     renderResults(
       createResponse({
         filename: 'clean.pdf',
-        scores: [{ criteria_name: 'Grammar', score: 100, feedback: '' }],
-        summary: 'Grammar: 100%',
+        summary: 'The grammar is clear and accurate.',
         grammar: { issues: [], summary: 'The grammar is clear and accurate.' },
       })
     );
@@ -70,30 +64,24 @@ describe('BatchResults', () => {
     expect(screen.getByText('The grammar is clear and accurate.')).toBeInTheDocument();
   });
 
-  it('keeps legacy and custom criteria feedback when structured grammar is missing', () => {
+  it('does not render obsolete criteria when structured grammar is missing', () => {
     renderResults(
       createResponse({
         filename: 'legacy.docx',
-        scores: [
-          { criteria_name: 'Grammar', score: 70, feedback: 'Legacy grammar feedback' },
-          { criteria_name: 'Argument Quality', score: 82, feedback: 'The argument is well supported.' },
-        ],
-        summary: 'Grammar: 70%, Argument Quality: 82%',
+        summary: 'No structured grammar feedback available.',
       })
     );
 
-    expect(screen.getByText('Legacy grammar feedback')).toBeInTheDocument();
-    expect(screen.getByText('The argument is well supported.')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.queryByText('Detailed Findings')).not.toBeInTheDocument();
+    expect(screen.queryByText('Argument Quality')).not.toBeInTheDocument();
   });
 
   it('renders one table row for each structured grammar issue', () => {
     renderResults(
       createResponse({
         filename: 'multiple-issues.pdf',
-        scores: [{ criteria_name: 'Grammar', score: 50, feedback: '' }],
-        summary: 'Grammar: 50%',
+        summary: 'Review subject-verb agreement.',
         grammar: {
           issues: [
             { original_text: 'She go home.', corrected_text: 'She goes home.' },

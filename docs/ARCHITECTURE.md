@@ -231,14 +231,14 @@ sequenceDiagram
 
         SVC->>SVC: grammar_evaluation_prompt(language)
         SVC->>AI: evaluate_text(text, grammar prompt)
-        AI-->>SVC: {score, grammar: {issues[], summary}}
-        SVC->>SVC: Use grammar score for overall score and summary
+        AI-->>SVC: {grammar: {issues[], summary}}
+        SVC->>SVC: Use grammar summary for the top-level summary
     end
 
     SVC->>LOG: write_run_log(batch-evaluation, inputs, outputs, provider)
     SVC-->>API: BatchEvaluationResponse {id, results[], created_at}
     API-->>BE: Store response
-    BE-->>U: Display per-file scores, breakdown, and feedback
+    BE-->>U: Display per-file grammar findings and summary
 ```
 
 ---
@@ -373,7 +373,6 @@ classDiagram
     class FileEvaluationResult {
         +id: string
         +filename: string
-        +scores: CriteriaScore[]
         +summary: string
         +grammar: GrammarFeedback | null
     }
@@ -384,14 +383,8 @@ classDiagram
     }
 
     class GrammarIssue {
-        +issue: string
-        +correction: string
-    }
-
-    class CriteriaScore {
-        +criteria_name: string
-        +score: float
-        +feedback: string
+        +original_text: string
+        +corrected_text: string
     }
 
     class BatchResults_FE {
@@ -416,7 +409,6 @@ classDiagram
 
     BatchEvaluation_FE --> BatchEvaluationResponse
     BatchEvaluationResponse --> FileEvaluationResult
-    FileEvaluationResult --> CriteriaScore
     FileEvaluationResult --> GrammarFeedback
     GrammarFeedback --> GrammarIssue
     BatchResults_FE --> BatchEvaluationResponse

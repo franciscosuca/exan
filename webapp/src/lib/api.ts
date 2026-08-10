@@ -57,12 +57,6 @@ export interface ProviderConfig {
 
 // --- Batch Evaluation Types ---
 
-export interface CriteriaScore {
-  criteria_name: string;
-  score: number;
-  feedback: string;
-}
-
 export interface GrammarIssue {
   original_text: string;
   corrected_text: string;
@@ -76,7 +70,6 @@ export interface GrammarFeedback {
 export interface FileEvaluationResult {
   id: string;
   filename: string;
-  scores: CriteriaScore[];
   summary: string;
   grammar?: GrammarFeedback | null;
 }

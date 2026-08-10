@@ -46,7 +46,6 @@ async def test_maps_grammar_issues_and_summary():
     provider = FakeProvider(
         [
             {
-                "score": 78,
                 "grammar": {
                     "issues": [
                         {"original_text": "teh", "corrected_text": "the"},
@@ -69,22 +68,20 @@ async def test_maps_grammar_issues_and_summary():
         ],
         summary="The text has two small errors.",
     )
-    assert result.scores[0].criteria_name == "Grammar"
-    assert result.scores[0].score == 78
-    assert result.scores[0].feedback == ""
+    assert result.summary == "The text has two small errors."
+    assert "scores" not in result.model_dump()
     assert "overall_score" not in result.model_dump()
     assert len(provider.prompts) == 1
     assert '"grammar": {' in provider.prompts[0]
     assert '"original_text":' in provider.prompts[0]
     assert '"corrected_text":' in provider.prompts[0]
     assert "Issue found | Correction" not in provider.prompts[0]
+    assert '"score"' not in provider.prompts[0]
 
 
 @pytest.mark.asyncio
 async def test_uses_correction_and_summary_languages_separately():
-    provider = FakeProvider(
-        [{"score": 90, "grammar": {"issues": [], "summary": "Résumé."}}]
-    )
+    provider = FakeProvider([{"grammar": {"issues": [], "summary": "Résumé."}}])
 
     with patch("app.services.batch_evaluation.write_run_log"):
         await _service(provider).evaluate(
@@ -100,11 +97,9 @@ async def test_evaluates_each_document_once_with_grammar():
     provider = FakeProvider(
         [
             {
-                "score": 78,
                 "grammar": {"issues": [], "summary": "First document."},
             },
             {
-                "score": 62,
                 "grammar": {"issues": [], "summary": "Second document."},
             },
         ]
@@ -116,7 +111,11 @@ async def test_evaluates_each_document_once_with_grammar():
         )
 
     assert [result.filename for result in response.results] == ["first.pdf", "second.pdf"]
-    assert [result.scores[0].score for result in response.results] == [78, 62]
+    assert [result.summary for result in response.results] == [
+        "First document.",
+        "Second document.",
+    ]
+    assert all("scores" not in result.model_dump() for result in response.results)
     assert len(provider.prompts) == 2
 
 
@@ -125,7 +124,6 @@ async def test_maps_empty_grammar_issue_list():
     provider = FakeProvider(
         [
             {
-                "score": 100,
                 "grammar": {"issues": [], "summary": "No grammar issues found."},
             }
         ]
@@ -147,7 +145,6 @@ async def test_malformed_grammar_output_raises_batch_evaluation_error():
     provider = FakeProvider(
         [
             {
-                "score": 85,
                 "grammar": {
                     "issues": [{"issue": "missing correction"}],
                     "summary": "Incomplete issue.",

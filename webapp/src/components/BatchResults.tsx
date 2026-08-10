@@ -41,30 +41,6 @@ export function BatchResults({ response }: BatchResultsProps) {
             </div>
           </header>
 
-          {result.scores.filter(
-            (score) => !result.grammar || score.criteria_name.toLowerCase() !== 'grammar'
-          ).length > 0 && (
-            <section
-              aria-label={t('batchResults.scores')}
-              className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm"
-            >
-              <div className="divide-y divide-gray-100">
-                {result.scores
-                  .filter((score) => !result.grammar || score.criteria_name.toLowerCase() !== 'grammar')
-                  .map((score) => (
-                  <div key={score.criteria_name} className="p-4 sm:p-6">
-                    <span className="wrap-break-word text-sm font-semibold text-gray-800">
-                      {score.criteria_name}
-                    </span>
-                    <p className="mt-2 whitespace-pre-wrap wrap-break-word text-sm text-gray-600">
-                      {score.feedback}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            </section>
-          )}
-
           {result.grammar && (
             <>
               <section

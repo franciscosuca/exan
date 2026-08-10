@@ -59,12 +59,6 @@ class ProviderConfig(BaseModel):
 # --- Batch Evaluation Models ---
 
 
-class CriteriaScore(BaseModel):
-    criteria_name: str
-    score: float  # 0-100
-    feedback: str
-
-
 class GrammarIssue(BaseModel):
     """A single finding, with an unambiguous before/after representation.
 
@@ -93,7 +87,6 @@ class GrammarFeedback(BaseModel):
 class FileEvaluationResult(BaseModel):
     id: str
     filename: str
-    scores: list[CriteriaScore]
     summary: str
     grammar: GrammarFeedback | None = None
 

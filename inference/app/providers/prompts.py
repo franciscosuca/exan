@@ -102,15 +102,8 @@ def grammar_evaluation_prompt(
 Analyze the following text for grammatical correctness, spelling, punctuation,
 sentence structure, and overall writing quality in {correction_language}.
 
-Evaluate on a scale of 0 to 100 where:
-- 0% means the text is completely unintelligible, full of errors in every
-  sentence, and impossible to understand
-- 100% means the text is perfectly written with flawless grammar, spelling,
-  punctuation, and natural flow
-
 Provide:
-1. A numeric score (0-100)
-2. A grammar object containing:
+1. A grammar object containing:
    - An issues array with one object for each issue. Each object must contain
     "original_text" (the exact original sentence or text) and
     "corrected_text" (the complete corrected sentence or text).
@@ -128,7 +121,6 @@ Keep the summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{
-  "score": 85,
   "grammar": {{
     "issues": [
       {{

@@ -103,7 +103,6 @@ const translations = {
 
     'batchResults.title': 'Evaluation Results',
     'batchResults.filesEvaluated': '{count} file(s) evaluated',
-    'batchResults.scores': 'Criteria Scores',
     'batchResults.processed': 'Processed {date}',
     'batchResults.detailedFindings': 'Detailed Findings',
     'batchResults.originalSentence': 'Original Sentence',
@@ -206,7 +205,6 @@ const translations = {
 
     'batchResults.title': 'Auswertungsergebnisse',
     'batchResults.filesEvaluated': '{count} Datei(en) ausgewertet',
-    'batchResults.scores': 'Kriteriumsbewertungen',
     'batchResults.processed': 'Verarbeitet am {date}',
     'batchResults.detailedFindings': 'Detaillierte Ergebnisse',
     'batchResults.originalSentence': 'Originalsatz',

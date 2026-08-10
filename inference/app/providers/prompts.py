@@ -88,27 +88,31 @@ Only return valid JSON, no other text."""
 # --- Batch Evaluation Prompts ---
 
 
-def grammar_evaluation_prompt(language: str) -> str:
-    return f"""You are an expert language and grammar evaluator for {language}.
+def grammar_evaluation_prompt(
+    correction_language: str | None = None,
+    summary_language: str | None = None,
+    *,
+    language: str | None = None,
+) -> str:
+    """Build the grammar prompt while accepting the legacy ``language`` name."""
+    correction_language = correction_language or language or "en"
+    summary_language = summary_language or correction_language
+    return f"""You are an expert language and grammar evaluator.
 
 Analyze the following text for grammatical correctness, spelling, punctuation,
-sentence structure, and overall writing quality in {language}.
-
-Evaluate on a scale of 0 to 100 where:
-- 0% means the text is completely unintelligible, full of errors in every
-  sentence, and impossible to understand
-- 100% means the text is perfectly written with flawless grammar, spelling,
-  punctuation, and natural flow
+sentence structure, and overall writing quality in {correction_language}.
 
 Provide:
-1. A numeric score (0-100)
-2. A grammar object containing:
+1. A grammar object containing:
    - An issues array with one object for each issue. Each object must contain
-     the exact issue and its correction.
+    "original_text" (the exact original sentence or text) and
+    "corrected_text" (the complete corrected sentence or text).
    - A plain-text summary of the overall grammar assessment.
 
-Write the feedback entirely in {language}, regardless of the language of the text
-being evaluated. Do not use Markdown formatting or tables, including Markdown
+Write every issue and correction in {correction_language}. Write the summary
+in {summary_language}. Do not translate the original text merely to produce a
+finding: preserve it exactly, except for the corresponding corrected text.
+Do not use Markdown formatting or tables, including Markdown
 table syntax, headings, bullets, asterisks, or code fences. The issues array is
 the issue list: include exactly one JSON object (one row) per issue and do not
 combine multiple issues in one object. If there are no issues, return an empty
@@ -117,12 +121,11 @@ Keep the summary under 100 words.
 
 Return your evaluation as JSON with this exact structure:
 {{
-  "score": 85,
   "grammar": {{
     "issues": [
       {{
-        "issue": "the exact error or issue",
-        "correction": "the corrected text or recommended correction"
+        "original_text": "the complete original sentence or text",
+        "corrected_text": "the complete corrected sentence or text"
       }}
     ],
     "summary": "The text is mostly well-written with minor issues."

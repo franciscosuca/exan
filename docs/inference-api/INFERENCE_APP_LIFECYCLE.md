@@ -27,10 +27,10 @@ routers. The application is split into these ownership boundaries:
 | --- | --- |
 | `app/api/routes/providers.py` | Provider discovery HTTP endpoint. |
 | `app/api/routes/exams.py` | Exam upload HTTP concerns and error-to-HTTP translation. |
-| `app/api/routes/batch.py` | Batch form parsing, criteria validation, and HTTP errors. |
+| `app/api/routes/batch.py` | Batch form parsing and HTTP errors. |
 | `app/api/dependencies.py` | Constructs injectable repositories and workflow services. |
 | `app/services/exam_comparison.py` | Template, answer-key, and grading orchestration. |
-| `app/services/batch_evaluation.py` | Text extraction, criteria evaluation, scoring, and logging. |
+| `app/services/batch_evaluation.py` | Text extraction, grammar evaluation, and logging. |
 | `app/repositories/exam_repository.py` | In-memory exam and answer-key storage. |
 | `app/utils/` | File processing and run logging primitives. |
 | `app/providers/` | Provider contract, registry, adapters, and prompts. |
@@ -80,8 +80,6 @@ Errors are converted to HTTP responses close to the operation that failed:
 | Unsupported or invalid upload | `400` |
 | Unknown `exam_id` | `404` |
 | Grade requested before an answer key | `400` |
-| Invalid batch criteria JSON | `400` |
-| No selected batch criteria | `400` |
 | Provider or AI operation failure | `500` |
 
 ## Exam Comparison Lifecycle
@@ -162,8 +160,8 @@ in the selected feedback language:
 2. Extract text from each file.
 3. Evaluate grammar using `grammar_evaluation_prompt`, returning structured
   issues and a summary.
-4. Build `BatchEvaluationResponse` with per-criterion scores and grammar
-  feedback.
+4. Build `BatchEvaluationResponse` with structured grammar feedback and a
+  summary derived from the grammar response.
 5. Write one `batch-evaluation` run log and return the response.
 
 The route performs exactly one provider call per file. Legacy multipart fields
@@ -223,7 +221,7 @@ flowchart LR
 | `inference/app/providers/registry.py` | Maps a provider name to its implementation and reports availability. |
 | `inference/app/providers/__init__.py` | Defines the shared async provider methods. |
 | `inference/app/providers/*.py` | Calls a cloud or local model and parses its JSON response. |
-| `inference/app/providers/prompts.py` | Supplies the structure, grading, grammar, and custom-criteria instructions. |
+| `inference/app/providers/prompts.py` | Supplies the structure, grading, and grammar instructions. |
 | `inference/app/config.py` | Loads API keys, model names, and local provider URLs. |
 | `inference/app/utils/run_logging.py` | Records inputs, outputs, provider metadata, token usage, and elapsed time. |
 | `logs/` | Receives completed comparison and batch-evaluation JSON records. |
@@ -236,7 +234,7 @@ flowchart LR
 | `POST /api/exam/template` | One PDF or image, provider | `routes/exams.py -> ExamComparisonService -> file_processing.py -> provider` | `ExamStructure` |
 | `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `AnswerKey` |
 | `POST /api/exam/grade` | One or more PDFs/images, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `GradingResult[]` |
-| `POST /api/batch/evaluate` | PDFs/Word files, provider, criteria | `routes/batch.py -> BatchEvaluationService -> prompts -> provider` | `BatchEvaluationResponse` |
+| `POST /api/batch/evaluate` | PDFs/Word files, provider, feedback languages | `routes/batch.py -> BatchEvaluationService -> prompts -> provider` | `BatchEvaluationResponse` |
 
 ## Operational Notes
 
@@ -244,8 +242,8 @@ flowchart LR
   by configuration and local endpoint probes.
 - PDFs used by exam comparison become one image per page; PDFs used by batch
   evaluation remain text extraction inputs.
-- A provider instance is selected once per route request. Batch files and
-  criteria reuse that instance for all calls in the request.
+- A provider instance is selected once per route request. Batch files reuse
+  that instance for all calls in the request.
 - A run log is written only after all files and evaluations in the route have
   completed successfully. An exception raised earlier returns an HTTP error
   before the final log write.

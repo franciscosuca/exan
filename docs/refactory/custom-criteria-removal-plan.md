@@ -7,11 +7,11 @@ The migration to grammar-only batch evaluation is complete.
 - The route accepts files, provider, and feedback language.
 - Every uploaded document receives exactly one grammar provider evaluation.
 - Legacy multipart evaluation controls are ignored.
-- Response identifiers, scores, summaries, and grammar feedback remain stable.
+- Response identifiers, summaries, and grammar feedback remain stable.
 
 ## Implementation
 
-- The route and service no longer parse or score selectable evaluation controls.
+- The route and service accept no selectable evaluation controls.
 - The webapp submits only the supported multipart fields.
 - Run logs record language, files, provider output, and timing.
 - Architecture docs and the API example describe the grammar-only workflow.
@@ -19,4 +19,4 @@ The migration to grammar-only batch evaluation is complete.
 ## Validation
 
 - Backend application modules compile successfully.
-- The webapp TypeScript and production build pass.
+- The webapp production build passes.

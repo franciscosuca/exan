@@ -3,10 +3,10 @@
 ## pre-requisites
 
 - Scope structured feedback exclusively to grammar evaluation.
-- Preserve the existing score and feedback response fields.
-- Confirm grammar issue fields: `issue` and `correction`.
+- Require a grammar-only provider response for batch feedback.
+- Confirm grammar issue fields: `original_text` and `corrected_text`.
 - Confirm grammar summary is one plain-text string.
-- Preserve current score calculation and batch result identifiers.
+- Derive the top-level batch summary from the grammar summary.
 - Coordinate Python and React contract changes in one release.
 
 ## files to change
@@ -26,17 +26,16 @@
 
 ## response contract
 
-`BatchEvaluationResponse` keeps `id`, `results`, and `created_at`. Only
-`FileEvaluationResult` gains an optional `grammar` object holding the table rows
-and the summary. `CriteriaScore` remains unchanged so existing score feedback
-fields remain compatible.
+`BatchEvaluationResponse` keeps `id`, `results`, and `created_at`.
+`FileEvaluationResult` contains an optional `grammar` object holding the table
+rows and the summary. Its top-level `summary` mirrors the grammar summary.
 
 ### backend — `inference/app/models/__init__.py`
 
 ```python
 class GrammarIssue(BaseModel):
-    issue: str  # exact fragment found in the document
-    correction: str  # recommended replacement
+    original_text: str  # exact fragment found in the document
+    corrected_text: str  # recommended replacement
 
 
 class GrammarFeedback(BaseModel):
@@ -47,7 +46,6 @@ class GrammarFeedback(BaseModel):
 class FileEvaluationResult(BaseModel):
     id: str
     filename: str
-    scores: list[CriteriaScore]
     summary: str
     grammar: GrammarFeedback | None = None
 ```
@@ -56,8 +54,8 @@ class FileEvaluationResult(BaseModel):
 
 ```ts
 export interface GrammarIssue {
-  issue: string;
-  correction: string;
+  original_text: string;
+  corrected_text: string;
 }
 
 export interface GrammarFeedback {
@@ -68,7 +66,6 @@ export interface GrammarFeedback {
 export interface FileEvaluationResult {
   id: string;
   filename: string;
-  scores: CriteriaScore[];
   summary: string;
   grammar?: GrammarFeedback | null;
 }
@@ -84,12 +81,11 @@ export interface FileEvaluationResult {
     {
       "id": "9c22…",
       "filename": "carta.docx",
-      "summary": "Grammar: 78%",
-      "scores": [{ "criteria_name": "Grammar", "score": 78, "feedback": "" }],
+      "summary": "El texto presenta errores ortográficos y de concordancia.",
       "grammar": {
         "issues": [
-          { "issue": "de la manara", "correction": "de la manera" },
-          { "issue": "un perspectiva", "correction": "una perspectiva" }
+          { "original_text": "de la manara", "corrected_text": "de la manera" },
+          { "original_text": "un perspectiva", "corrected_text": "una perspectiva" }
         ],
         "summary": "El texto presenta errores ortográficos y de concordancia."
       }
@@ -103,7 +99,7 @@ export interface FileEvaluationResult {
 - `grammar.issues` renders one table row per item, columns `Issue found` and `Correction`.
 - `grammar.summary` renders as a paragraph section below the table.
 - Empty `issues` renders an explicit no-issues message, not an empty table.
-- Absent or `null` `grammar` falls back to the existing `feedback` paragraph.
+- Absent or `null` `grammar` renders no grammar findings section.
 
 ## frontend component skeleton
 
@@ -153,12 +149,12 @@ export function GrammarFeedbackTable({
             </thead>
             <tbody className="divide-y divide-gray-100 bg-white">
               {feedback.issues.map((item, index) => (
-                <tr key={`${item.issue}-${index}`}>
+                <tr key={`${item.original_text}-${index}`}>
                   <td className="whitespace-pre-wrap px-4 py-3 align-top text-gray-700">
-                    {item.issue}
+                    {item.original_text}
                   </td>
                   <td className="whitespace-pre-wrap px-4 py-3 align-top text-gray-700">
-                    {item.correction}
+                    {item.corrected_text}
                   </td>
                 </tr>
               ))}
@@ -181,8 +177,8 @@ export function GrammarFeedbackTable({
 ```
 
 `BatchResults` should render `<GrammarFeedbackTable feedback={result.grammar} />`
-when structured grammar data exists, then retain the current feedback paragraph
-for legacy or custom-criteria results.
+when structured grammar data exists. The batch response always supplies that
+grammar object after validation.
 
 ## package recommendations
 
@@ -198,16 +194,14 @@ then introduce TanStack Table only when interaction requirements justify it.
 
 ## implementation
 
-- Backend: Add `GrammarIssue` with issue and correction fields.
+- Backend: Add `GrammarIssue` with original and corrected text fields.
 - Backend: Add `GrammarFeedback` containing issues and summary.
 - Backend: Add optional `grammar` field to `FileEvaluationResult`.
 - Backend: Keep `BatchEvaluationResponse` top-level fields unchanged.
-- Backend: Leave `CriteriaScore` and score feedback unchanged.
 - Backend: Request issues and summary as JSON properties.
 - Backend: Configure Gemini with the grammar response schema.
 - Backend: Validate provider output before service-level mapping.
 - Backend: Reject malformed grammar responses with actionable errors.
-- Backend: Preserve grammar scores and overall-score calculations.
 - Backend: Test valid, empty, and malformed grammar feedback.
 - Frontend: Mirror grammar feedback interfaces in TypeScript.
 - Frontend: Mark `grammar` optional on `FileEvaluationResult`.
@@ -216,8 +210,6 @@ then introduce TanStack Table only when interaction requirements justify it.
 - Frontend: Add the reusable grammar table component skeleton.
 - Frontend: Render grammar summary beneath the issues table.
 - Frontend: Show an explicit no-issues state when empty.
-- Frontend: Fall back to feedback text when grammar missing.
-- Frontend: Keep score feedback rendering compatible.
 - Frontend: Test tables, summaries, empty issues, and fallback.
 - Documentation: Record the transitional grammar-only response contract.
 - Verification: Run backend tests and Ruff checks.

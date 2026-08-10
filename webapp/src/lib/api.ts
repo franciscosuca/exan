@@ -57,15 +57,9 @@ export interface ProviderConfig {
 
 // --- Batch Evaluation Types ---
 
-export interface CriteriaScore {
-  criteria_name: string;
-  score: number;
-  feedback: string;
-}
-
 export interface GrammarIssue {
-  issue: string;
-  correction: string;
+  original_text: string;
+  corrected_text: string;
 }
 
 export interface GrammarFeedback {
@@ -76,7 +70,6 @@ export interface GrammarFeedback {
 export interface FileEvaluationResult {
   id: string;
   filename: string;
-  scores: CriteriaScore[];
   summary: string;
   grammar?: GrammarFeedback | null;
 }
@@ -150,12 +143,14 @@ export async function uploadStudentExams(
 export async function batchEvaluate(
   files: File[],
   provider: string,
-  language: string
+  correctionLanguage: string,
+  summaryLanguage: string
 ): Promise<BatchEvaluationResponse> {
   const form = new FormData();
   files.forEach((f) => form.append('files', f));
   form.append('provider', provider);
-  form.append('language', language);
+  form.append('correction_language', correctionLanguage);
+  form.append('summary_language', summaryLanguage);
 
   const res = await fetch(`${API_BASE}/batch/evaluate`, { method: 'POST', body: form });
   if (!res.ok) {

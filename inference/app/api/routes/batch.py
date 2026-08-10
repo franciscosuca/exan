@@ -19,9 +19,16 @@ async def batch_evaluate(
     files: list[UploadFile] = File(...),
     provider: str = Form("gemini"),
     language: str = Form("en"),
+    correction_language: str | None = Form(None),
+    summary_language: str | None = Form(None),
     service: BatchEvaluationService = Depends(get_batch_evaluation_service),
 ) -> BatchEvaluationResponse:
-    """Evaluate every uploaded document for grammar."""
+    """Evaluate every uploaded document for grammar.
+
+    ``language`` remains the legacy correction-language field.  New clients
+    should use ``correction_language`` and ``summary_language``; omitted
+    values fall back to ``language``.
+    """
 
     documents = [
         UploadedDocument(
@@ -33,9 +40,11 @@ async def batch_evaluate(
     ]
     try:
         return await service.evaluate(
-            documents,
-            provider,
-            language,
+            documents=documents,
+            provider_name=provider,
+            language=language,
+            summary_language=summary_language,
+            correction_language=correction_language,
         )
     except UploadProcessingError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc

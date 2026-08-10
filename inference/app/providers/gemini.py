@@ -12,7 +12,6 @@ from .prompts import ANALYZE_STRUCTURE_PROMPT, EXTRACT_ANSWERS_PROMPT, grade_exa
 GRAMMAR_RESPONSE_SCHEMA = {
     "type": "OBJECT",
     "properties": {
-        "score": {"type": "NUMBER"},
         "grammar": {
             "type": "OBJECT",
             "properties": {
@@ -21,10 +20,10 @@ GRAMMAR_RESPONSE_SCHEMA = {
                     "items": {
                         "type": "OBJECT",
                         "properties": {
-                            "issue": {"type": "STRING"},
-                            "correction": {"type": "STRING"},
+                            "original_text": {"type": "STRING"},
+                            "corrected_text": {"type": "STRING"},
                         },
-                        "required": ["issue", "correction"],
+                        "required": ["original_text", "corrected_text"],
                     },
                 },
                 "summary": {"type": "STRING"},
@@ -32,7 +31,7 @@ GRAMMAR_RESPONSE_SCHEMA = {
             "required": ["issues", "summary"],
         },
     },
-    "required": ["score", "grammar"],
+    "required": ["grammar"],
 }
 
 
@@ -74,7 +73,7 @@ class GeminiProvider(BaseProvider):
             fields = getattr(types.GenerateContentConfig, "__fields__", {})
         return "response_schema" in fields
 
-    #TODO: add this method to the BaseProvider interface and implement it in other providers
+    # TODO: add this method to the BaseProvider interface and implement it in other providers
     def _evaluation_config(self, prompt: str) -> types.GenerateContentConfig:
         config_kwargs: dict[str, object] = {"response_mime_type": "application/json"}
         if self._is_grammar_prompt(prompt) and self._supports_response_schema():

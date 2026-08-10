@@ -27,16 +27,13 @@ describe('BatchResults', () => {
     window.localStorage.setItem(LANGUAGE_STORAGE_KEY, 'en');
   });
 
-  it('renders structured grammar rows and summary without legacy grammar feedback', () => {
+  it('renders structured grammar rows and summary with word-level highlighting', () => {
     renderResults(
       createResponse({
         filename: 'essay.docx',
-        scores: [
-          { criteria_name: 'Grammar', score: 78, feedback: 'Legacy grammar feedback' },
-        ],
-        summary: 'Grammar: 78%',
+        summary: 'Review article usage before singular nouns.',
         grammar: {
-          issues: [{ issue: 'a apple', correction: 'an apple' }],
+          issues: [{ original_text: 'a apple', corrected_text: 'an apple' }],
           summary: 'Review article usage before singular nouns.',
         },
       })
@@ -45,11 +42,11 @@ describe('BatchResults', () => {
     expect(screen.getByRole('table')).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Original Sentence' })).toBeInTheDocument();
     expect(screen.getByRole('columnheader', { name: 'Corrected Sentence' })).toBeInTheDocument();
-    expect(screen.getByText('a apple')).toBeInTheDocument();
-    expect(screen.getByText('an apple')).toBeInTheDocument();
+    expect(screen.getAllByRole('cell')[0]).toHaveTextContent('a apple');
+    expect(screen.getAllByRole('cell')[1]).toHaveTextContent('an apple');
+    expect(screen.getAllByRole('mark')).toHaveLength(2);
     expect(screen.getByRole('heading', { name: 'How to Improve' })).toBeInTheDocument();
     expect(screen.getByText('Review article usage before singular nouns.')).toBeInTheDocument();
-    expect(screen.queryByText('Legacy grammar feedback')).not.toBeInTheDocument();
     expect(screen.queryByText('Overall')).not.toBeInTheDocument();
   });
 
@@ -57,8 +54,7 @@ describe('BatchResults', () => {
     renderResults(
       createResponse({
         filename: 'clean.pdf',
-        scores: [{ criteria_name: 'Grammar', score: 100, feedback: '' }],
-        summary: 'Grammar: 100%',
+        summary: 'The grammar is clear and accurate.',
         grammar: { issues: [], summary: 'The grammar is clear and accurate.' },
       })
     );
@@ -68,34 +64,28 @@ describe('BatchResults', () => {
     expect(screen.getByText('The grammar is clear and accurate.')).toBeInTheDocument();
   });
 
-  it('keeps legacy and custom criteria feedback when structured grammar is missing', () => {
+  it('does not render obsolete criteria when structured grammar is missing', () => {
     renderResults(
       createResponse({
         filename: 'legacy.docx',
-        scores: [
-          { criteria_name: 'Grammar', score: 70, feedback: 'Legacy grammar feedback' },
-          { criteria_name: 'Argument Quality', score: 82, feedback: 'The argument is well supported.' },
-        ],
-        summary: 'Grammar: 70%, Argument Quality: 82%',
+        summary: 'No structured grammar feedback available.',
       })
     );
 
-    expect(screen.getByText('Legacy grammar feedback')).toBeInTheDocument();
-    expect(screen.getByText('The argument is well supported.')).toBeInTheDocument();
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     expect(screen.queryByText('Detailed Findings')).not.toBeInTheDocument();
+    expect(screen.queryByText('Argument Quality')).not.toBeInTheDocument();
   });
 
   it('renders one table row for each structured grammar issue', () => {
     renderResults(
       createResponse({
         filename: 'multiple-issues.pdf',
-        scores: [{ criteria_name: 'Grammar', score: 50, feedback: '' }],
-        summary: 'Grammar: 50%',
+        summary: 'Review subject-verb agreement.',
         grammar: {
           issues: [
-            { issue: 'She go home.', correction: 'She goes home.' },
-            { issue: 'They was ready.', correction: 'They were ready.' },
+            { original_text: 'She go home.', corrected_text: 'She goes home.' },
+            { original_text: 'They was ready.', corrected_text: 'They were ready.' },
           ],
           summary: 'Review subject-verb agreement.',
         },
@@ -103,7 +93,9 @@ describe('BatchResults', () => {
     );
 
     expect(screen.getAllByRole('row')).toHaveLength(3);
-    expect(screen.getByText('She go home.')).toBeInTheDocument();
-    expect(screen.getByText('They were ready.')).toBeInTheDocument();
+    expect(screen.getAllByRole('cell')[0]).toHaveTextContent('She go home.');
+    expect(screen.getAllByRole('cell')[1]).toHaveTextContent('She goes home.');
+    expect(screen.getAllByRole('cell')[2]).toHaveTextContent('They was ready.');
+    expect(screen.getAllByRole('cell')[3]).toHaveTextContent('They were ready.');
   });
 });

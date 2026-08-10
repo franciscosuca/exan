@@ -4,7 +4,7 @@ Each provider implements the same interface for:
 1. Analyzing exam structure from images/PDFs
 2. Extracting answers from filled exams
 3. Comparing student answers against answer keys
-4. Evaluating text against criteria (batch evaluation)
+4. Evaluating text for grammar feedback (batch evaluation)
 """
 
 import re
@@ -48,9 +48,7 @@ class BaseProvider(ABC):
             usage = vars(usage)
         if usage is None and isinstance(response, dict):
             usage = {
-                key: response[key]
-                for key in ("prompt_eval_count", "eval_count")
-                if key in response
+                key: response[key] for key in ("prompt_eval_count", "eval_count") if key in response
             } or None
         return ProviderResponse(result, usage=usage)
 
@@ -104,6 +102,5 @@ class BaseProvider(ABC):
     async def evaluate_text(self, text: str, prompt: str) -> dict:
         """Evaluate text using a given prompt.
 
-        Returns dict with:
-        - score (0-100), feedback (string)
+        Returns a parsed provider response for the requested evaluation.
         """

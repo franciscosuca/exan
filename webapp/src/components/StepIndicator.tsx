@@ -45,19 +45,19 @@ export function StepIndicator({ steps, currentStep }: StepIndicatorProps) {
   );
 }
 
-interface ResultsBadgeProps {
+interface CorrectnessBadgeProps {
   correct: boolean;
 }
 
-export function ResultsBadge({ correct }: ResultsBadgeProps) {
+export function CorrectnessBadge({ correct }: CorrectnessBadgeProps) {
   const { t } = useLanguage();
   return correct ? (
     <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-      <Check className="h-3 w-3" /> {t('gradingResults.correct')}
+      <Check className="h-3 w-3" /> {t('comparisonResults.correct')}
     </span>
   ) : (
     <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-      <X className="h-3 w-3" /> {t('gradingResults.incorrect')}
+      <X className="h-3 w-3" /> {t('comparisonResults.incorrect')}
     </span>
   );
 }

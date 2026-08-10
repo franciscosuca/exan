@@ -1,3 +1,5 @@
+import { throwResponseError } from './response-error';
+
 const API_BASE = '/api';
 
 export type QuestionNumber = number | string;
@@ -7,6 +9,7 @@ export interface ExamStructure {
   filename: string;
   questions: Question[];
   created_at: string;
+  criteria?: string | null;
 }
 
 export interface Question {
@@ -14,7 +17,6 @@ export interface Question {
   text: string;
   type: 'multiple_choice' | 'open_ended' | 'true_false' | 'fill_in_blank';
   options?: string[];
-  points?: number;
 }
 
 export interface AnswerKey {
@@ -27,17 +29,13 @@ export interface AnswerKey {
 export interface Answer {
   question_number: QuestionNumber;
   correct_answer: string;
-  points: number;
 }
 
-export interface GradingResult {
+export interface ComparisonResult {
   id: string;
   exam_id: string;
   student_name?: string;
   filename: string;
-  total_score: number;
-  max_score: number;
-  percentage: number;
   answers: StudentAnswer[];
 }
 
@@ -46,8 +44,6 @@ export interface StudentAnswer {
   student_answer: string;
   correct_answer: string;
   is_correct: boolean;
-  points_earned: number;
-  points_possible: number;
 }
 
 export interface ProviderConfig {
@@ -85,23 +81,39 @@ export interface BatchEvaluationResponse {
 // --- API Functions ---
 
 export async function getProviders(): Promise<ProviderConfig[]> {
-  const res = await fetch(`${API_BASE}/providers`);
-  if (!res.ok) throw new Error('Failed to fetch providers');
+  const requestUrl = `${API_BASE}/providers`;
+  const res = await fetch(requestUrl);
+  if (!res.ok) {
+    await throwResponseError(res, {
+      fallbackMessage: 'Failed to fetch providers',
+      method: 'GET',
+      requestUrl,
+    });
+  }
   return res.json();
 }
 
 export async function uploadExamTemplate(
   file: File,
-  provider: string
+  provider: string,
+  criteria?: string
 ): Promise<ExamStructure> {
   const form = new FormData();
   form.append('file', file);
   form.append('provider', provider);
+  const normalizedCriteria = criteria?.trim();
+  if (normalizedCriteria) {
+    form.append('criteria', normalizedCriteria);
+  }
 
-  const res = await fetch(`${API_BASE}/exam/template`, { method: 'POST', body: form });
+  const requestUrl = `${API_BASE}/exam/template`;
+  const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
-    throw new Error(err.detail || 'Upload failed');
+    await throwResponseError(res, {
+      fallbackMessage: 'Upload failed',
+      method: 'POST',
+      requestUrl,
+    });
   }
   return res.json();
 }
@@ -116,28 +128,36 @@ export async function uploadAnswerKey(
   form.append('exam_id', examId);
   form.append('provider', provider);
 
-  const res = await fetch(`${API_BASE}/exam/answer-key`, { method: 'POST', body: form });
+  const requestUrl = `${API_BASE}/exam/answer-key`;
+  const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Upload failed' }));
-    throw new Error(err.detail || 'Upload failed');
+    await throwResponseError(res, {
+      fallbackMessage: 'Upload failed',
+      method: 'POST',
+      requestUrl,
+    });
   }
   return res.json();
 }
 
-export async function uploadStudentExams(
+export async function compareStudentExams(
   files: File[],
   examId: string,
   provider: string
-): Promise<GradingResult[]> {
+): Promise<ComparisonResult[]> {
   const form = new FormData();
   files.forEach((f) => form.append('files', f));
   form.append('exam_id', examId);
   form.append('provider', provider);
 
-  const res = await fetch(`${API_BASE}/exam/grade`, { method: 'POST', body: form });
+  const requestUrl = `${API_BASE}/exam/compare`;
+  const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Grading failed' }));
-    throw new Error(err.detail || 'Grading failed');
+    await throwResponseError(res, {
+      fallbackMessage: 'Comparison failed',
+      method: 'POST',
+      requestUrl,
+    });
   }
   return res.json();
 }
@@ -154,10 +174,14 @@ export async function batchEvaluate(
   form.append('correction_language', correctionLanguage);
   form.append('summary_language', summaryLanguage);
 
-  const res = await fetch(`${API_BASE}/batch/evaluate`, { method: 'POST', body: form });
+  const requestUrl = `${API_BASE}/batch/evaluate`;
+  const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ detail: 'Evaluation failed' }));
-    throw new Error(err.detail || 'Evaluation failed');
+    await throwResponseError(res, {
+      fallbackMessage: 'Evaluation failed',
+      method: 'POST',
+      requestUrl,
+    });
   }
   return res.json();
 }

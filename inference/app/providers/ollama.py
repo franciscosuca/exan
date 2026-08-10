@@ -7,7 +7,11 @@ import httpx
 
 from ..config import settings
 from . import BaseProvider
-from .prompts import ANALYZE_STRUCTURE_PROMPT, EXTRACT_ANSWERS_PROMPT, grade_exam_prompt
+from .prompts import (
+    analyze_exam_structure_prompt,
+    compare_exam_prompt,
+    extract_answers_prompt,
+)
 
 
 class OllamaProvider(BaseProvider):
@@ -37,24 +41,42 @@ class OllamaProvider(BaseProvider):
             response.raise_for_status()
             return response.json()
 
-    async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
-        messages = self._build_messages(image_data, mime_types, ANALYZE_STRUCTURE_PROMPT)
+    async def analyze_exam_structure(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
+        messages = self._build_messages(
+            image_data,
+            mime_types,
+            analyze_exam_structure_prompt(criteria),
+        )
         response = await self._chat(messages)
         return self._with_metadata(self._parse_json(response["message"]["content"]), response)
 
-    async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
-        messages = self._build_messages(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
+    async def extract_answers(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
+        messages = self._build_messages(
+            image_data,
+            mime_types,
+            extract_answers_prompt(criteria),
+        )
         response = await self._chat(messages)
         return self._with_metadata(self._parse_json(response["message"]["content"]), response)
 
-    async def grade_exam(
+    async def compare_exam(
         self,
         student_images: list[bytes],
         student_mime_types: list[str],
         exam_structure: dict,
         answer_key: dict,
     ) -> dict:
-        prompt = grade_exam_prompt(exam_structure, answer_key)
+        prompt = compare_exam_prompt(exam_structure, answer_key)
         messages = self._build_messages(student_images, student_mime_types, prompt)
         response = await self._chat(messages)
         return self._with_metadata(self._parse_json(response["message"]["content"]), response)

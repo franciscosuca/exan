@@ -2,16 +2,16 @@ import { useState, useEffect } from 'react';
 import { FileDropzone } from './FileDropzone';
 import { ProviderSelector } from './ProviderSelector';
 import { StepIndicator } from './StepIndicator';
-import { GradingResults } from './GradingResults';
+import { ComparisonResults } from './ComparisonResults';
 import {
   getProviders,
   uploadExamTemplate,
   uploadAnswerKey,
-  uploadStudentExams,
+  compareStudentExams,
   type ProviderConfig,
   type ExamStructure,
   type AnswerKey,
-  type GradingResult,
+  type ComparisonResult,
 } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Loader2, RotateCcw } from 'lucide-react';
@@ -25,13 +25,14 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
   const STEPS = [t('examComparison.step1'), t('examComparison.step2'), t('examComparison.step3')];
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [selectedProvider, setSelectedProvider] = useState('');
+  const [criteria, setCriteria] = useState('');
   const [currentStep, setCurrentStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [examStructure, setExamStructure] = useState<ExamStructure | null>(null);
   const [answerKey, setAnswerKey] = useState<AnswerKey | null>(null);
-  const [gradingResults, setGradingResults] = useState<GradingResult[]>([]);
+  const [comparisonResults, setComparisonResults] = useState<ComparisonResult[]>([]);
 
   useEffect(() => {
     getProviders()
@@ -45,9 +46,10 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
 
   const reset = () => {
     setCurrentStep(0);
+    setCriteria('');
     setExamStructure(null);
     setAnswerKey(null);
-    setGradingResults([]);
+    setComparisonResults([]);
     setError(null);
   };
 
@@ -55,7 +57,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
     setLoading(true);
     setError(null);
     try {
-      const result = await uploadExamTemplate(files[0], selectedProvider);
+      const result = await uploadExamTemplate(files[0], selectedProvider, criteria);
       setExamStructure(result);
       setCurrentStep(1);
     } catch (e: unknown) {
@@ -85,8 +87,8 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
     setLoading(true);
     setError(null);
     try {
-      const results = await uploadStudentExams(files, examStructure.id, selectedProvider);
-      setGradingResults(results);
+      const results = await compareStudentExams(files, examStructure.id, selectedProvider);
+      setComparisonResults(results);
       setCurrentStep(3);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : t('examComparison.step3.error'));
@@ -144,6 +146,22 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
           <p className="text-gray-600">
             {t('examComparison.step1.description')}
           </p>
+          <div className="space-y-2">
+            <label htmlFor="exam-criteria" className="block text-sm font-medium text-gray-700">
+              {t('examComparison.step1.criteriaLabel')}
+            </label>
+            <textarea
+              id="exam-criteria"
+              value={criteria}
+              onChange={(event) => setCriteria(event.target.value)}
+              placeholder={t('examComparison.step1.criteriaPlaceholder')}
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            />
+            <p className="text-sm text-gray-500">
+              {t('examComparison.step1.criteriaDescription')}
+            </p>
+          </div>
           <FileDropzone
             onFiles={handleExamTemplate}
             label={t('examComparison.step1.dropLabel')}
@@ -194,7 +212,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
         </div>
       )}
 
-      {!loading && currentStep === 3 && <GradingResults results={gradingResults} />}
+      {!loading && currentStep === 3 && <ComparisonResults results={comparisonResults} />}
     </div>
   );
 }

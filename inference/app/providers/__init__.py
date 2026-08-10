@@ -69,30 +69,40 @@ class BaseProvider(ABC):
         return feedback.strip()
 
     @abstractmethod
-    async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
+    async def analyze_exam_structure(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
         """Analyze an exam image/PDF and return its structure.
 
         Returns dict with 'questions' list, each having:
-        - number, text, type, options (if applicable), points
+        - number, text, type, options (if applicable)
         """
 
     @abstractmethod
-    async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
+    async def extract_answers(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
         """Extract filled-in answers from an exam image/PDF.
 
         Returns dict with 'answers' list, each having:
-        - question_number, answer, points
+        - question_number, answer
         """
 
     @abstractmethod
-    async def grade_exam(
+    async def compare_exam(
         self,
         student_images: list[bytes],
         student_mime_types: list[str],
         exam_structure: dict,
         answer_key: dict,
     ) -> dict:
-        """Grade a student's exam against the answer key.
+        """Compare a student's exam against the answer key.
 
         Returns dict with:
         - student_name (if detectable), answers list with correctness

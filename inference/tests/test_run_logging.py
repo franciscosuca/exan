@@ -16,9 +16,9 @@ def test_write_run_log_creates_timestamped_exam_comparison_record(tmp_path, monk
         input_snapshot={"files": [{"filename": "student.pdf", "bytes": 10}]},
         outputs=[
             {
-                "operation": "grade_exam",
+                "operation": "compare_exam",
                 "elapsed_ms": 3.2,
-                "output": ProviderResponse({"score": 9}, usage={"total": 12}),
+                "output": ProviderResponse({"answers": []}, usage={"total": 12}),
             }
         ],
         elapsed=4.5,
@@ -30,7 +30,7 @@ def test_write_run_log_creates_timestamped_exam_comparison_record(tmp_path, monk
     record = json.loads(path.read_text())
     assert record["provider"] == "gemini"
     assert record["model"] == "test-model"
-    assert record["outputs"][0]["output"] == {"score": 9}
+    assert record["outputs"][0]["output"] == {"answers": []}
     assert record["outputs"][0]["token_usage"] == {"total": 12}
 
 

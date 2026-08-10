@@ -7,7 +7,11 @@ from google.genai import types
 
 from ..config import settings
 from . import BaseProvider
-from .prompts import ANALYZE_STRUCTURE_PROMPT, EXTRACT_ANSWERS_PROMPT, grade_exam_prompt
+from .prompts import (
+    analyze_exam_structure_prompt,
+    compare_exam_prompt,
+    extract_answers_prompt,
+)
 
 GRAMMAR_RESPONSE_SCHEMA = {
     "type": "OBJECT",
@@ -80,8 +84,17 @@ class GeminiProvider(BaseProvider):
             config_kwargs["response_schema"] = GRAMMAR_RESPONSE_SCHEMA
         return types.GenerateContentConfig(**config_kwargs)
 
-    async def analyze_exam_structure(self, image_data: list[bytes], mime_types: list[str]) -> dict:
-        contents = self._build_content(image_data, mime_types, ANALYZE_STRUCTURE_PROMPT)
+    async def analyze_exam_structure(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
+        contents = self._build_content(
+            image_data,
+            mime_types,
+            analyze_exam_structure_prompt(criteria),
+        )
         response = self.client.models.generate_content(
             model=self.model,
             contents=contents,
@@ -91,8 +104,17 @@ class GeminiProvider(BaseProvider):
         )
         return self._with_metadata(self._parse_json(response.text), response)
 
-    async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
-        contents = self._build_content(image_data, mime_types, EXTRACT_ANSWERS_PROMPT)
+    async def extract_answers(
+        self,
+        image_data: list[bytes],
+        mime_types: list[str],
+        criteria: str | None = None,
+    ) -> dict:
+        contents = self._build_content(
+            image_data,
+            mime_types,
+            extract_answers_prompt(criteria),
+        )
         response = self.client.models.generate_content(
             model=self.model,
             contents=contents,
@@ -102,14 +124,14 @@ class GeminiProvider(BaseProvider):
         )
         return self._with_metadata(self._parse_json(response.text), response)
 
-    async def grade_exam(
+    async def compare_exam(
         self,
         student_images: list[bytes],
         student_mime_types: list[str],
         exam_structure: dict,
         answer_key: dict,
     ) -> dict:
-        prompt = grade_exam_prompt(exam_structure, answer_key)
+        prompt = compare_exam_prompt(exam_structure, answer_key)
         contents = self._build_content(student_images, student_mime_types, prompt)
         response = self.client.models.generate_content(
             model=self.model,

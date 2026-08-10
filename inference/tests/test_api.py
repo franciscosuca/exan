@@ -65,14 +65,13 @@ MOCK_STRUCTURE = {
             "text": "What is 2+2?",
             "type": "multiple_choice",
             "options": ["A) 3", "B) 4", "C) 5", "D) 6"],
-            "points": 1,
         }
     ]
 }
 
-MOCK_ANSWERS = {"answers": [{"question_number": 1, "answer": "B", "points": 1}]}
+MOCK_ANSWERS = {"answers": [{"question_number": 1, "answer": "B"}]}
 
-MOCK_GRADING = {
+MOCK_COMPARISON = {
     "student_name": "Test Student",
     "answers": [
         {
@@ -80,8 +79,6 @@ MOCK_GRADING = {
             "student_answer": "B",
             "correct_answer": "B",
             "is_correct": True,
-            "points_earned": 1,
-            "points_possible": 1,
         }
     ],
 }
@@ -98,7 +95,7 @@ def test_upload_exam_template(mock_get_provider):
     response = client.post(
         "/api/exam/template",
         files={"file": ("exam.pdf", io.BytesIO(pdf), "application/pdf")},
-        data={"provider": "gemini"},
+        data={"provider": "gemini", "criteria": "B1 and B3 only"},
     )
 
     assert response.status_code == 200
@@ -106,6 +103,9 @@ def test_upload_exam_template(mock_get_provider):
     assert data["filename"] == "exam.pdf"
     assert len(data["questions"]) == 1
     assert data["questions"][0]["number"] == 1
+    assert data["criteria"] == "B1 and B3 only"
+    mock_provider.analyze_exam_structure.assert_awaited_once()
+    assert mock_provider.analyze_exam_structure.call_args.args[2] == "B1 and B3 only"
     assert data["id"]  # non-empty UUID
 
 
@@ -136,6 +136,7 @@ def test_upload_answer_key(mock_get_provider):
     data = resp2.json()
     assert data["exam_id"] == exam_id
     assert len(data["answers"]) == 1
+    assert set(data["answers"][0]) == {"question_number", "correct_answer"}
 
 
 def test_upload_answer_key_missing_exam():
@@ -149,13 +150,22 @@ def test_upload_answer_key_missing_exam():
     assert response.status_code == 404
 
 
+def test_failed_http_response_logs_response_detail(caplog):
+    """Failed validation responses include their body in inference logs."""
+    with caplog.at_level("ERROR", logger="app.main"):
+        response = client.post("/api/exam/answer-key")
+
+    assert response.status_code == 422
+    assert "Field required" in caplog.text
+
+
 @patch("app.main.get_provider")
-def test_grade_student_exams(mock_get_provider):
-    """POST /api/exam/grade returns grading results."""
+def test_compare_student_exams(mock_get_provider):
+    """POST /api/exam/compare returns answer comparisons."""
     mock_provider = AsyncMock()
     mock_provider.analyze_exam_structure.return_value = MOCK_STRUCTURE
     mock_provider.extract_answers.return_value = MOCK_ANSWERS
-    mock_provider.grade_exam.return_value = MOCK_GRADING
+    mock_provider.compare_exam.return_value = MOCK_COMPARISON
     mock_get_provider.return_value = mock_provider
 
     pdf = _make_fake_pdf()
@@ -174,9 +184,9 @@ def test_grade_student_exams(mock_get_provider):
         data={"exam_id": exam_id, "provider": "gemini"},
     )
 
-    # Grade
+    # Compare
     resp3 = client.post(
-        "/api/exam/grade",
+        "/api/exam/compare",
         files=[("files", ("student1.pdf", io.BytesIO(pdf), "application/pdf"))],
         data={"exam_id": exam_id, "provider": "gemini"},
     )
@@ -184,16 +194,24 @@ def test_grade_student_exams(mock_get_provider):
     results = resp3.json()
     assert len(results) == 1
     assert results[0]["student_name"] == "Test Student"
-    assert results[0]["percentage"] == 100.0
+    assert set(results[0]) == {"id", "exam_id", "student_name", "filename", "answers"}
+    assert set(results[0]["answers"][0]) == {
+        "question_number",
+        "student_answer",
+        "correct_answer",
+        "is_correct",
+    }
+    assert not {"points", "score", "percentage"}.intersection(results[0])
+    assert not {"points", "score", "percentage"}.intersection(results[0]["answers"][0])
     assert results[0]["answers"][0]["is_correct"] is True
 
 
-def test_grade_missing_answer_key():
-    """POST /api/exam/grade returns 400 if answer key not uploaded."""
+def test_compare_missing_answer_key():
+    """POST /api/exam/compare returns 400 if answer key not uploaded."""
     # We need an exam that exists but has no answer key
     # Use the providers endpoint to ensure the app is working
     response = client.post(
-        "/api/exam/grade",
+        "/api/exam/compare",
         files=[("files", ("student.pdf", io.BytesIO(b"fake"), "application/pdf"))],
         data={"exam_id": "nonexistent", "provider": "gemini"},
     )

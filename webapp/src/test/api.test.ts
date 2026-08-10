@@ -1,5 +1,45 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { batchEvaluate } from '../lib/api';
+import { batchEvaluate, compareStudentExams, uploadExamTemplate } from '../lib/api';
+
+describe('compareStudentExams', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('posts student exams to the comparison endpoint', async () => {
+    const response = [
+      {
+        id: 'comparison-id',
+        exam_id: 'exam-id',
+        student_name: 'Alice',
+        filename: 'alice.pdf',
+        answers: [
+          {
+            question_number: 1,
+            student_answer: 'A',
+            correct_answer: 'A',
+            is_correct: true,
+          },
+        ],
+      },
+    ];
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response);
+    const file = new File(['exam'], 'alice.pdf', { type: 'application/pdf' });
+
+    await compareStudentExams([file], 'exam-id', 'ollama');
+
+    const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
+    expect(requestUrl).toBe('/api/exam/compare');
+    expect(requestInit?.method).toBe('POST');
+    const form = requestInit?.body as FormData;
+    expect(form.getAll('files')).toHaveLength(1);
+    expect(form.get('exam_id')).toBe('exam-id');
+    expect(form.get('provider')).toBe('ollama');
+  });
+});
 
 describe('batchEvaluate', () => {
   afterEach(() => {
@@ -29,5 +69,27 @@ describe('batchEvaluate', () => {
     expect(form.get('language')).toBeNull();
     expect(form.get('include_grammar')).toBeNull();
     expect(form.get('custom_criteria')).toBeNull();
+  });
+
+  it('submits the optional exam question scope', async () => {
+    const response = {
+      id: 'exam-id',
+      filename: 'exam.pdf',
+      questions: [],
+      created_at: '2026-08-10T00:00:00Z',
+      criteria: 'B1 and B3 only',
+    };
+    const fetchMock = vi.spyOn(globalThis, 'fetch').mockResolvedValue({
+      ok: true,
+      json: async () => response,
+    } as Response);
+    const file = new File(['exam'], 'exam.pdf', { type: 'application/pdf' });
+
+    await uploadExamTemplate(file, 'ollama', '  B1 and B3 only  ');
+
+    const request = fetchMock.mock.calls[0]?.[1];
+    const form = request?.body as FormData;
+    expect(form.get('provider')).toBe('ollama');
+    expect(form.get('criteria')).toBe('B1 and B3 only');
   });
 });

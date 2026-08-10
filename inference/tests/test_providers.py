@@ -64,7 +64,7 @@ def test_ollama_implements_base():
     assert isinstance(provider, BaseProvider)
     assert hasattr(provider, "analyze_exam_structure")
     assert hasattr(provider, "extract_answers")
-    assert hasattr(provider, "grade_exam")
+    assert hasattr(provider, "compare_exam")
 
 
 @patch("app.providers.registry.httpx.get")

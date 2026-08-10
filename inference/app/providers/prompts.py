@@ -8,7 +8,6 @@ For each question, determine:
 2. The full question text
 3. The question type: "multiple_choice", "open_ended", "true_false", or "fill_in_blank"
 4. For multiple choice: list all available options (A, B, C, D, etc.)
-5. Points value if shown
 
 Return your analysis as JSON with this exact structure:
 {
@@ -17,8 +16,7 @@ Return your analysis as JSON with this exact structure:
       "number": 1,
       "text": "What is the capital of France?",
       "type": "multiple_choice",
-      "options": ["A) Paris", "B) London", "C) Berlin", "D) Madrid"],
-      "points": 2
+      "options": ["A) Paris", "B) London", "C) Berlin", "D) Madrid"]
     }
   ]
 }
@@ -32,15 +30,13 @@ For each answered question, identify:
 1. The question number
 2. The answer given (the selected option letter for multiple choice,
 or the written text for open-ended)
-3. Points value if shown
 
 Return your extraction as JSON with this exact structure:
 {
   "answers": [
     {
       "question_number": 1,
-      "answer": "A",
-      "points": 2
+      "answer": "A"
     }
   ]
 }
@@ -48,8 +44,53 @@ Return your extraction as JSON with this exact structure:
 Only return valid JSON, no other text."""
 
 
-def grade_exam_prompt(exam_structure: dict, answer_key: dict) -> str:
-    return f"""You are an expert exam grader. Look at this completed student exam and grade it.
+def _scope_instructions(criteria: str | None, *, persisted: bool = False) -> str:
+    normalized = criteria.strip() if criteria else ""
+    if not normalized:
+        return ""
+
+    criteria_label = "persisted user criteria" if persisted else "user criteria"
+    return (
+        "\n\nMANDATORY EVALUATION SCOPE:\n"
+        f"The {criteria_label} is exactly:\n"
+        "----- BEGIN USER CRITERIA -----\n"
+        f"{normalized}\n"
+        "----- END USER CRITERIA -----\n"
+        "This scope is mandatory. Identify only the sections and questions requested "
+        "by the criteria. Ignore all other visible content, even if it appears in the "
+        "uploaded document. Do not include, extract, or compare any out-of-scope section "
+        "or question."
+    )
+
+
+def analyze_exam_structure_prompt(criteria: str | None = None) -> str:
+    """Build the structure prompt with an optional mandatory question scope."""
+    return ANALYZE_STRUCTURE_PROMPT + _scope_instructions(criteria)
+
+
+def extract_answers_prompt(criteria: str | None = None) -> str:
+    """Build the answer-extraction prompt with an optional mandatory scope."""
+    return EXTRACT_ANSWERS_PROMPT + _scope_instructions(criteria)
+
+
+def compare_exam_prompt(exam_structure: dict, answer_key: dict) -> str:
+    criteria = exam_structure.get("criteria") or answer_key.get("criteria")
+    has_scope = bool(criteria and criteria.strip())
+    scope_instructions = _scope_instructions(criteria, persisted=True)
+    question_instruction = (
+        "For each in-scope question only:" if has_scope else "For each question in the exam:"
+    )
+    output_scope_instruction = (
+        "\nOnly include comparison results for questions in the mandatory scope. Do not "
+        "output any question outside the persisted criteria."
+        if has_scope
+        else ""
+    )
+
+    return f"""You are an expert at comparing exam answers. Look at this completed student exam
+  and compare it to the answer key.
+
+{scope_instructions}
 
 The exam structure is:
 {exam_structure}
@@ -57,7 +98,7 @@ The exam structure is:
 The correct answer key is:
 {answer_key}
 
-For each question in the exam:
+{question_instruction}
 1. Identify what the student answered
 2. Compare it to the correct answer
 3. Determine if it is correct
@@ -67,7 +108,7 @@ word-for-word identical, just semantically correct.
 
 Also try to identify the student's name if it appears on the exam.
 
-Return your grading as JSON with this exact structure:
+Return your comparison as JSON with this exact structure:
 {{
   "student_name": "John Doe",
   "answers": [
@@ -75,13 +116,12 @@ Return your grading as JSON with this exact structure:
       "question_number": 1,
       "student_answer": "A",
       "correct_answer": "A",
-      "is_correct": true,
-      "points_earned": 2,
-      "points_possible": 2
+      "is_correct": true
     }}
   ]
 }}
 
+{output_scope_instruction}
 Only return valid JSON, no other text."""
 
 

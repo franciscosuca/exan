@@ -20,12 +20,12 @@ This document is the short architecture index for Exan. It keeps the project pur
 
 ## Purpose
 
-Exan scans exam documents, extracts their structure, and grades student responses with AI. The architecture supports both cloud providers and local inference while keeping the frontend workflow consistent across providers.
+Exan scans exam documents, extracts their structure, and compares student responses with correct answers using AI. The architecture supports both cloud providers and local inference while keeping the frontend workflow consistent across providers.
 
 ## Current Status
 
 - The React 19 webapp provides exam comparison and batch evaluation workflows.
-- The FastAPI inference service owns document processing, workflow orchestration, provider selection, and grading.
+- The FastAPI inference service owns document processing, workflow orchestration, provider selection, and answer comparison.
 - Gemini, Claude, GPT, Ollama, and LM Studio are represented behind a shared provider abstraction.
 - Express and MongoDB provide authentication and user storage.
 - Exam and answer-key workflow state is currently held in FastAPI process memory.
@@ -88,7 +88,7 @@ graph TB
         end
         
         subgraph ResultComponents["Result Components"]
-            GR["GradingResults"]
+            CR["ComparisonResults"]
             BR["BatchResults"]
         end
         
@@ -110,7 +110,7 @@ graph TB
     Eval --> FD
     Eval --> PS
     Eval --> SI
-    Eval --> GR
+    Eval --> CR
     Eval --> BR
     Eval --> API
     
@@ -177,21 +177,20 @@ sequenceDiagram
 
     U->>EC: Upload one or more student exams
     EC->>API: uploadStudentExams(files, exam_id, provider)
-    API->>BE: POST /api/exam/grade<br/>multipart: files[], exam_id, provider
+    API->>BE: POST /api/exam/compare<br/>multipart: files[], exam_id, provider
     BE->>PR: get_provider(provider)
     PR-->>BE: Provider instance
     loop For each student file
         BE->>BE: get_mime_type(filename, content_type)
         BE->>FP: process_upload(content, mime)
         FP-->>BE: Image bytes and MIME types
-        BE->>AI: grade_exam(images, mimes, structure, key)
+        BE->>AI: compare_exam(images, mimes, structure, key)
         AI-->>BE: Student name and answers
-        BE->>BE: Calculate scores and percentage
     end
     BE->>LOG: write_run_log(exam-comparison, inputs, outputs, provider)
-    BE-->>API: GradingResult[]
-    API-->>EC: Store results and show breakdown
-    EC-->>U: Display scores and per-question results
+    BE-->>API: ComparisonResult[]
+    API-->>EC: Store results and show answer comparison
+    EC-->>U: Display correct and incorrect answers
 ```
 
 ### 3.2 Batch Evaluation Flow
@@ -246,7 +245,7 @@ sequenceDiagram
 ## 4. Per-Feature Class Diagrams (PENDING TO READ)
 
 Batch evaluation is grammar-only; the remaining diagrams describe the active
-response contract and shared grading infrastructure.
+response contract and shared comparison infrastructure.
 
 ### 4.1 Exam Comparison — Models & Classes
 
@@ -265,7 +264,7 @@ classDiagram
         +currentStep: number
         +examStructure: ExamStructure
         +answerKey: AnswerKey
-        +gradingResults: GradingResult[]
+        +comparisonResults: ComparisonResult[]
         +handleExamTemplate(files)
         +handleAnswerKey(files)
         +handleStudentExams(files)
@@ -284,7 +283,6 @@ classDiagram
         +text: string
         +type: string
         +options: string[]
-        +points: float
     }
 
     class AnswerKey {
@@ -297,17 +295,13 @@ classDiagram
     class Answer {
         +question_number: int
         +correct_answer: string
-        +points: float
     }
 
-    class GradingResult {
+    class ComparisonResult {
         +id: string
         +exam_id: string
         +student_name: string
         +filename: string
-        +total_score: float
-        +max_score: float
-        +percentage: float
         +answers: StudentAnswer[]
     }
 
@@ -316,8 +310,6 @@ classDiagram
         +student_answer: string
         +correct_answer: string
         +is_correct: bool
-        +points_earned: float
-        +points_possible: float
     }
 
     class BaseProvider_BE {
@@ -325,7 +317,7 @@ classDiagram
         +name: string
         +analyze_exam_structure(images, mimes)*
         +extract_answers(images, mimes)*
-        +grade_exam(images, mimes, structure, key)*
+        +compare_exam(images, mimes, structure, key)*
         +evaluate_text(text, prompt)*
     }
 
@@ -333,17 +325,17 @@ classDiagram
         +model: string
         +analyze_exam_structure()
         +extract_answers()
-        +grade_exam()
+        +compare_exam()
         +evaluate_text()
     }
 
     App_FE --> ExamComparison_FE
     ExamComparison_FE --> ExamStructure
     ExamComparison_FE --> AnswerKey
-    ExamComparison_FE --> GradingResult
+    ExamComparison_FE --> ComparisonResult
     ExamStructure --> Question
     AnswerKey --> Answer
-    GradingResult --> StudentAnswer
+    ComparisonResult --> StudentAnswer
     BaseProvider_BE <|-- GeminiProvider_BE
 ```
 
@@ -427,7 +419,7 @@ classDiagram
         +name: string
         +analyze_exam_structure(images, mimes)* dict
         +extract_answers(images, mimes)* dict
-        +grade_exam(images, mimes, structure, key)* dict
+        +compare_exam(images, mimes, structure, key)* dict
         +evaluate_text(text, prompt)* dict
     }
 

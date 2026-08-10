@@ -19,7 +19,7 @@ vi.mock('../lib/api', () => ({
   ]),
   uploadExamTemplate: vi.fn(),
   uploadAnswerKey: vi.fn(),
-  uploadStudentExams: vi.fn(),
+  compareStudentExams: vi.fn(),
   batchEvaluate: vi.fn(),
 }));
 

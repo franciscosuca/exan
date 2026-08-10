@@ -14,15 +14,15 @@ class AnswerKeyProvider:
     async def extract_answers(self, image_data: list[bytes], mime_types: list[str]) -> dict:
         return {
             "answers": [
-                {"question_number": "B3a", "correct_answer": "A", "points": 1},
+                {"question_number": "B3a", "correct_answer": "A"},
             ]
         }
 
 
-class GradingProvider:
+class ComparisonProvider:
     name = "stub"
 
-    async def grade_exam(
+    async def compare_exam(
         self,
         student_images: list[bytes],
         student_mime_types: list[str],
@@ -36,8 +36,6 @@ class GradingProvider:
                     "student_answer": "A",
                     "correct_answer": "A",
                     "is_correct": True,
-                    "points_earned": 1,
-                    "points_possible": 1,
                 }
             ]
         }
@@ -45,15 +43,13 @@ class GradingProvider:
 
 def test_question_identifiers_preserve_numeric_values_and_accept_labels() -> None:
     assert Question(number=3, text="x", type="open_ended").number == 3
-    assert isinstance(Answer(question_number=3, correct_answer="x", points=1).question_number, int)
+    assert isinstance(Answer(question_number=3, correct_answer="x").question_number, int)
     assert (
         StudentAnswer(
             question_number=3,
             student_answer="x",
             correct_answer="x",
             is_correct=True,
-            points_earned=1,
-            points_possible=1,
         ).question_number
         == 3
     )
@@ -85,18 +81,18 @@ async def test_answer_key_endpoint_accepts_alphanumeric_question_numbers(monkeyp
     assert response.json()["answers"][0]["question_number"] == "B3a"
 
 
-async def test_grading_accepts_alphanumeric_question_numbers(monkeypatch) -> None:
+async def test_comparison_accepts_alphanumeric_question_numbers(monkeypatch) -> None:
     repository = ExamRepository()
     repository.save_exam("exam-1", {"id": "exam-1"}, {})
     repository.save_answer_key("exam-1", {"answers": []}, {})
-    service = ExamComparisonService(repository, lambda _: GradingProvider())
+    service = ExamComparisonService(repository, lambda _: ComparisonProvider())
     monkeypatch.setattr(
         exam_comparison,
         "process_upload",
         lambda content, mime: [(b"image", "image/png")],
     )
 
-    results = await service.grade_student_exams(
+    results = await service.compare_student_exams(
         [UploadedDocument(b"content", "student.png", "image/png")],
         "exam-1",
         "stub",

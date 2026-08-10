@@ -2,13 +2,13 @@
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from ...models import AnswerKey, ExamStructure, GradingResult
+from ...models import AnswerKey, ComparisonResult, ExamStructure
 from ...services import UploadedDocument
 from ...services.exam_comparison import (
     AnswerKeyNotFoundError,
+    ComparisonError,
     ExamComparisonService,
     ExamNotFoundError,
-    GradingError,
     ProviderAnalysisError,
     UploadProcessingError,
 )
@@ -29,12 +29,13 @@ def _document(content: bytes, file: UploadFile) -> UploadedDocument:
 async def upload_exam_template(
     file: UploadFile = File(...),
     provider: str = Form("gemini"),
+    criteria: str | None = Form(None),
     service: ExamComparisonService = Depends(get_exam_comparison_service),
 ) -> ExamStructure:
     """Upload an empty exam template for structure analysis."""
     document = _document(await file.read(), file)
     try:
-        return await service.upload_exam_template(document, provider)
+        return await service.upload_exam_template(document, provider, criteria)
     except UploadProcessingError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except ProviderAnalysisError as exc:
@@ -60,22 +61,22 @@ async def upload_answer_key(
         raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
-@router.post("/grade", response_model=list[GradingResult])
-async def grade_student_exams(
+@router.post("/compare", response_model=list[ComparisonResult])
+async def compare_student_exams(
     files: list[UploadFile] = File(...),
     exam_id: str = Form(...),
     provider: str = Form("gemini"),
     service: ExamComparisonService = Depends(get_exam_comparison_service),
-) -> list[GradingResult]:
-    """Upload and grade one or more student exams."""
+) -> list[ComparisonResult]:
+    """Upload and compare one or more student exams."""
     documents = [_document(await file.read(), file) for file in files]
     try:
-        return await service.grade_student_exams(documents, exam_id, provider)
+        return await service.compare_student_exams(documents, exam_id, provider)
     except ExamNotFoundError as exc:
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except AnswerKeyNotFoundError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
     except UploadProcessingError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except GradingError as exc:
+    except ComparisonError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -252,7 +252,7 @@ Return `reasoning_options: []` for models without a supported effort control. Th
 
 Replace the free-form `provider` field on all exam and batch endpoints with `provider_connection_id`. The server resolves provider, credential, model, and effort from the connection. Do not accept a client-supplied provider or model that bypasses the verified connection.
 
-Freeze the selected connection configuration for an active exam workflow. This prevents template extraction, answer-key extraction, and grading from silently using different models.
+Freeze the selected connection configuration for an active exam workflow. This prevents template extraction, answer-key extraction, and answer comparison from silently using different models.
 
 ### Disconnect
 

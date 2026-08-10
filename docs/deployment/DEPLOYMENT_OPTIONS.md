@@ -16,6 +16,7 @@ It expands [Deployment and networking](../scanning/ARCHITECTURE_OPTIONS.md#deplo
   - [Option 5: Non-GCP PaaS (Render, Railway, Fly.io)](#option-5-non-gcp-paas-render-railway-flyio)
 - [Comparison Table](#comparison-table)
 - [Cost Estimate](#cost-estimate)
+- [Variant: Everything on Cloud Run, Database on Atlas](#variant-everything-on-cloud-run-database-on-atlas)
 - [Containers or Kubernetes Pods?](#containers-or-kubernetes-pods)
 - [Infrastructure Automation](#infrastructure-automation)
 - [Blockers to Resolve Before the Beta](#blockers-to-resolve-before-the-beta)
@@ -33,6 +34,8 @@ It expands [Deployment and networking](../scanning/ARCHITECTURE_OPTIONS.md#deplo
 - **Automate with Terraform** for the cloud resources and GitHub Actions for build and deploy. Terraform is worth it even at this size because it captures the IAM, secrets, and service wiring that are hard to reproduce by hand.
 
 If the beta must be live in days rather than weeks, [Option 2](#option-2-single-compute-engine-vm-running-docker-compose) (one VM running the current `docker-compose.yml`) is the zero-rewrite fallback and can be replaced by Cloud Run later without changing application code.
+
+If a single platform is preferred over splitting the frontend onto Firebase, see [Variant: Everything on Cloud Run, Database on Atlas](#variant-everything-on-cloud-run-database-on-atlas) — an equally defensible setup that trades the CDN for uniformity and removes the 60-second rewrite ceiling.
 
 ## What We Are Deploying
 
@@ -196,7 +199,40 @@ Note that this stack is **not three vendors to wire together**: Cloud Run, Fireb
 
 Against roughly $85/month for GKE, the AI provider calls themselves will likely dominate the bill for a beta of this size. Paying a fixed cluster fee to orchestrate four containers that see intermittent traffic buys availability and scaling guarantees the beta does not need yet — which is the cost argument behind [Containers or Kubernetes Pods?](#containers-or-kubernetes-pods).
 
-## Containers or Kubernetes Pods?
+## Variant: Everything on Cloud Run, Database on Atlas
+
+A reasonable simplification of the recommendation: drop Firebase Hosting and deploy **all three application containers — `webapp`, `auth-server`, `inference` — as Cloud Run services**, keeping only MongoDB on Atlas. The existing `webapp/Dockerfile` and `nginx.conf` ship unchanged; nginx serves the built SPA and reverse-proxies `/api/auth/` and `/api/` to the two backend services, exactly as it does under Docker Compose.
+
+### Advantages
+
+- **One platform, one deploy verb.** Three `gcloud run deploy` calls, one Terraform resource type, one set of IAM rules, one log view. There is no `firebase.json`, no Firebase CLI in CI, and no second deployment target that can drift from the images.
+- **The Compose topology is preserved.** `nginx.conf` stays the single routing definition for both local development and production, so a route added locally behaves the same way deployed. Under the Firebase variant the routing rules exist twice — in `nginx.conf` for Compose and in `firebase.json` rewrites for the cloud — and can silently disagree.
+- **No 60-second rewrite ceiling.** This is the significant one. Firebase Hosting cuts a rewritten response at 60 seconds; a Cloud Run frontend proxying to Cloud Run backends is bound only by Cloud Run's own request timeout, configurable up to 60 minutes. Slow grading calls stop being a blocker and [Blocker 5](#blockers-to-resolve-before-the-beta) mostly disappears.
+- **Backends can stop being public.** Because the caller is now a service we control rather than Firebase's edge, `auth-server` and `inference` can be set to internal-only ingress reached over Direct VPC egress, so only `webapp` has a public URL. Under the Hosting variant the backends must accept anonymous public traffic.
+- **Same-origin by construction.** Everything is served from one hostname, so there is no CORS configuration and no third deployment surface for cookies or CSP to account for.
+- **Still scales to zero**, and the free tier still covers a beta.
+
+### Disadvantages
+
+- **The SPA loses the CDN.** Firebase Hosting serves static assets from a global edge cache; a Cloud Run container serves them from one region, on a billed request, after a possible cold start. First paint from a distant tester is measurably slower, and *every* asset request wakes or occupies an instance instead of being answered at the edge.
+- **Cold starts now hit the first page load,** not just the first API call — the worst place to put them for a beta tester's first impression. Avoiding that means `min-instances = 1` on `webapp`, which gives up scale-to-zero for the one service that would otherwise be nearly free, or fronting it with Cloud CDN and an external HTTPS load balancer at roughly $18/month, which erases the cost advantage.
+- **An extra hop and an extra hop's worth of billing.** Each `/api/*` call occupies a `webapp` instance for the whole duration of the backend call, so slow grading requests are billed twice — once on `inference`, once on the nginx container holding the connection open.
+- **`nginx.conf` needs cloud-specific edits after all.** `proxy_pass http://auth-server:3001/` relies on Compose DNS. In Cloud Run the upstreams are HTTPS URLs that only exist after the services are created, which means an nginx `resolver`, `proxy_ssl_server_name on`, and `proxy_set_header Host` matching the target — plus templating the URLs in at deploy time. The "unchanged config" advantage is real but partial.
+- **Internal ingress is not free of work.** It requires Direct VPC egress (or a connector) on `webapp`, and if the backends are set to require IAM authentication, nginx cannot mint the ID token — that would force a small proxy in application code instead. Practically, the beta keeps ingress internal and authenticates with JWTs, as [Blocker 3](#blockers-to-resolve-before-the-beta) requires anyway.
+- **The 32 MiB request limit does not go away.** It applies to the `webapp` service too, so `client_max_body_size 50M` remains misleading and uploads still need capping or a direct-to-storage path.
+- **No preview channels, no atomic static rollback.** Firebase Hosting gives per-PR preview URLs and instant rollback of a static release for free; here a frontend change is a container build and a revision rollout.
+
+### Verdict
+
+**Both are correct choices; pick on latency versus uniformity.**
+
+Use all-on-Cloud-Run if operational uniformity matters more than frontend latency — one platform, one config, no 60-second rewrite ceiling, and private backends. This is the better default if grading calls are known to run long, and it is the closest thing to "lift the Compose file into managed containers".
+
+Use the recommended Cloud Run + Firebase Hosting split if the SPA should load fast worldwide from cache at no compute cost, and handle long grading calls by making them asynchronous — which is worth doing regardless, since a 60-second synchronous HTTP request is a fragile contract on any platform.
+
+The two are not mutually exclusive over time: the images and routing are identical, so starting all-on-Cloud-Run and moving the static build to Hosting later (or the reverse) changes only where `/` is served from. Either way, MongoDB stays on Atlas — nothing here argues for self-hosting the database.
+
+
 
 **Separate managed containers on a shared private network — not pods — for the first release.**
 

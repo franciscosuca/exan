@@ -1,3 +1,5 @@
+## [1.6.1](https://github.com/franciscosuca/exan/compare/v1.6.0...v1.6.1) (2026-08-11)
+
 ## [1.6.0](https://github.com/franciscosuca/exan/compare/v1.5.2...v1.6.0) (2026-08-10)
 
 ### Features

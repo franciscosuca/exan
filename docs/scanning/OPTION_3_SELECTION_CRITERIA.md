@@ -80,7 +80,7 @@ The table below matches the option 3 plan to the **real phases** and to the **sp
 
 | Phase | Goal | Files to modify | Files to create | Notes |
 | --- | --- | --- | --- | --- |
-| **1. Desktop entry point and pairing UI** | Add a **Scan with phone** action to the existing upload workflow and display the QR/session state. | `/home/runner/work/exan/exan/webapp/src/components/FileDropzone.tsx`, `/home/runner/work/exan/exan/webapp/src/components/ExamComparison.tsx`, `/home/runner/work/exan/exan/webapp/src/components/BatchEvaluation.tsx` | `/home/runner/work/exan/exan/webapp/src/components/PhonePairingPanel.tsx` | This phase is where the desktop user starts the session. |
+| **1. Desktop entry point and pairing UI** | Add a **Scan with phone** action to the existing upload workflow and display the QR/session state. | `/home/runner/work/exan/exan/webapp/src/components/FileDropzone.tsx`, `/home/runner/work/exan/exan/webapp/src/components/ExamComparison.tsx`, `/home/runner/work/exan/exan/webapp/src/components/GrammarEvaluation.tsx` | `/home/runner/work/exan/exan/webapp/src/components/PhonePairingPanel.tsx` | This phase is where the desktop user starts the session. |
 | **2. Frontend API and polling client** | Add session creation, status polling, cancel, phone upload, and finalize requests. | `/home/runner/work/exan/exan/webapp/src/lib/api.ts`, `/home/runner/work/exan/exan/webapp/src/auth.api.ts` | optional `/home/runner/work/exan/exan/webapp/src/lib/phoneScanning.ts` | Polling belongs here because the desktop needs a lightweight status loop, not WebSockets. |
 | **3. Phone scanner route and page flow** | Add the mobile route opened from the QR code, with capture/review/finalize behavior. | `/home/runner/work/exan/exan/webapp/src/App.tsx` | `/home/runner/work/exan/exan/webapp/src/pages/PhoneScannerPage.tsx` | This is the phone-only browser view for option 3. |
 | **4. Session API registration** | Register dedicated FastAPI routes for upload-session creation, claim, page upload, status, cancel, and finalize. | `/home/runner/work/exan/exan/inference/app/main.py`, `/home/runner/work/exan/exan/inference/app/api/routes/__init__.py` | `/home/runner/work/exan/exan/inference/app/api/routes/phone_scanning.py` | Keep this separate from the existing exam upload endpoints. |
@@ -95,7 +95,7 @@ If implemented with the **smallest viable scope**, the most likely first-pass ch
 - **Modify**
   - `/home/runner/work/exan/exan/webapp/src/components/FileDropzone.tsx`
   - `/home/runner/work/exan/exan/webapp/src/components/ExamComparison.tsx`
-  - `/home/runner/work/exan/exan/webapp/src/components/BatchEvaluation.tsx`
+  - `/home/runner/work/exan/exan/webapp/src/components/GrammarEvaluation.tsx`
   - `/home/runner/work/exan/exan/webapp/src/lib/api.ts`
   - `/home/runner/work/exan/exan/webapp/src/auth.api.ts`
   - `/home/runner/work/exan/exan/webapp/src/App.tsx`

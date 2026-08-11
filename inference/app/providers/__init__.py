@@ -4,7 +4,7 @@ Each provider implements the same interface for:
 1. Analyzing exam structure from images/PDFs
 2. Extracting answers from filled exams
 3. Comparing student answers against answer keys
-4. Evaluating text for grammar feedback (batch evaluation)
+4. Evaluating text for grammar feedback (grammar evaluation)
 """
 
 import re

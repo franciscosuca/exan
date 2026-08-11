@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
-  batchEvaluate,
   compareStudentExams,
+  grammarEvaluate,
   updateAnswerKey,
   uploadExamTemplate,
 } from '../lib/api';
@@ -37,7 +37,7 @@ describe('compareStudentExams', () => {
     await compareStudentExams([file], 'exam-id', 'ollama', 'gemini-2.5-flash');
 
     const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
-    expect(requestUrl).toBe('/api/exam/compare');
+    expect(requestUrl).toBe('/api/exam-comparison/compare');
     expect(requestInit?.method).toBe('POST');
     const form = requestInit?.body as FormData;
     expect(form.getAll('files')).toHaveLength(1);
@@ -47,14 +47,14 @@ describe('compareStudentExams', () => {
   });
 });
 
-describe('batchEvaluate', () => {
+describe('grammarEvaluate', () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
   it('submits separate correction and summary languages', async () => {
     const response = {
-      id: 'batch-id',
+      id: 'grammar-evaluation-id',
       results: [],
       created_at: '2026-08-09T00:00:00Z',
     };
@@ -64,7 +64,7 @@ describe('batchEvaluate', () => {
     } as Response);
     const file = new File(['essay'], 'essay.pdf', { type: 'application/pdf' });
 
-    await batchEvaluate([file], 'ollama', 'es', 'de', 'gemini-2.5-flash');
+    await grammarEvaluate([file], 'ollama', 'es', 'de', 'gemini-2.5-flash');
 
     const request = fetchMock.mock.calls[0]?.[1];
     const form = request?.body as FormData;
@@ -123,7 +123,7 @@ describe('updateAnswerKey', () => {
     await updateAnswerKey('exam-id', answers);
 
     const [requestUrl, requestInit] = fetchMock.mock.calls[0] ?? [];
-    expect(requestUrl).toBe('/api/exam/answer-key/exam-id');
+    expect(requestUrl).toBe('/api/exam-comparison/answer-key/exam-id');
     expect(requestInit?.method).toBe('PUT');
     expect(requestInit?.headers).toEqual({ 'Content-Type': 'application/json' });
     expect(JSON.parse(requestInit?.body as string)).toEqual({ answers });

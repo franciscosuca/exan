@@ -2,6 +2,9 @@
 
 An AI-powered application that scans exam documents, extracts their structure, and compares student responses with correct answers. Supports both cloud AI providers and fully offline local inference.
 
+Exan provides two workflows: Exam Comparison for structured answer checking and
+Grammar Evaluation for document-level grammar feedback.
+
 ## How It Works
 
 1. **Upload Empty Exam** — Upload a blank exam (PDF or image). The AI identifies all questions, their types, and point values.
@@ -154,9 +157,14 @@ bun run test
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/providers` | List available AI providers |
-| POST | `/api/exam/template` | Upload empty exam for structure analysis |
-| POST | `/api/exam/answer-key` | Upload exam with correct answers |
-| POST | `/api/exam/compare` | Upload and compare student exams |
+| POST | `/api/exam-comparison/template` | Upload empty exam for structure analysis |
+| POST | `/api/exam-comparison/answer-key` | Upload exam with correct answers |
+| PUT | `/api/exam-comparison/answer-key/{exam_id}` | Save edited answer-key answers |
+| POST | `/api/exam-comparison/compare` | Upload and compare student exams |
+| POST | `/api/grammar-evaluation/evaluate` | Evaluate uploaded documents for grammar |
+
+The legacy prefixes `/api/exam` and `/api/batch` remain registered as
+compatibility aliases with the same operations and response contracts.
 
 ## Project Structure
 

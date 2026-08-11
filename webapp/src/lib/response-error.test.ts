@@ -63,7 +63,7 @@ describe('throwResponseError', () => {
       throwResponseError(response, {
         fallbackMessage: 'Evaluation failed',
         method: 'POST',
-        requestUrl: '/api/batch/evaluate',
+        requestUrl: '/api/grammar-evaluation/evaluate',
       }),
     ).rejects.toThrow('Plain text failure');
   });

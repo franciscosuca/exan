@@ -1,14 +1,16 @@
-# Batch grammar evaluation example
+# Grammar Evaluation example
 
 Evaluate one or more text documents for grammar:
 
 ```bash
-curl -X POST http://localhost:8000/api/batch/evaluate \
-  -F "provider=ollama" -F "language=en" -F "files=@essay.pdf"
+curl -X POST http://localhost:8000/api/grammar-evaluation/evaluate \
+  -F "provider=ollama" -F "model=<model-id>" \
+  -F "correction_language=en" -F "summary_language=en" \
+  -F "files=@essay.pdf"
 ```
 
 Each model output, timing, and compact request snapshot is persisted under
-`logs/batch-evaluation/<yymmddhhmm>/`.
+`logs/grammar-evaluation/<yymmddhhmm>/`.
 
 With grammar enabled, each file result includes structured findings instead of
 Markdown-formatted feedback:

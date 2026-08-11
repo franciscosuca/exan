@@ -1,4 +1,4 @@
-"""Batch document evaluation workflow orchestration."""
+"""Grammar evaluation workflow orchestration."""
 
 import uuid
 from collections.abc import Callable, Sequence
@@ -7,7 +7,7 @@ from typing import Any, Mapping
 
 from pydantic import ValidationError
 
-from ..models import BatchEvaluationResponse, FileEvaluationResult, GrammarFeedback
+from ..models import FileEvaluationResult, GrammarEvaluationResponse, GrammarFeedback
 from ..providers import BaseProvider
 from ..providers.prompts import grammar_evaluation_prompt
 from ..utils.file_processing import extract_text, get_mime_type
@@ -15,12 +15,12 @@ from ..utils.run_logging import elapsed_ms, start_timer, write_run_log
 from . import UploadedDocument
 
 
-class UploadProcessingError(ValueError):
-    """Raised when a batch document cannot be converted to text."""
+class GrammarUploadProcessingError(ValueError):
+    """Raised when a grammar-evaluation document cannot be converted to text."""
 
 
-class BatchEvaluationError(RuntimeError):
-    """Raised when a provider cannot complete a batch evaluation."""
+class GrammarEvaluationError(RuntimeError):
+    """Raised when a provider cannot complete a grammar evaluation."""
 
 
 def _parse_grammar_result(result: Mapping[str, Any]) -> GrammarFeedback:
@@ -32,8 +32,8 @@ def _parse_grammar_result(result: Mapping[str, Any]) -> GrammarFeedback:
     return grammar
 
 
-class BatchEvaluationService:
-    """Orchestrate batch evaluation without depending on HTTP routing."""
+class GrammarEvaluationService:
+    """Orchestrate grammar evaluation without depending on HTTP routing."""
 
     def __init__(self, provider_factory: Callable[[str, str], BaseProvider]) -> None:
         self.provider_factory = provider_factory
@@ -46,7 +46,7 @@ class BatchEvaluationService:
         language: str = "en",
         summary_language: str | None = None,
         correction_language: str | None = None,
-    ) -> BatchEvaluationResponse:
+    ) -> GrammarEvaluationResponse:
         """Evaluate each document for grammar.
 
         ``language`` is retained for callers of the original API and means
@@ -58,7 +58,7 @@ class BatchEvaluationService:
         try:
             provider = self.provider_factory(provider_name, model)
         except Exception as exc:
-            raise BatchEvaluationError(f"Batch evaluation failed: {exc}") from exc
+            raise GrammarEvaluationError(f"Grammar evaluation failed: {exc}") from exc
 
         results: list[FileEvaluationResult] = []
         run_started = start_timer()
@@ -70,10 +70,10 @@ class BatchEvaluationService:
             try:
                 text = extract_text(document.content, mime)
             except ValueError as exc:
-                raise UploadProcessingError(f"File {document.filename}: {exc}") from exc
+                raise GrammarUploadProcessingError(f"File {document.filename}: {exc}") from exc
 
             if not text.strip():
-                raise UploadProcessingError(
+                raise GrammarUploadProcessingError(
                     f"File {document.filename}: No text content could be extracted"
                 )
             input_files.append(
@@ -100,7 +100,7 @@ class BatchEvaluationService:
                 )
                 grammar_feedback = _parse_grammar_result(result)
             except Exception as exc:
-                raise BatchEvaluationError(
+                raise GrammarEvaluationError(
                     f"Grammar evaluation failed for {document.filename}: {exc}"
                 ) from exc
 
@@ -113,13 +113,13 @@ class BatchEvaluationService:
                 )
             )
 
-        response = BatchEvaluationResponse(
+        response = GrammarEvaluationResponse(
             id=str(uuid.uuid4()),
             results=results,
             created_at=datetime.now(timezone.utc).isoformat(),
         )
         write_run_log(
-            "batch-evaluation",
+            "grammar-evaluation",
             input_snapshot={
                 "language": correction_language,
                 "correction_language": correction_language,

@@ -1,29 +1,29 @@
-"""Batch evaluation HTTP routes."""
+"""Grammar evaluation HTTP routes."""
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
-from ...models import BatchEvaluationResponse
+from ...models import GrammarEvaluationResponse
 from ...services import UploadedDocument
-from ...services.batch_evaluation import (
-    BatchEvaluationError,
-    BatchEvaluationService,
-    UploadProcessingError,
+from ...services.grammar_evaluation import (
+    GrammarEvaluationError,
+    GrammarEvaluationService,
+    GrammarUploadProcessingError,
 )
-from ..dependencies import get_batch_evaluation_service
+from ..dependencies import get_grammar_evaluation_service
 
-router = APIRouter(prefix="/api/batch")
+router = APIRouter()
 
 
-@router.post("/evaluate", response_model=BatchEvaluationResponse)
-async def batch_evaluate(
+@router.post("/evaluate", response_model=GrammarEvaluationResponse)
+async def grammar_evaluate(
     files: list[UploadFile] = File(...),
     provider: str = Form("gemini"),
     model: str = Form(...),
     language: str = Form("en"),
     correction_language: str | None = Form(None),
     summary_language: str | None = Form(None),
-    service: BatchEvaluationService = Depends(get_batch_evaluation_service),
-) -> BatchEvaluationResponse:
+    service: GrammarEvaluationService = Depends(get_grammar_evaluation_service),
+) -> GrammarEvaluationResponse:
     """Evaluate every uploaded document for grammar.
 
     ``language`` remains the legacy correction-language field.  New clients
@@ -48,7 +48,7 @@ async def batch_evaluate(
             summary_language=summary_language,
             correction_language=correction_language,
         )
-    except UploadProcessingError as exc:
+    except GrammarUploadProcessingError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
-    except BatchEvaluationError as exc:
+    except GrammarEvaluationError as exc:
         raise HTTPException(status_code=500, detail=str(exc)) from exc

@@ -1,12 +1,12 @@
-import type { BatchEvaluationResponse } from '../lib/api';
+import type { GrammarEvaluationResponse } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { FileText, Lightbulb } from 'lucide-react';
 
-interface BatchResultsProps {
-  response: BatchEvaluationResponse;
+interface GrammarResultsProps {
+  response: GrammarEvaluationResponse;
 }
 
-export function BatchResults({ response }: BatchResultsProps) {
+export function GrammarResults({ response }: GrammarResultsProps) {
   const { language, t } = useLanguage();
   if (response.results.length === 0) return null;
 
@@ -15,9 +15,9 @@ export function BatchResults({ response }: BatchResultsProps) {
   return (
     <div className="space-y-8">
       <div>
-        <h2 className="text-2xl font-bold text-gray-900">{t('batchResults.title')}</h2>
+        <h2 className="text-2xl font-bold text-gray-900">{t('grammarResults.title')}</h2>
         <p className="mt-1 text-sm text-gray-500">
-          {t('batchResults.filesEvaluated', { count: response.results.length })}
+          {t('grammarResults.filesEvaluated', { count: response.results.length })}
         </p>
       </div>
 
@@ -33,7 +33,7 @@ export function BatchResults({ response }: BatchResultsProps) {
                 {processedDate && (
                   <p className="mt-1 text-xs text-gray-500">
                     <time dateTime={response.created_at}>
-                      {t('batchResults.processed', { date: processedDate })}
+                      {t('grammarResults.processed', { date: processedDate })}
                     </time>
                   </p>
                 )}
@@ -49,21 +49,21 @@ export function BatchResults({ response }: BatchResultsProps) {
               >
                 <div className="border-b border-gray-200 px-6 py-4">
                   <h4 id={`findings-${result.id}`} className="text-base font-semibold text-gray-900">
-                    {t('batchResults.detailedFindings')}
+                    {t('grammarResults.detailedFindings')}
                   </h4>
                 </div>
 
                 {result.grammar.issues.length > 0 ? (
                   <div className="overflow-x-auto">
                     <table className="min-w-160 w-full border-collapse text-left text-sm">
-                      <caption className="sr-only">{t('batchResults.detailedFindings')}</caption>
+                      <caption className="sr-only">{t('grammarResults.detailedFindings')}</caption>
                       <thead className="bg-gray-50">
                         <tr>
                           <th scope="col" className="w-1/2 border-b border-gray-200 px-4 py-3 font-semibold text-gray-700">
-                            {t('batchResults.originalSentence')}
+                            {t('grammarResults.originalSentence')}
                           </th>
                           <th scope="col" className="w-1/2 border-b border-gray-200 px-4 py-3 font-semibold text-gray-700">
-                            {t('batchResults.correctedSentence')}
+                            {t('grammarResults.correctedSentence')}
                           </th>
                         </tr>
                       </thead>
@@ -91,7 +91,7 @@ export function BatchResults({ response }: BatchResultsProps) {
                   </div>
                 ) : (
                   <p className="p-6 text-sm text-gray-600" role="status">
-                    {t('batchResults.noIssues')}
+                    {t('grammarResults.noIssues')}
                   </p>
                 )}
               </section>
@@ -102,7 +102,7 @@ export function BatchResults({ response }: BatchResultsProps) {
                 </div>
                 <div>
                   <h5 className="mb-1 text-sm font-semibold text-gray-800">
-                    {t('batchResults.howToImprove')}
+                    {t('grammarResults.howToImprove')}
                   </h5>
                   <p className="whitespace-pre-wrap wrap-break-word text-sm text-gray-700">
                     {result.grammar.summary}

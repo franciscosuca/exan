@@ -60,7 +60,7 @@ export interface ProviderModel {
   supported_actions: string[];
 }
 
-// --- Batch Evaluation Types ---
+// --- Grammar Evaluation Types ---
 
 export interface GrammarIssue {
   original_text: string;
@@ -79,7 +79,7 @@ export interface FileEvaluationResult {
   grammar?: GrammarFeedback | null;
 }
 
-export interface BatchEvaluationResponse {
+export interface GrammarEvaluationResponse {
   id: string;
   results: FileEvaluationResult[];
   created_at: string;
@@ -128,7 +128,7 @@ export async function uploadExamTemplate(
     form.append('criteria', normalizedCriteria);
   }
 
-  const requestUrl = `${API_BASE}/exam/template`;
+  const requestUrl = `${API_BASE}/exam-comparison/template`;
   const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
@@ -152,7 +152,7 @@ export async function uploadAnswerKey(
   form.append('provider', provider);
   form.append('model', model);
 
-  const requestUrl = `${API_BASE}/exam/answer-key`;
+  const requestUrl = `${API_BASE}/exam-comparison/answer-key`;
   const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
@@ -165,7 +165,7 @@ export async function uploadAnswerKey(
 }
 
 export async function updateAnswerKey(examId: string, answers: Answer[]): Promise<AnswerKey> {
-  const requestUrl = `${API_BASE}/exam/answer-key/${encodeURIComponent(examId)}`;
+  const requestUrl = `${API_BASE}/exam-comparison/answer-key/${encodeURIComponent(examId)}`;
   const res = await fetch(requestUrl, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
@@ -193,7 +193,7 @@ export async function compareStudentExams(
   form.append('provider', provider);
   form.append('model', model);
 
-  const requestUrl = `${API_BASE}/exam/compare`;
+  const requestUrl = `${API_BASE}/exam-comparison/compare`;
   const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
@@ -205,13 +205,13 @@ export async function compareStudentExams(
   return res.json();
 }
 
-export async function batchEvaluate(
+export async function grammarEvaluate(
   files: File[],
   provider: string,
   correctionLanguage: string,
   summaryLanguage: string,
   model: string
-): Promise<BatchEvaluationResponse> {
+): Promise<GrammarEvaluationResponse> {
   const form = new FormData();
   files.forEach((f) => form.append('files', f));
   form.append('provider', provider);
@@ -219,7 +219,7 @@ export async function batchEvaluate(
   form.append('correction_language', correctionLanguage);
   form.append('summary_language', summaryLanguage);
 
-  const requestUrl = `${API_BASE}/batch/evaluate`;
+  const requestUrl = `${API_BASE}/grammar-evaluation/evaluate`;
   const res = await fetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {

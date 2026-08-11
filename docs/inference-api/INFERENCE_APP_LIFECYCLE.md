@@ -26,11 +26,11 @@ routers. The application is split into these ownership boundaries:
 | Boundary | Responsibility |
 | --- | --- |
 | `app/api/routes/providers.py` | Provider discovery HTTP endpoint. |
-| `app/api/routes/exams.py` | Exam upload HTTP concerns and error-to-HTTP translation. |
-| `app/api/routes/batch.py` | Batch form parsing and HTTP errors. |
+| `app/api/routes/exam_comparison.py` | Exam Comparison upload HTTP concerns and error-to-HTTP translation. |
+| `app/api/routes/grammar_evaluation.py` | Grammar Evaluation form parsing and HTTP errors. |
 | `app/api/dependencies.py` | Constructs injectable repositories and workflow services. |
 | `app/services/exam_comparison.py` | Template, answer-key, and answer-comparison orchestration. |
-| `app/services/batch_evaluation.py` | Text extraction, grammar evaluation, and logging. |
+| `app/services/grammar_evaluation.py` | Text extraction, grammar evaluation, and logging. |
 | `app/repositories/exam_repository.py` | In-memory exam and answer-key storage. |
 | `app/utils/` | File processing and run logging primitives. |
 | `app/providers/` | Provider contract, registry, adapters, and prompts. |
@@ -68,7 +68,7 @@ resolved again when an evaluation request arrives.
 Each route reads the complete upload into memory. Depending on the route:
 
 - Exam comparison routes convert PDFs to page images or validate image files.
-- Batch evaluation extracts text from PDFs or Word documents.
+- Grammar Evaluation extracts text from PDFs or Word documents.
 - The selected provider receives images or text and returns a parsed
   dictionary.
 - FastAPI serializes the response model and sends it to the frontend.
@@ -89,7 +89,7 @@ The exam comparison workflow has an intentional dependency order:
 ```mermaid
 flowchart TD
     Start([App ready]) --> Providers[GET /api/providers]
-    Providers --> Template[POST /api/exam/template]
+    Providers --> Template[POST /api/exam-comparison/template]
     Template --> TemplateRead[Read upload and determine MIME type]
     TemplateRead --> TemplateProcess{PDF or image?}
     TemplateProcess -->|PDF| TemplatePages[Render each PDF page as PNG]
@@ -100,7 +100,7 @@ flowchart TD
     TemplateModel --> ExamStore[ExamRepository stores structure and raw result]
     ExamStore --> TemplateResponse[Return exam_id and questions]
 
-    TemplateResponse --> Key[POST /api/exam/answer-key]
+    TemplateResponse --> Key[POST /api/exam-comparison/answer-key]
     Key --> KeyGate{exam_id exists in ExamRepository?}
     KeyGate -->|No| NotFound[404 Exam not found]
     KeyGate -->|Yes| KeyRead[Read upload and determine MIME type]
@@ -110,7 +110,7 @@ flowchart TD
     KeyModel --> KeyStore[ExamRepository stores key and raw result]
     KeyStore --> KeyResponse[Return answer key]
 
-    KeyResponse --> Compare[POST /api/exam/compare]
+    KeyResponse --> Compare[POST /api/exam-comparison/compare]
     Compare --> CompareGate{exam_id and answer key exist?}
     CompareGate -->|No exam| CompareNotFound[404 Exam not found]
     CompareGate -->|No key| KeyMissing[400 Answer key not uploaded yet]
@@ -150,19 +150,20 @@ provider can compare the student document against the same exam context.
 The repository instance owns dictionaries internally, so it remains suitable
 for the MVP workflow but is not durable application storage.
 
-## Batch Evaluation Lifecycle
+## Grammar Evaluation Lifecycle
 
-`POST /api/batch/evaluate` is independent of the exam comparison stores. It
-accepts one or more PDF or Word files, then evaluates every file for grammar
+`POST /api/grammar-evaluation/evaluate` is independent of the Exam Comparison
+stores. The legacy `/api/batch/evaluate` path is an identical compatibility
+alias. The canonical route accepts one or more PDF or Word files, then evaluates every file for grammar
 in the selected feedback language:
 
 1. Resolve one provider for the request.
 2. Extract text from each file.
 3. Evaluate grammar using `grammar_evaluation_prompt`, returning structured
   issues and a summary.
-4. Build `BatchEvaluationResponse` with structured grammar feedback and a
+4. Build `GrammarEvaluationResponse` with structured grammar feedback and a
   summary derived from the grammar response.
-5. Write one `batch-evaluation` run log and return the response.
+5. Write one `grammar-evaluation` run log and return the response.
 
 The route performs exactly one provider call per file. Legacy multipart fields
 from older clients are ignored and do not alter the grammar-only workflow.
@@ -176,21 +177,21 @@ orchestration and external runtime work.
 flowchart LR
     Frontend["webapp/src/lib/api.ts"] -->|multipart HTTP| Main["inference/app/main.py\n(app wiring)"]
 
-    subgraph Inference["Inference service"]
+    subgraph Inference [Inference service]
       Main --> Routers["app/api/routes/*.py"]
       Routers --> Dependencies["app/api/dependencies.py"]
       Dependencies --> ExamService["app/services/exam_comparison.py"]
-      Dependencies --> BatchService["app/services/batch_evaluation.py"]
+      Dependencies --> GrammarService["app/services/grammar_evaluation.py"]
       ExamService --> Repository["app/repositories/exam_repository.py"]
       ExamService --> Processing["app/utils/file_processing.py"]
-      BatchService --> Processing
+      GrammarService --> Processing
       ExamService --> Registry["app/providers/registry.py"]
-      BatchService --> Registry
+      GrammarService --> Registry
       ExamService --> Models["app/models/__init__.py"]
-      BatchService --> Models
+      GrammarService --> Models
       ExamService --> Logging["app/utils/run_logging.py"]
-      BatchService --> Logging
-      BatchService --> Prompts["app/providers/prompts.py"]
+      GrammarService --> Logging
+      GrammarService --> Prompts["app/providers/prompts.py"]
 
         Registry --> Contract["app/providers/__init__.py\nBaseProvider"]
         Registry --> Implementations["gemini.py | claude.py | gpt.py\nollama.py | lmstudio.py"]
@@ -224,25 +225,27 @@ flowchart LR
 | `inference/app/providers/prompts.py` | Supplies the structure, comparison, and grammar instructions. |
 | `inference/app/config.py` | Loads API keys, model names, and local provider URLs. |
 | `inference/app/utils/run_logging.py` | Records inputs, outputs, provider metadata, token usage, and elapsed time. |
-| `logs/` | Receives completed comparison and batch-evaluation JSON records. |
+| `logs/` | Receives completed Exam Comparison and Grammar Evaluation JSON records. |
 
 ## Route Reference
 
 | Route | Input | Main dependency path | Output |
 | --- | --- | --- | --- |
 | `GET /api/providers` | None | `routes/providers.py -> registry.py` | Provider availability list |
-| `POST /api/exam/template` | One PDF or image, provider | `routes/exams.py -> ExamComparisonService -> file_processing.py -> provider` | `ExamStructure` |
-| `POST /api/exam/answer-key` | One PDF or image, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `AnswerKey` |
-| `POST /api/exam/compare` | One or more PDFs/images, `exam_id`, provider | `routes/exams.py -> ExamRepository -> ExamComparisonService -> provider` | `ComparisonResult[]` |
-| `POST /api/batch/evaluate` | PDFs/Word files, provider, feedback languages | `routes/batch.py -> BatchEvaluationService -> prompts -> provider` | `BatchEvaluationResponse` |
+| `POST /api/exam-comparison/template` | One PDF or image, provider | `routes/exam_comparison.py -> ExamComparisonService -> file_processing.py -> provider` | `ExamStructure` |
+| `POST /api/exam-comparison/answer-key` | One PDF or image, `exam_id`, provider | `routes/exam_comparison.py -> ExamRepository -> ExamComparisonService -> provider` | `AnswerKey` |
+| `POST /api/exam-comparison/compare` | One or more PDFs/images, `exam_id`, provider | `routes/exam_comparison.py -> ExamRepository -> ExamComparisonService -> provider` | `ComparisonResult[]` |
+| `POST /api/grammar-evaluation/evaluate` | PDFs/Word files, provider, feedback languages | `routes/grammar_evaluation.py -> GrammarEvaluationService -> prompts -> provider` | `GrammarEvaluationResponse` |
+
+The legacy `/api/exam/*` routes are identical Exam Comparison aliases.
 
 ## Operational Notes
 
 - The default provider form value is `gemini`, but availability is controlled
   by configuration and local endpoint probes.
-- PDFs used by exam comparison become one image per page; PDFs used by batch
+- PDFs used by Exam Comparison become one image per page; PDFs used by Grammar
   evaluation remain text extraction inputs.
-- A provider instance is selected once per route request. Batch files reuse
+- A provider instance is selected once per route request. Grammar files reuse
   that instance for all calls in the request.
 - A run log is written only after all files and evaluations in the route have
   completed successfully. An exception raised earlier returns an HTTP error

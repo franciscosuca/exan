@@ -70,7 +70,7 @@ async def test_answer_key_endpoint_accepts_alphanumeric_question_numbers(monkeyp
     try:
         async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
             response = await client.post(
-                "/api/exam/answer-key",
+                "/api/exam-comparison/answer-key",
                 files={"file": ("answer-key.png", b"content", "image/png")},
                 data={"exam_id": "exam-1", "provider": "stub", "model": "test-model"},
             )
@@ -81,7 +81,7 @@ async def test_answer_key_endpoint_accepts_alphanumeric_question_numbers(monkeyp
     assert response.json()["answers"][0]["question_number"] == "B3a"
 
 
-async def test_comparison_accepts_alphanumeric_question_numbers(monkeypatch) -> None:
+async def test_exam_comparison_accepts_alphanumeric_question_numbers(monkeypatch) -> None:
     repository = ExamRepository()
     repository.save_exam("exam-1", {"id": "exam-1"}, {})
     repository.save_answer_key("exam-1", {"answers": []}, {})

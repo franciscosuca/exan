@@ -6,8 +6,8 @@ from fastapi import Depends
 
 from ..providers import BaseProvider
 from ..repositories.exam_repository import ExamRepository
-from ..services.batch_evaluation import BatchEvaluationService
 from ..services.exam_comparison import ExamComparisonService
+from ..services.grammar_evaluation import GrammarEvaluationService
 
 _exam_repository = ExamRepository()
 
@@ -36,6 +36,6 @@ def get_exam_comparison_service(
     return ExamComparisonService(repository, get_provider_factory())
 
 
-def get_batch_evaluation_service() -> BatchEvaluationService:
-    """Construct the batch evaluation workflow."""
-    return BatchEvaluationService(get_provider_factory())
+def get_grammar_evaluation_service() -> GrammarEvaluationService:
+    """Construct the grammar evaluation workflow."""
+    return GrammarEvaluationService(get_provider_factory())

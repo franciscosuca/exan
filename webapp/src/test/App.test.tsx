@@ -20,7 +20,7 @@ vi.mock('../lib/api', () => ({
   uploadExamTemplate: vi.fn(),
   uploadAnswerKey: vi.fn(),
   compareStudentExams: vi.fn(),
-  batchEvaluate: vi.fn(),
+  grammarEvaluate: vi.fn(),
 }));
 
 // Mock the auth API module used for login/register/logout
@@ -73,7 +73,7 @@ describe('App', () => {
     it('renders the landing page with two options', async () => {
       renderApp();
       expect(screen.getByText('Exam Comparison')).toBeInTheDocument();
-      expect(screen.getByText('Batch Evaluation')).toBeInTheDocument();
+      expect(screen.getByText('Grammar Evaluation')).toBeInTheDocument();
     });
 
     it('navigates to exam comparison when clicked', async () => {
@@ -83,11 +83,11 @@ describe('App', () => {
       expect(screen.getByText('Step 1: Upload Empty Exam')).toBeInTheDocument();
     });
 
-    it('navigates to batch evaluation when clicked', async () => {
+    it('navigates to grammar evaluation when clicked', async () => {
       renderApp();
-      fireEvent.click(screen.getByText('Batch Evaluation'));
+      fireEvent.click(screen.getByText('Grammar Evaluation'));
       expect(screen.getByText('Upload Exams')).toBeInTheDocument();
-      expect(screen.getByText('Grammar Evaluation')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Grammar Evaluation' })).toBeInTheDocument();
     });
 
     it('returns to landing page when clicking Exan logo', async () => {

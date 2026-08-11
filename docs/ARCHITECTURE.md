@@ -24,7 +24,7 @@ Exan scans exam documents, extracts their structure, and compares student respon
 
 ## Current Status
 
-- The React 19 webapp provides exam comparison and batch evaluation workflows.
+- The React 19 webapp provides Exam Comparison and Grammar Evaluation workflows.
 - The FastAPI inference service owns document processing, workflow orchestration, provider selection, and answer comparison.
 - Gemini, Claude, GPT, Ollama, and LM Studio are represented behind a shared provider abstraction.
 - Express and MongoDB provide authentication and user storage.
@@ -79,7 +79,7 @@ graph TB
     subgraph Frontend["Frontend (React 19 + Vite + Tailwind CSS 4)"]
         App["App.tsx<br/>(Mode Router)"]
         Landing["Landing Page"]
-        Eval["ExamComparison / BatchEvaluation"]
+        Eval["ExamComparison / GrammarEvaluation"]
         
         subgraph SharedComponents["Shared Components"]
             FD["FileDropzone"]
@@ -89,7 +89,7 @@ graph TB
         
         subgraph ResultComponents["Result Components"]
             CR["ComparisonResults"]
-            BR["BatchResults"]
+            BR["GrammarResults"]
         end
         
         API["api.ts<br/>(API Client)"]
@@ -101,7 +101,7 @@ graph TB
         Services["services/<br/>(Workflow Orchestration)"]
         Repository["repositories/<br/>(In-Memory State)"]
         FP["file_processing.py<br/>(PDF/Word/Image)"]
-        Models["models/<br/>(Pydantic Models)"]
+        Models["models/<domain>.py<br/>(Pydantic Models)"]
         AI["AI-provider"]
     end
 
@@ -150,7 +150,7 @@ sequenceDiagram
 
     U->>EC: Select provider and upload template
     EC->>API: uploadExamTemplate(file, provider)
-    API->>BE: POST /api/exam/template<br/>multipart: file, provider
+    API->>BE: POST /api/exam-comparison/template<br/>multipart: file, provider
     BE->>BE: get_mime_type(filename, content_type)
     BE->>FP: process_upload(content, mime)
     FP-->>BE: Image bytes and MIME types
@@ -163,7 +163,7 @@ sequenceDiagram
 
     U->>EC: Upload answer key
     EC->>API: uploadAnswerKey(file, exam_id, provider)
-    API->>BE: POST /api/exam/answer-key<br/>multipart: file, exam_id, provider
+    API->>BE: POST /api/exam-comparison/answer-key<br/>multipart: file, exam_id, provider
     BE->>BE: Validate exam_id and get_mime_type()
     BE->>FP: process_upload(content, mime)
     FP-->>BE: Image bytes and MIME types
@@ -177,7 +177,7 @@ sequenceDiagram
 
     U->>EC: Upload one or more student exams
     EC->>API: uploadStudentExams(files, exam_id, provider)
-    API->>BE: POST /api/exam/compare<br/>multipart: files[], exam_id, provider
+    API->>BE: POST /api/exam-comparison/compare<br/>multipart: files[], exam_id, provider
     BE->>PR: get_provider(provider)
     PR-->>BE: Provider instance
     loop For each student file
@@ -193,12 +193,12 @@ sequenceDiagram
     EC-->>U: Display correct and incorrect answers
 ```
 
-### 3.2 Batch Evaluation Flow
+### 3.2 Grammar Evaluation Flow
 
 ```mermaid
 sequenceDiagram
     participant U as User
-    participant BE as BatchEvaluation
+    participant BE as GrammarEvaluation
     participant API as API Client
     participant SVC as FastAPI
     participant FP as File Processing
@@ -206,7 +206,7 @@ sequenceDiagram
     participant AI as AI Provider
     participant LOG as Run Logging
 
-    U->>BE: Open Batch Evaluation
+    U->>BE: Open Grammar Evaluation
     BE->>API: getProviders()
     API->>SVC: GET /api/providers
     SVC->>PR: get_available_providers()
@@ -218,8 +218,8 @@ sequenceDiagram
     U->>BE: Select grammar feedback language
     U->>BE: Click Evaluate
 
-    BE->>API: batchEvaluate(files, provider, language)
-    API->>SVC: POST /api/batch/evaluate<br/>multipart: files[], provider, language
+    BE->>API: grammarEvaluate(files, provider, language)
+    API->>SVC: POST /api/grammar-evaluation/evaluate<br/>multipart: files[], provider, language
     SVC->>PR: get_provider(provider)
     PR-->>SVC: Provider instance
 
@@ -234,8 +234,8 @@ sequenceDiagram
         SVC->>SVC: Use grammar summary for the top-level summary
     end
 
-    SVC->>LOG: write_run_log(batch-evaluation, inputs, outputs, provider)
-    SVC-->>API: BatchEvaluationResponse {id, results[], created_at}
+    SVC->>LOG: write_run_log(grammar-evaluation, inputs, outputs, provider)
+    SVC-->>API: GrammarEvaluationResponse {id, results[], created_at}
     API-->>BE: Store response
     BE-->>U: Display per-file grammar findings and summary
 ```
@@ -244,7 +244,7 @@ sequenceDiagram
 
 ## 4. Per-Feature Class Diagrams (PENDING TO READ)
 
-Batch evaluation is grammar-only; the remaining diagrams describe the active
+Grammar Evaluation is grammar-only; the remaining diagrams describe the active
 response contract and shared comparison infrastructure.
 
 ### 4.1 Exam Comparison — Models & Classes
@@ -339,24 +339,24 @@ classDiagram
     BaseProvider_BE <|-- GeminiProvider_BE
 ```
 
-### 4.2 Batch Evaluation — Models & Classes
+### 4.2 Grammar Evaluation — Models & Classes
 
 ```mermaid
 classDiagram
     direction TB
 
-    class BatchEvaluation_FE {
+    class GrammarEvaluation_FE {
         +providers: ProviderConfig[]
         +selectedProvider: string
         +files: File[]
         +language: string
-        +results: BatchEvaluationResponse
+        +results: GrammarEvaluationResponse
         +handleFiles(files)
         +handleEvaluate()
         +reset()
     }
 
-    class BatchEvaluationResponse {
+    class GrammarEvaluationResponse {
         +id: string
         +results: FileEvaluationResult[]
         +created_at: string
@@ -379,8 +379,8 @@ classDiagram
         +corrected_text: string
     }
 
-    class BatchResults_FE {
-        +response: BatchEvaluationResponse
+    class GrammarResults_FE {
+        +response: GrammarEvaluationResponse
     }
 
     class BaseProvider_BE {
@@ -399,13 +399,13 @@ classDiagram
         +grammar_evaluation_prompt(language) string
     }
 
-    BatchEvaluation_FE --> BatchEvaluationResponse
-    BatchEvaluationResponse --> FileEvaluationResult
+    GrammarEvaluation_FE --> GrammarEvaluationResponse
+    GrammarEvaluationResponse --> FileEvaluationResult
     FileEvaluationResult --> GrammarFeedback
     GrammarFeedback --> GrammarIssue
-    BatchResults_FE --> BatchEvaluationResponse
-    BaseProvider_BE ..> prompts_BE : uses prompts
-    file_processing_BE ..> BaseProvider_BE : provides text to
+    GrammarResults_FE --> GrammarEvaluationResponse
+    BaseProvider_BE --> prompts_BE : uses prompts
+    file_processing_BE --> BaseProvider_BE : provides text to
 ```
 
 ### 4.3 Shared Infrastructure — Provider Registry

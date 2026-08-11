@@ -1,19 +1,19 @@
 import { useState, useEffect } from 'react';
 import { FileDropzone } from './FileDropzone';
 import { ProviderSelector } from './ProviderSelector';
-import { BatchResults } from './BatchResults';
+import { GrammarResults } from './GrammarResults';
 import {
   getProviders,
   getProviderModels,
-  batchEvaluate,
+  grammarEvaluate,
   type ProviderConfig,
   type ProviderModel,
-  type BatchEvaluationResponse,
+  type GrammarEvaluationResponse,
 } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
 import { Loader2, Trash2, RotateCcw } from 'lucide-react';
 
-interface BatchEvaluationProps {
+interface GrammarEvaluationProps {
   onBack: () => void;
 }
 
@@ -28,7 +28,7 @@ const LANGUAGES = [
   { code: 'ca', label: 'Catalan' },
 ];
 
-export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
+export function GrammarEvaluation({ onBack }: GrammarEvaluationProps) {
   const { t, language: uiLanguage } = useLanguage();
   const [providers, setProviders] = useState<ProviderConfig[]>([]);
   const [selectedProvider, setSelectedProvider] = useState('');
@@ -43,7 +43,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
   // Default the grammar-check language to the current webpage language, so
   // AI answers follow the language the user is browsing in.
   const [correctionLanguage, setCorrectionLanguage] = useState<string>(uiLanguage);
-  const [results, setResults] = useState<BatchEvaluationResponse | null>(null);
+  const [results, setResults] = useState<GrammarEvaluationResponse | null>(null);
 
   useEffect(() => {
     getProviders()
@@ -96,13 +96,13 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
   const handleEvaluate = async () => {
     if (!requireSelection()) return;
     if (files.length === 0) {
-      setError(t('batchEvaluation.noFiles'));
+      setError(t('grammarEvaluation.noFiles'));
       return;
     }
     setLoading(true);
     setError(null);
     try {
-      const response = await batchEvaluate(
+      const response = await grammarEvaluate(
         files,
         selectedProvider,
         correctionLanguage,
@@ -111,7 +111,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
       );
       setResults(response);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : t('batchEvaluation.error'));
+      setError(e instanceof Error ? e.message : t('grammarEvaluation.error'));
     } finally {
       setLoading(false);
     }
@@ -131,10 +131,10 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             onClick={reset}
             className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100"
           >
-            <RotateCcw className="h-4 w-4" /> {t('batchEvaluation.newEvaluation')}
+            <RotateCcw className="h-4 w-4" /> {t('grammarEvaluation.newEvaluation')}
           </button>
         </div>
-        <BatchResults response={results} />
+        <GrammarResults response={results} />
       </div>
     );
   }
@@ -166,7 +166,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
         />
         {selectedProvider && (
           <div className="mt-4">
-            <label htmlFor="batch-model" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="grammar-model" className="mb-2 block text-sm font-medium text-gray-700">
               {t('common.aiModel')}
             </label>
             {modelsLoading && <p className="text-sm text-gray-500">{t('common.loadingModels')}</p>}
@@ -180,7 +180,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             )}
             {!modelsLoading && !modelsError && models.length > 0 && (
               <select
-                id="batch-model"
+                id="grammar-model"
                 value={selectedModel}
                 onChange={(event) => setSelectedModel(event.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
@@ -206,7 +206,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
       {loading && (
         <div className="mb-6 flex items-center justify-center gap-2 rounded-lg bg-blue-50 p-6 text-blue-700">
           <Loader2 className="h-5 w-5 animate-spin" />
-          <span>{t('batchEvaluation.evaluating', { count: files.length, provider: selectedProvider })}</span>
+          <span>{t('grammarEvaluation.evaluating', { count: files.length, provider: selectedProvider })}</span>
         </div>
       )}
 
@@ -214,9 +214,9 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
         <div className="space-y-8">
           {/* File Upload */}
           <section>
-            <h2 className="mb-3 text-xl font-semibold text-gray-900">{t('batchEvaluation.uploadExams')}</h2>
+            <h2 className="mb-3 text-xl font-semibold text-gray-900">{t('grammarEvaluation.uploadExams')}</h2>
             <p className="mb-4 text-gray-600">
-              {t('batchEvaluation.uploadExamsDescription')}
+              {t('grammarEvaluation.uploadExamsDescription')}
             </p>
             <FileDropzone
               onFiles={handleFiles}
@@ -227,13 +227,13 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
                 'application/msword': ['.doc'],
               }}
               multiple
-              label={t('batchEvaluation.dropLabel')}
-              description={t('batchEvaluation.dropDescription')}
+              label={t('grammarEvaluation.dropLabel')}
+              description={t('grammarEvaluation.dropDescription')}
             />
             {files.length > 0 && (
               <div className="mt-4 space-y-2">
                 <p className="text-sm font-medium text-gray-700">
-                  {t('batchEvaluation.filesSelected', { count: files.length })}
+                  {t('grammarEvaluation.filesSelected', { count: files.length })}
                 </p>
                 {files.map((file, i) => (
                   <div
@@ -256,11 +256,11 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
           {/* Evaluation Criteria */}
           <section>
             <h2 className="mb-3 text-xl font-semibold text-gray-900">
-              {t('batchEvaluation.grammarEvaluation')}
+              {t('grammarEvaluation.grammarEvaluation')}
             </h2>
 
             <div className="mb-4 rounded-xl border border-gray-200 bg-white p-5">
-              <label className="mb-1 block text-sm text-gray-600">{t('batchEvaluation.language')}</label>
+              <label className="mb-1 block text-sm text-gray-600">{t('grammarEvaluation.language')}</label>
               <select
                 value={correctionLanguage}
                 onChange={(e) => setCorrectionLanguage(e.target.value)}
@@ -281,7 +281,7 @@ export function BatchEvaluation({ onBack }: BatchEvaluationProps) {
             disabled={!canUseWorkflow || files.length === 0}
             className="w-full rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {t('batchEvaluation.evaluate', { count: files.length, plural: files.length !== 1 ? 's' : '' })}
+            {t('grammarEvaluation.evaluate', { count: files.length, plural: files.length !== 1 ? 's' : '' })}
           </button>
         </div>
       )}

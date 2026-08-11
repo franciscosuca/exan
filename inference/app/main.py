@@ -7,7 +7,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
-from .api.routes import batch, exams, providers
+from .api.routes import exam_comparison, grammar_evaluation, providers
 from .providers.registry import get_provider  # noqa: F401
 
 logger = logging.getLogger(__name__)
@@ -88,5 +88,7 @@ app.add_middleware(
 )
 
 app.include_router(providers.router)
-app.include_router(exams.router)
-app.include_router(batch.router)
+app.include_router(exam_comparison.router, prefix="/api/exam-comparison")
+app.include_router(exam_comparison.router, prefix="/api/exam")
+app.include_router(grammar_evaluation.router, prefix="/api/grammar-evaluation")
+app.include_router(grammar_evaluation.router, prefix="/api/batch")

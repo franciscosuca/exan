@@ -14,7 +14,7 @@ from ...services.exam_comparison import (
 )
 from ..dependencies import get_exam_comparison_service
 
-router = APIRouter(prefix="/api/exam")
+router = APIRouter()
 
 
 def _document(content: bytes, file: UploadFile) -> UploadedDocument:

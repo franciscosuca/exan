@@ -34,18 +34,18 @@ def test_write_run_log_creates_timestamped_exam_comparison_record(tmp_path, monk
     assert record["outputs"][0]["token_usage"] == {"total": 12}
 
 
-def test_write_run_log_creates_batch_evaluation_record(tmp_path, monkeypatch):
+def test_write_run_log_creates_grammar_evaluation_record(tmp_path, monkeypatch):
     monkeypatch.setattr(run_logging, "LOG_ROOT", tmp_path)
 
     path = run_logging.write_run_log(
-        "batch-evaluation",
+        "grammar-evaluation",
         input_snapshot={"files": [{"filename": "essay.pdf", "text_preview": "Example"}]},
         outputs=[{"operation": "grammar", "output": {"score": 80}}],
         elapsed=20,
         provider=SimpleNamespace(name="ollama", model="local"),
     )
 
-    assert path.parent.parent == tmp_path / "batch-evaluation"
+    assert path.parent.parent == tmp_path / "grammar-evaluation"
     assert len(json.loads(path.read_text())["outputs"]) == 1
 
 
@@ -53,7 +53,7 @@ def test_usage_is_kept_with_each_model_output(tmp_path, monkeypatch):
     monkeypatch.setattr(run_logging, "LOG_ROOT", tmp_path)
 
     path = run_logging.write_run_log(
-        "batch-evaluation",
+        "grammar-evaluation",
         input_snapshot={},
         outputs=[
             {"operation": "grammar", "output": ProviderResponse({}, usage={"total": 3})},

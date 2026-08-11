@@ -125,7 +125,7 @@ Return your comparison as JSON with this exact structure:
 Only return valid JSON, no other text."""
 
 
-# --- Batch Evaluation Prompts ---
+# --- Grammar Evaluation Prompts ---
 
 
 def grammar_evaluation_prompt(

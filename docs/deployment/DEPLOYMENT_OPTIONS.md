@@ -290,13 +290,13 @@ Suggested split:
 
 ## Rollout Checklist
 
-- [ ] Create the GCP project, enable Cloud Run, Artifact Registry, and Secret Manager, and create the Terraform state bucket.
-- [ ] Create a MongoDB Atlas cluster and store its connection string in Secret Manager.
-- [ ] Generate a strong `JWT_SECRET` and store the provider API keys in Secret Manager.
-- [ ] Address the [blockers](#blockers-to-resolve-before-the-beta) — at minimum single-instance pinning, upload limits, and inference authentication.
-- [ ] Write the Terraform configuration for the registry, three Cloud Run services, IAM, secrets, and custom-domain routing.
-- [ ] Add a GitHub Actions workflow that tests, builds and pushes all images, then deploys `webapp`, `auth-server`, and `inference` to Cloud Run.
-- [ ] Configure the Cloud Run webapp to proxy `/api/auth/**` and `/api/**` to the backend services, and verify the frontend never calls backend URLs directly.
-- [ ] Smoke-test the full workflow (template, answer key, grading) against the deployed URL, then invite beta testers.
+1. [ ] Create the GCP project, enable Cloud Run, Artifact Registry, and Secret Manager, and create the Terraform state bucket.
+2. [ ] Create a MongoDB Atlas cluster and store its connection string in Secret Manager.
+3. [ ] Generate a strong `JWT_SECRET` and store the provider API keys in Secret Manager.
+4. [ ] Address the [blockers](#blockers-to-resolve-before-the-beta) — at minimum single-instance pinning, upload limits, and inference authentication.
+5. [ ] Write the Terraform configuration for the registry, three Cloud Run services, IAM, secrets, and custom-domain routing.
+6. [ ] Add a GitHub Actions workflow that tests, builds and pushes all images, then deploys `webapp`, `auth-server`, and `inference` to Cloud Run.
+7. [ ] Configure the Cloud Run webapp to proxy `/api/auth/**` and `/api/**` to the backend services, and verify the frontend never calls backend URLs directly.
+8. [ ] Smoke-test the full workflow (template, answer key, grading) against the deployed URL, then invite beta testers.
 
 > Pricing and platform limits change. Confirm the current free-tier allowances and request limits on Google Cloud's pricing and quotas pages before committing.

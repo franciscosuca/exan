@@ -1,3 +1,23 @@
+## [1.6.1](https://github.com/franciscosuca/exan/compare/v1.6.0...v1.6.1) (2026-08-11)
+
+## [1.6.0](https://github.com/franciscosuca/exan/compare/v1.5.2...v1.6.0) (2026-08-10)
+
+### Features
+
+* **add structured grammar feedback plan and evaluation results logging:** feat: add structured grammar feedback plan and evaluation results logging ([d8af7b4](https://github.com/franciscosuca/exan/commit/d8af7b44c40ddfa4e8d78be3e629db9dc9c3cafc))
+* **Enhance grammar evaluation with structured feedback.:** feat: Enhance grammar evaluation with structured feedback. ([6279b17](https://github.com/franciscosuca/exan/commit/6279b176277cf0b4e4938919f8998e56b4c43a29))
+* **enhance grammar findings and summary language:** feat: enhance grammar findings and summary language ([90f35f1](https://github.com/franciscosuca/exan/commit/90f35f105889f4980cdb6b92c70d5a4503999c2b))
+* **Integrate Gemini model selection into provider workflows and enable user to modify or add key answers if necessary.:** feat: Integrate Gemini model selection into provider workflows and enable user to modify or add key answers if necessary. ([8882c0b](https://github.com/franciscosuca/exan/commit/8882c0b68a04080feaf580787bfd6c48295de66f))
+* **migrate to structured grammar evaluation and remove legacy scoring:** feat: migrate to structured grammar evaluation and remove legacy scoring ([274f4be](https://github.com/franciscosuca/exan/commit/274f4be2e27ab7f2fa73436c459434810527fd77))
+
+### Bug Fixes
+
+* **add logs directory to .gitignore:** fix: add logs directory to .gitignore ([eb4cd5d](https://github.com/franciscosuca/exan/commit/eb4cd5d4256dc193084c9949489095eb7cc4c28f))
+* **normalize batch provider feedback:** fix: normalize batch provider feedback ([2e60018](https://github.com/franciscosuca/exan/commit/2e600187418787d84631f05bd14d989c9429e8b5))
+* **remove grammar grading percentages:** fix: remove grammar grading percentages ([263c790](https://github.com/franciscosuca/exan/commit/263c7900af2401c4c4f7e6c4ee8262b82bd241e6))
+* **structure batch evaluation feedback:** fix: structure batch evaluation feedback ([9538825](https://github.com/franciscosuca/exan/commit/9538825bee11ad60907d556ee2f5d2e815b945e9))
+* **update question number type to support alphanumeric values in models and API:** fix: update question number type to support alphanumeric values in models and API ([bd64b9c](https://github.com/franciscosuca/exan/commit/bd64b9c6b9064f24fd32cab467771e0c3bc6e734))
+
 ## [1.5.2](https://github.com/franciscosuca/exan/compare/v1.5.1...v1.5.2) (2026-08-05)
 
 ### Bug Fixes

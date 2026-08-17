@@ -1,0 +1,50 @@
+{
+  "created_at": "2026-08-07T19:39:17.240469+00:00",
+  "elapsed_ms": 11652.78,
+  "input": {
+    "language": "es",
+    "include_grammar": true,
+    "custom_criteria": [],
+    "files": [
+      {
+        "filename": "exan-batch-test-1.pdf",
+        "mime_type": "application/pdf",
+        "bytes": 15030,
+        "text_preview": "Estoy sumamente feliz por mis hermanos! Aunque las cosas quiz\u00e1s no han \nsucedido de la manara que uno inicialmente se las imagino, ambos est\u00e1n \nsumamente saludables y tienen un perspectiva del futuro. \nStanly, me hecho muy feliz el hecho de que el ha decidido tomar otro comienzo e \nintentar salir adelante. Me da un poco de pena el hecho que lo est\u00e9 intentando tan \nlejos de papi y mami, pero quiz\u00e1s ese ha sido su m\u00e9todo para poder empezar. Me \nencantar\u00eda que el supiera que puede solicitar ayuda a"
+      }
+    ]
+  },
+  "model": "gemini-2.5-flash",
+  "provider": "gemini",
+  "outputs": [
+    {
+      "operation": "grammar",
+      "filename": "exan-batch-test-1.pdf",
+      "elapsed_ms": 11520.45,
+      "output": {
+        "score": 85,
+        "feedback": "La ortograf\u00eda de la palabra \"manara\" es incorrecta; debe ser \"manera\". El verbo \"imagino\" en pasado simple para tercera persona singular requiere tilde: \"imagin\u00f3\". Existe un error de concordancia de g\u00e9nero en \"un perspectiva\"; lo correcto es \"una perspectiva\". En la frase \"me hecho muy feliz\", se omite el verbo auxiliar \"ha\"; la forma correcta es \"me ha hecho muy feliz\". El pronombre personal \"\u00e9l\" siempre lleva tilde para distinguirlo del art\u00edculo \"el\". La construcci\u00f3n \"el hecho que\" deber\u00eda incluir la preposici\u00f3n \"de\", resultando en \"el hecho de que\". La expresi\u00f3n \"(por saber)\" al final de la oraci\u00f3n sobre la comunicaci\u00f3n con la familia resulta ambigua y poco clara en este contexto. En la frase \"desde que te deje en RD\", el pronombre \"te\" es incorrecto; al referirse a un tercero (Joan), debe usarse \"lo\" (\"desde que lo dej\u00e9 en RD\"). El pronombre personal \"\u00e9l\" en \"de el\" necesita tilde: \"de \u00e9l\". En la construcci\u00f3n \"lo han hecho pelear\", el uso del pronombre de objeto indirecto \"le\" ser\u00eda m\u00e1s adecuado, ya que se refiere a la persona a quien se le hace algo (\"le han hecho pelear\"). La expresi\u00f3n \"por delantero\" es incorrecta; deber\u00eda ser \"por delante\" o \"por delante de ellos\". La frase \"ayud\u00e1ndosela mutuamente\" contiene un pronombre redundante; la forma correcta es \"ayud\u00e1ndose mutuamente\". A pesar de estos puntos, el texto es f\u00e1cil de comprender y transmite un mensaje claro y emotivo."
+      },
+      "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "token_usage": {
+        "cache_tokens_details": null,
+        "cached_content_token_count": null,
+        "candidates_token_count": 372,
+        "candidates_tokens_details": null,
+        "prompt_token_count": 603,
+        "prompt_tokens_details": [
+          {
+            "modality": "TEXT",
+            "token_count": 603
+          }
+        ],
+        "thoughts_token_count": 2073,
+        "tool_use_prompt_token_count": null,
+        "tool_use_prompt_tokens_details": null,
+        "total_token_count": 3048,
+        "traffic_type": null
+      }
+    }
+  ]
+}

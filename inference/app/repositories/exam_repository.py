@@ -49,3 +49,22 @@ class ExamRepository:
     def get_answer_key(self, exam_id: str) -> AnswerKeyRecord | None:
         """Return an answer-key record, or ``None`` when it is not stored."""
         return self._answer_keys.get(exam_id)
+
+    def update_answer_key(
+        self,
+        exam_id: str,
+        answers: list[dict[str, Any]],
+        raw_answers: list[dict[str, Any]],
+    ) -> AnswerKeyRecord | None:
+        """Update answers while retaining the stored key identity and metadata."""
+        record = self._answer_keys.get(exam_id)
+        if record is None:
+            return None
+
+        key = dict(record["key"])
+        key["answers"] = answers
+        raw_result = dict(record["raw_result"])
+        raw_result["answers"] = raw_answers
+        updated_record: AnswerKeyRecord = {"key": key, "raw_result": raw_result}
+        self._answer_keys[exam_id] = updated_record
+        return updated_record

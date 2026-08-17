@@ -37,11 +37,18 @@ export function authRoutes(db: Db): Router {
       });
 
       res.status(201).json({ token, username: user.username });
-    } catch (err: any) {
-      if (err.message === "Username already exists") {
-        res.status(409).json({ error: err.message });
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : undefined;
+
+      if (errorMessage === "Username already exists") {
+        res.status(409).json({ error: errorMessage });
         return;
       }
+
+      console.error(
+        "Registration failed",
+        err instanceof Error ? err.stack || err.message : String(err)
+      );
       res.status(500).json({ error: "Registration failed" });
     }
   });

@@ -5,7 +5,7 @@
 Exan needs a way to capture exam pages with a phone and add them to an upload slot in either:
 
 - Exam Comparison: template, answer key, or one or more student exams.
-- Batch Evaluation: one or more documents to evaluate.
+- Grammar Evaluation: one or more documents to evaluate.
 
 There are two distinct user experiences:
 
@@ -31,7 +31,7 @@ The first experience is a small web change. The second requires pairing, transfe
 - `FileDropzone` is the natural frontend integration point because every upload workflow already uses it.
 - A template or answer key accepts one file. Several phone photos therefore need to be assembled into one logical document, normally a PDF, before using the current endpoint.
 - Student exam uploads treat each file as a separate student exam. Individual page photos must not be added directly as independent files unless each photo is a complete exam.
-- Batch Evaluation currently accepts PDF and Word files, not image files. Phone pages must become a searchable PDF, pass through OCR, or be evaluated through a new vision-based path.
+- Grammar Evaluation currently accepts PDF and Word files, not image files. Phone pages must become a searchable PDF, pass through OCR, or be evaluated through a new vision-based path.
 - iPhones may supply HEIC/HEIF images, especially when choosing existing photos. The server currently rejects those formats.
 - Advanced browser camera APIs such as `getUserMedia()` require a secure context. A phone also cannot reach a service bound only to the computer's `localhost` address.
 - A browser cannot invoke Apple's Continuity Camera experience through a standard cross-browser web API.
@@ -385,7 +385,7 @@ type UploadDocument =
 ```
 
 - Template and answer-key slots own one `UploadDocument` each.
-- Student grading and batch evaluation own an ordered `UploadDocument[]`.
+- Student exam comparison and Grammar Evaluation own an ordered `UploadDocument[]`.
 - A staged document owns its ordered pages; pages are never mistaken for separate student exams.
 - Processing endpoints can accept either an ordinary multipart file or a staged document ID.
 

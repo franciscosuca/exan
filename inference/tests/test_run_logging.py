@@ -16,9 +16,9 @@ def test_write_run_log_creates_timestamped_exam_comparison_record(tmp_path, monk
         input_snapshot={"files": [{"filename": "student.pdf", "bytes": 10}]},
         outputs=[
             {
-                "operation": "grade_exam",
+                "operation": "compare_exam",
                 "elapsed_ms": 3.2,
-                "output": ProviderResponse({"score": 9}, usage={"total": 12}),
+                "output": ProviderResponse({"answers": []}, usage={"total": 12}),
             }
         ],
         elapsed=4.5,
@@ -30,37 +30,34 @@ def test_write_run_log_creates_timestamped_exam_comparison_record(tmp_path, monk
     record = json.loads(path.read_text())
     assert record["provider"] == "gemini"
     assert record["model"] == "test-model"
-    assert record["outputs"][0]["output"] == {"score": 9}
+    assert record["outputs"][0]["output"] == {"answers": []}
     assert record["outputs"][0]["token_usage"] == {"total": 12}
 
 
-def test_write_run_log_creates_batch_evaluation_record(tmp_path, monkeypatch):
+def test_write_run_log_creates_grammar_evaluation_record(tmp_path, monkeypatch):
     monkeypatch.setattr(run_logging, "LOG_ROOT", tmp_path)
 
     path = run_logging.write_run_log(
-        "batch-evaluation",
+        "grammar-evaluation",
         input_snapshot={"files": [{"filename": "essay.pdf", "text_preview": "Example"}]},
-        outputs=[
-            {"operation": "grammar", "output": {"score": 80}},
-            {"operation": "custom_criteria", "output": {"score": 70}},
-        ],
+        outputs=[{"operation": "grammar", "output": {"score": 80}}],
         elapsed=20,
         provider=SimpleNamespace(name="ollama", model="local"),
     )
 
-    assert path.parent.parent == tmp_path / "batch-evaluation"
-    assert len(json.loads(path.read_text())["outputs"]) == 2
+    assert path.parent.parent == tmp_path / "grammar-evaluation"
+    assert len(json.loads(path.read_text())["outputs"]) == 1
 
 
 def test_usage_is_kept_with_each_model_output(tmp_path, monkeypatch):
     monkeypatch.setattr(run_logging, "LOG_ROOT", tmp_path)
 
     path = run_logging.write_run_log(
-        "batch-evaluation",
+        "grammar-evaluation",
         input_snapshot={},
         outputs=[
             {"operation": "grammar", "output": ProviderResponse({}, usage={"total": 3})},
-            {"operation": "custom", "output": ProviderResponse({}, usage={"total": 7})},
+            {"operation": "grammar", "output": ProviderResponse({}, usage={"total": 7})},
         ],
         elapsed=1,
         provider=SimpleNamespace(name="gpt", model="test"),

@@ -5,13 +5,13 @@ import httpx
 from ..config import settings
 from . import BaseProvider
 from .claude import ClaudeProvider
-from .gemini import GeminiProvider
+from .gemini import GeminiProvider, list_gemini_models
 from .gpt import GPTProvider
 from .lmstudio import LMStudioProvider
 from .ollama import OllamaProvider
 
 
-def get_provider(name: str) -> BaseProvider:
+def get_provider(name: str, model: str) -> BaseProvider:
     providers = {
         "gemini": GeminiProvider,
         "claude": ClaudeProvider,
@@ -21,7 +21,15 @@ def get_provider(name: str) -> BaseProvider:
     }
     if name not in providers:
         raise ValueError(f"Unknown provider: {name}. Available: {list(providers.keys())}")
+    if name == "gemini":
+        return GeminiProvider(model)
     return providers[name]()
+
+
+def get_provider_models(name: str) -> list[dict]:
+    if name != "gemini":
+        raise ValueError(f"Model catalogue is not supported for provider: {name}")
+    return list_gemini_models()
 
 
 def get_available_providers() -> list[dict]:

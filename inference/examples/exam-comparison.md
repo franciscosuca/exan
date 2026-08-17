@@ -3,7 +3,7 @@
 Upload a student exam after creating an exam template and answer key:
 
 ```bash
-curl -X POST http://localhost:8000/api/exam/grade \
+curl -X POST http://localhost:8000/api/exam-comparison/compare \
   -F "exam_id=<exam-id>" -F "provider=gemini" \
   -F "files=@student-exam.pdf"
 ```

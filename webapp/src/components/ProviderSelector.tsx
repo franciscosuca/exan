@@ -9,7 +9,7 @@ interface ProviderSelectorProps {
 
 export function ProviderSelector({ providers, selected, onSelect }: ProviderSelectorProps) {
   const { t } = useLanguage();
-  const available = providers.filter((p) => p.available);
+  const available = providers.filter((p) => p.available && p.provider === 'gemini');
 
   if (available.length === 0) {
     return (

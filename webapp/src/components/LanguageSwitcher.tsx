@@ -9,9 +9,9 @@ export function LanguageSwitcher() {
   return (
     <label className="flex items-center gap-1.5 text-sm font-medium text-gray-600">
       <Languages className="h-4 w-4 text-gray-500" />
-      <span className="sr-only">{t('batchEvaluation.language')}</span>
+      <span className="sr-only">{t('grammarEvaluation.language')}</span>
       <select
-        aria-label={t('batchEvaluation.language')}
+        aria-label={t('grammarEvaluation.language')}
         value={language}
         onChange={(e) => setLanguage(e.target.value as Language)}
         className="rounded-lg border border-gray-200 bg-white px-2 py-1 text-sm text-gray-700 focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"

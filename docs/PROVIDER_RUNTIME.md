@@ -23,7 +23,7 @@ For this feature, "mount the token" should mean **attach a credential to an auth
 ### Frontend
 
 - `webapp/src/components/ProviderSelector.tsx` displays only providers whose `available` field is already true. A user therefore cannot select an unconfigured cloud provider and enter a credential.
-- `webapp/src/components/ExamComparison.tsx` and `webapp/src/components/BatchEvaluation.tsx` each own provider state independently.
+- `webapp/src/components/ExamComparison.tsx` and `webapp/src/components/GrammarEvaluation.tsx` each own provider state independently.
 - `webapp/src/lib/api.ts` sends only a provider name with inference requests. It has no credential, connection, model, or reasoning fields.
 - The Exan JWT is stored by `webapp/src/auth.api.ts`, but inference requests do not send it.
 - Authentication currently gates the React UI, not the FastAPI endpoints.
@@ -252,7 +252,7 @@ Return `reasoning_options: []` for models without a supported effort control. Th
 
 Replace the free-form `provider` field on all exam and batch endpoints with `provider_connection_id`. The server resolves provider, credential, model, and effort from the connection. Do not accept a client-supplied provider or model that bypasses the verified connection.
 
-Freeze the selected connection configuration for an active exam workflow. This prevents template extraction, answer-key extraction, and grading from silently using different models.
+Freeze the selected connection configuration for an active exam workflow. This prevents template extraction, answer-key extraction, and answer comparison from silently using different models.
 
 ### Disconnect
 
@@ -310,7 +310,7 @@ Likely files:
 - `webapp/src/components/ProviderSelector.tsx`
 - a new provider setup component or hook
 - `webapp/src/components/ExamComparison.tsx`
-- `webapp/src/components/BatchEvaluation.tsx`
+- `webapp/src/components/GrammarEvaluation.tsx`
 - `webapp/src/lib/api.ts`
 - `webapp/src/auth.api.ts`
 - `webapp/src/lib/i18n.tsx`
@@ -413,7 +413,7 @@ Steps 1 and 2 are prerequisites. Accepting provider secrets before inference aut
 - model access and capability filtering;
 - models with and without reasoning options;
 - provider-specific effort translation;
-- every exam and batch endpoint resolving the same frozen connection;
+- every Exam Comparison and Grammar Evaluation endpoint resolving the same frozen connection;
 - sanitized upstream authentication, rate-limit, and provider errors.
 
 ### Frontend tests

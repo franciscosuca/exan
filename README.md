@@ -1,12 +1,15 @@
-# Exan — AI Exam Scanner & Grader
+# Exan — AI Exam Scanner & Answer Comparator
 
-An AI-powered application that scans exam documents, extracts their structure, and automatically grades student responses. Supports both cloud AI providers and fully offline local inference.
+An AI-powered application that scans exam documents, extracts their structure, and compares student responses with correct answers. Supports both cloud AI providers and fully offline local inference.
+
+Exan provides two workflows: Exam Comparison for structured answer checking and
+Grammar Evaluation for document-level grammar feedback.
 
 ## How It Works
 
 1. **Upload Empty Exam** — Upload a blank exam (PDF or image). The AI identifies all questions, their types, and point values.
 2. **Upload Answer Key** — Upload the same exam filled in with correct answers.
-3. **Grade Student Exams** — Upload one or more completed student exams. Each is graded automatically against the answer key.
+3. **Compare Student Exams** — Upload one or more completed student exams. Each is compared automatically against the answer key.
 
 ## Architecture
 
@@ -48,7 +51,7 @@ An AI-powered application that scans exam documents, extracts their structure, a
 | Provider | Mode | Why |
 |----------|------|-----|
 | **Gemini** (google-genai) | Cloud | Best-in-class multimodal (vision + reasoning). Native JSON output mode reduces parsing errors. Generous free tier. |
-| **Claude** (anthropic) | Cloud | Exceptional at structured analysis and nuanced grading of open-ended answers. Strong vision capabilities. |
+| **Claude** (anthropic) | Cloud | Exceptional at structured analysis and nuanced comparison of open-ended answers. Strong vision capabilities. |
 | **GPT** (OpenAI) | Cloud | Strong multimodal document understanding through OpenAI's API. Uses the configurable `OPENAI_MODEL` setting. |
 | **Ollama** | Local/Offline | Runs models like `qwen2.5-vl` entirely on-device. Zero data leaves the machine. Essential for privacy-sensitive educational environments and air-gapped deployments. |
 | **LM Studio** | Local/Offline | Serves locally loaded vision models through an OpenAI-compatible API. Useful for selecting and testing local models through a desktop interface. |
@@ -158,9 +161,14 @@ bun run test
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/providers` | List available AI providers |
-| POST | `/api/exam/template` | Upload empty exam for structure analysis |
-| POST | `/api/exam/answer-key` | Upload exam with correct answers |
-| POST | `/api/exam/grade` | Upload and grade student exams |
+| POST | `/api/exam-comparison/template` | Upload empty exam for structure analysis |
+| POST | `/api/exam-comparison/answer-key` | Upload exam with correct answers |
+| PUT | `/api/exam-comparison/answer-key/{exam_id}` | Save edited answer-key answers |
+| POST | `/api/exam-comparison/compare` | Upload and compare student exams |
+| POST | `/api/grammar-evaluation/evaluate` | Evaluate uploaded documents for grammar |
+
+The legacy prefixes `/api/exam` and `/api/batch` remain registered as
+compatibility aliases with the same operations and response contracts.
 
 ## Project Structure
 

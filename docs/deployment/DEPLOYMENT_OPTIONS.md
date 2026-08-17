@@ -9,14 +9,14 @@ It expands [Deployment and networking](../scanning/ARCHITECTURE_OPTIONS.md#deplo
 - [Summary](#summary)
 - [What We Are Deploying](#what-we-are-deploying)
 - [Platform Options](#platform-options)
-  - [Option 1: Cloud Run + Firebase Hosting (recommended)](#option-1-cloud-run--firebase-hosting-recommended)
+  - [Option 1: Cloud Run + Firebase Hosting](#option-1-cloud-run--firebase-hosting)
   - [Option 2: Single Compute Engine VM running Docker Compose](#option-2-single-compute-engine-vm-running-docker-compose)
   - [Option 3: GKE Autopilot (Kubernetes)](#option-3-gke-autopilot-kubernetes)
   - [Option 4: Firebase only](#option-4-firebase-only)
   - [Option 5: Non-GCP PaaS (Render, Railway, Fly.io)](#option-5-non-gcp-paas-render-railway-flyio)
 - [Comparison Table](#comparison-table)
 - [Cost Estimate](#cost-estimate)
-- [Variant: Everything on Cloud Run, Database on Atlas](#variant-everything-on-cloud-run-database-on-atlas)
+- [Variant: Everything on Cloud Run, Database on Atlas (recommended)](#variant-everything-on-cloud-run-database-on-atlas-recommended)
 - [Containers or Kubernetes Pods?](#containers-or-kubernetes-pods)
 - [Infrastructure Automation](#infrastructure-automation)
 - [Blockers to Resolve Before the Beta](#blockers-to-resolve-before-the-beta)
@@ -25,17 +25,17 @@ It expands [Deployment and networking](../scanning/ARCHITECTURE_OPTIONS.md#deplo
 
 ## Summary
 
-**Recommendation: deploy the beta on Google Cloud Run, serve the React build from Firebase Hosting, and use MongoDB Atlas for the database.**
+**Recommendation: deploy the beta with all three application services on Google Cloud Run, MongoDB Atlas for persistence, and Secret Manager for credentials.**
 
-- **Best fit:** `inference` and `auth-server` are stateless HTTP containers with bursty, low beta traffic. Cloud Run scales them to zero between testers, so idle cost is close to nothing.
-- **Cheapest:** the Cloud Run free tier plus Firebase Hosting's free static tier plus an Atlas free-tier cluster keeps a small beta near zero cost. Kubernetes cannot match this because a cluster bills continuously.
-- **Easiest:** the existing `Dockerfile.auth` and `inference/Dockerfile` are reused as-is; there is no cluster, node pool, or ingress controller to operate.
+- **Best fit:** `webapp`, `inference`, and `auth-server` remain separate HTTP services with bursty, low beta traffic. Cloud Run scales them to zero between testers, while inference stays pinned to one instance until workflow state moves out of memory.
+- **Cheapest:** Cloud Run's free tier plus an Atlas free-tier cluster keeps a small beta near zero cost. Kubernetes cannot match this because a cluster bills continuously.
+- **Easiest:** the existing Dockerfiles can be reused; only the webapp's nginx upstreams need cloud-specific service URLs. There is no cluster, node pool, or ingress controller to operate.
 - **Separate containers, not pods.** Keep one deployable per service on a managed platform. Kubernetes only becomes worthwhile once we need multi-replica shared state, background workers, and independent scaling — the [Option 3: Independently scaled services](../scanning/ARCHITECTURE_OPTIONS.md#option-3-independently-scaled-services) stage.
 - **Automate with Terraform** for the cloud resources and GitHub Actions for build and deploy. Terraform is worth it even at this size because it captures the IAM, secrets, and service wiring that are hard to reproduce by hand.
 
 If the beta must be live in days rather than weeks, [Option 2](#option-2-single-compute-engine-vm-running-docker-compose) (one VM running the current `docker-compose.yml`) is the zero-rewrite fallback and can be replaced by Cloud Run later without changing application code.
 
-If a single platform is preferred over splitting the frontend onto Firebase, see [Variant: Everything on Cloud Run, Database on Atlas](#variant-everything-on-cloud-run-database-on-atlas) — an equally defensible setup that trades the CDN for uniformity and removes the 60-second rewrite ceiling.
+This choice trades global static asset caching for one deployment surface, private backend routing, and Cloud Run's full request timeout.
 
 ## What We Are Deploying
 
@@ -50,7 +50,7 @@ The two properties that drive the decision are the inference service's *in-memor
 
 ## Platform Options
 
-### Option 1: Cloud Run + Firebase Hosting (recommended)
+### Option 1: Cloud Run + Firebase Hosting
 
 **Shape:** `inference` and `auth-server` deploy as two Cloud Run services from the existing Dockerfiles. The webapp is built with `bun run build` and published to Firebase Hosting, whose `rewrites` forward `/api/auth/**` to the auth service and `/api/**` to the inference service, replacing `webapp/nginx.conf` in the cloud environment. MongoDB moves to MongoDB Atlas. Secrets live in Secret Manager.
 
@@ -199,9 +199,9 @@ Note that this stack is **not three vendors to wire together**: Cloud Run, Fireb
 
 Against roughly $85/month for GKE, the AI provider calls themselves will likely dominate the bill for a beta of this size. Paying a fixed cluster fee to orchestrate four containers that see intermittent traffic buys availability and scaling guarantees the beta does not need yet — which is the cost argument behind [Containers or Kubernetes Pods?](#containers-or-kubernetes-pods).
 
-## Variant: Everything on Cloud Run, Database on Atlas
+### Variant: Everything on Cloud Run, Database on Atlas (recommended)
 
-A reasonable simplification of the recommendation: drop Firebase Hosting and deploy **all three application containers — `webapp`, `auth-server`, `inference` — as Cloud Run services**, keeping only MongoDB on Atlas. The existing `webapp/Dockerfile` and `nginx.conf` ship unchanged; nginx serves the built SPA and reverse-proxies `/api/auth/` and `/api/` to the two backend services, exactly as it does under Docker Compose.
+The selected deployment is to deploy **all three application containers — `webapp`, `auth-server`, `inference` — as Cloud Run services**, keeping only MongoDB on Atlas. The existing `webapp/Dockerfile` and `nginx.conf` provide the starting point; nginx serves the built SPA and reverse-proxies `/api/auth/` and `/api/` to the two backend services, with cloud-specific upstream URLs replacing the Compose service names.
 
 ### Advantages
 
@@ -224,13 +224,7 @@ A reasonable simplification of the recommendation: drop Firebase Hosting and dep
 
 ### Verdict
 
-**Both are correct choices; pick on latency versus uniformity.**
-
-Use all-on-Cloud-Run if operational uniformity matters more than frontend latency — one platform, one config, no 60-second rewrite ceiling, and private backends. This is the better default if grading calls are known to run long, and it is the closest thing to "lift the Compose file into managed containers".
-
-Use the recommended Cloud Run + Firebase Hosting split if the SPA should load fast worldwide from cache at no compute cost, and handle long grading calls by making them asynchronous — which is worth doing regardless, since a 60-second synchronous HTTP request is a fragile contract on any platform.
-
-The two are not mutually exclusive over time: the images and routing are identical, so starting all-on-Cloud-Run and moving the static build to Hosting later (or the reverse) changes only where `/` is served from. Either way, MongoDB stays on Atlas — nothing here argues for self-hosting the database.
+**Use this variant for the beta.** It keeps the deployment and routing surface in one platform, avoids a hosting rewrite timeout, and preserves MongoDB Atlas as the managed persistence layer. A CDN-backed static frontend can be introduced later without changing the backend services.
 
 
 
@@ -257,8 +251,8 @@ The two are not mutually exclusive over time: the images and routing are identic
 
 Suggested split:
 
-- **Terraform** owns Artifact Registry, the two Cloud Run services, service accounts and IAM bindings, Secret Manager entries, the Firebase Hosting site, and the custom domain. Keep state in a GCS bucket.
-- **GitHub Actions** owns CI (the existing Vitest and pytest suites), image build and push, `gcloud run deploy` of the new image, and `firebase deploy --only hosting`. Authenticate with Workload Identity Federation so no long-lived service-account key is stored in the repo.
+- **Terraform** owns Artifact Registry, the three Cloud Run services, service accounts and IAM bindings, Secret Manager entries, and the custom domain. Keep state in a GCS bucket.
+- **GitHub Actions** owns CI (the existing Vitest and pytest suites), image build and push, and `gcloud run deploy` for `webapp`, `auth-server`, and `inference`. Authenticate with Workload Identity Federation so no long-lived service-account key is stored in the repo.
 - Secret *values* (`JWT_SECRET`, provider API keys, `MONGO_URI`) are created outside Terraform and only referenced by it, so no secret ever lands in state or in git.
 
 ## Blockers to Resolve Before the Beta
@@ -267,29 +261,30 @@ Suggested split:
 2. **Upload size.** `nginx.conf` allows 50 MB while Cloud Run's default HTTP/1 request limit is 32 MiB. Cap client-side upload size, upload files one at a time, or move to direct-to-storage uploads.
 3. **Unauthenticated inference endpoints.** `/api/exam/*` has no auth today. Because Hosting rewrites reach Cloud Run anonymously over its public URL, requiring the auth service's JWT inside `inference` is a hard prerequisite for going public.
 4. **Published ports.** `docker-compose.yml` publishes 8000, 3001, and 27017. In the deployed environment the database must never be publicly reachable, and every publicly reachable service must authenticate its own requests.
-5. **Long grading requests.** Firebase Hosting rewrites cut responses off at 60 seconds. Measure the slowest grading call and, if needed, move grading to an asynchronous job with polling or route it around the rewrite.
+5. **Long grading requests.** Set the Cloud Run timeouts for `webapp` and `inference` high enough for the slowest grading call. If calls approach the platform limit, move grading to an asynchronous job with polling.
 6. **Secrets.** `JWT_SECRET` defaults to `change-this-to-a-random-secret` and MongoDB uses `admin`/`admin`. Both must be generated per environment and stored in Secret Manager.
 7. **Logs.** Run logging writes to the mounted `./logs` volume, which does not survive an ephemeral container. Write to stdout for Cloud Logging or to a storage bucket.
 8. **Local providers.** Ollama and LM Studio are unreachable from managed hosting, so the beta build should hide or disable them.
 
 ## Target Topology
 
+**Beta verdict:** use the all-on-Cloud-Run variant: deploy `webapp`, `auth-server`, and `inference` as separate Cloud Run services, keep MongoDB on Atlas, and store credentials in Secret Manager. Pin `inference` to one instance until workflow state is externalized.
+
 ```
                     ┌────────────────────────────┐
-  Beta tester ────▶ │ Firebase Hosting (CDN+TLS) │  static React build
+  Beta tester ────▶ │ Cloud Run: webapp           │  React build + nginx
                     └─────────────┬──────────────┘
-                       rewrites   │
               /api/auth/**        │        /api/**
-            ┌───────────────────┐ │ ┌────────────────────────┐
-            │ Cloud Run         │◀┴▶│ Cloud Run              │
-            │ auth-server       │   │ inference (FastAPI)    │
-            │ (Node/Express)    │   │ max-instances pinned   │
-            └─────────┬─────────┘   └───────────┬────────────┘
+            ┌─────────▼─────────┐   ┌──────────▼─────────────┐
+            │ Cloud Run         │   │ Cloud Run               │
+            │ auth-server       │   │ inference (FastAPI)     │
+            │ (Node/Express)    │   │ max-instances pinned    │
+            └─────────┬─────────┘   └──────────┬──────────────┘
                       │                         │
                       ▼                         ▼
             ┌───────────────────┐   ┌────────────────────────┐
             │ MongoDB Atlas     │   │ Secret Manager         │
-            │ (users)           │   │ (JWT + provider keys)  │
+            │ (users)           │   │ (JWT, Mongo URI, keys)  │
             └───────────────────┘   └────────────────────────┘
 ```
 
@@ -299,9 +294,9 @@ Suggested split:
 - [ ] Create a MongoDB Atlas cluster and store its connection string in Secret Manager.
 - [ ] Generate a strong `JWT_SECRET` and store the provider API keys in Secret Manager.
 - [ ] Address the [blockers](#blockers-to-resolve-before-the-beta) — at minimum single-instance pinning, upload limits, and inference authentication.
-- [ ] Write the Terraform configuration for registry, services, IAM, secrets, and hosting.
-- [ ] Add a GitHub Actions workflow that tests, builds and pushes images, deploys Cloud Run, and deploys Firebase Hosting.
-- [ ] Point the Firebase Hosting rewrites at the two Cloud Run services and verify the frontend never calls them directly.
+- [ ] Write the Terraform configuration for the registry, three Cloud Run services, IAM, secrets, and custom-domain routing.
+- [ ] Add a GitHub Actions workflow that tests, builds and pushes all images, then deploys `webapp`, `auth-server`, and `inference` to Cloud Run.
+- [ ] Configure the Cloud Run webapp to proxy `/api/auth/**` and `/api/**` to the backend services, and verify the frontend never calls backend URLs directly.
 - [ ] Smoke-test the full workflow (template, answer key, grading) against the deployed URL, then invite beta testers.
 
 > Pricing and platform limits change. Confirm the current free-tier allowances and request limits on Google Cloud's pricing and quotas pages before committing.

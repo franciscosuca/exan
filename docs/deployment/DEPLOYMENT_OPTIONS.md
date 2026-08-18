@@ -290,12 +290,12 @@ Suggested split:
 
 ## Rollout Checklist
 
-1. [ ] Create the GCP project, enable Cloud Run, Artifact Registry, and Secret Manager, and create the Terraform state bucket.
-2. [ ] Create a MongoDB Atlas cluster and store its connection string in Secret Manager.
-3. [ ] Generate a strong `JWT_SECRET` and store the provider API keys in Secret Manager.
+1. [ ] [Step 1: GCP Project Setup](docs/deployment/STEP_1_GCP_PROJECT_SETUP.md) — Create the GCP project, enable Cloud Run, Artifact Registry, and Secret Manager, and create the Terraform state bucket.
+2. [ ] [Step 2: MongoDB Atlas Setup](docs/deployment/STEP_2_MONGODB_ATLAS_SETUP.md) — Create a MongoDB Atlas cluster and store its connection string in Secret Manager.
+3. [ ] [Step 3: Secrets Setup](docs/deployment/STEP_3_SECRETS_SETUP.md) — Generate a strong JWT_SECRET and store the provider API keys in Secret Manager.
 4. [ ] Address the [blockers](#blockers-to-resolve-before-the-beta) — at minimum single-instance pinning, upload limits, and inference authentication.
-5. [ ] Write the Terraform configuration for the registry, three Cloud Run services, IAM, secrets, and custom-domain routing.
-6. [ ] Add a GitHub Actions workflow that tests, builds and pushes all images, then deploys `webapp`, `auth-server`, and `inference` to Cloud Run.
+5. [ ] [Step 5: Terraform Configuration](docs/deployment/STEP_5_TERRAFORM_CONFIGURATION.md) — Write the Terraform configuration for the registry, three Cloud Run services, IAM, secrets, and custom-domain routing.
+6. [ ] Add a GitHub Actions workflow that tests, builds and pushes all images, then deploys webapp, auth-server, and inference to Cloud Run.
 7. [ ] Configure the Cloud Run webapp to proxy `/api/auth/**` and `/api/**` to the backend services, and verify the frontend never calls backend URLs directly.
 8. [ ] Smoke-test the full workflow (template, answer key, grading) against the deployed URL, then invite beta testers.
 

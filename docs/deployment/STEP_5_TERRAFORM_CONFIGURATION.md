@@ -72,7 +72,13 @@ variable "repository_name" {
 ### `main.tf`
 
 ```hcl
-# 1. Artifact Registry Repository
+# 1. Import the Artifact Registry Repository created in Step 1
+import {
+  to = google_artifact_registry_repository.repo
+  id = "projects/${var.project_id}/locations/${var.region}/repositories/${var.repository_name}"
+}
+
+# Keep this resource block after import so Terraform manages its configuration.
 resource "google_artifact_registry_repository" "repo" {
   location      = var.region
   repository_id = var.repository_name
@@ -312,10 +318,10 @@ terraform init
 # Validate configuration
 terraform validate
 
-# Review execution plan
+# Review execution plan; it includes importing the existing repository.
 terraform plan -var="project_id=YOUR_PROJECT_ID" -var="region=us-central1"
 
-# Provision resources
+# Import the existing repository and provision the remaining resources.
 terraform apply -var="project_id=YOUR_PROJECT_ID" -var="region=us-central1"
 ```
 

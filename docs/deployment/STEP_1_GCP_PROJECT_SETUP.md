@@ -11,7 +11,7 @@ Back to: [docs/deployment/DEPLOYMENT_OPTIONS.md](docs/deployment/DEPLOYMENT_OPTI
 ```bash
 # Set environment variables
 export PROJECT_ID="exan-beta-prod"
-export REGION="us-central1"
+export REGION="europe-west1"
 
 # Create GCP project
 gcloud projects create ${PROJECT_ID} --name="Exan Platform"

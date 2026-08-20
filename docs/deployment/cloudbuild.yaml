@@ -159,7 +159,7 @@ options:
 
 substitutions:
   _REPO_NAME: 'exan-repo'
-  _REGION: 'us-central1'
+  _REGION: 'europe-west1'
 
 tags:
   - 'exan'

@@ -65,7 +65,7 @@ gcloud auth configure-docker ${REGION}-docker.pkg.dev
 Create a Google Cloud Storage (GCS) bucket with Object Versioning enabled to store Terraform remote state securely:
 
 ```bash
-export TF_STATE_BUCKET="exan-tf-state-${PROJECT_ID}"
+export TF_STATE_BUCKET="tf-state-${PROJECT_ID}"
 
 # Create bucket
 gcloud storage buckets create gs://${TF_STATE_BUCKET} \
@@ -82,10 +82,10 @@ gcloud storage buckets update gs://${TF_STATE_BUCKET} --versioning
 
 ```bash
 # Create service account for CI/CD deployments
-gcloud iam service-accounts create github-deployer \
-  --display-name="GitHub Actions Deployer"
+gcloud iam service-accounts create github-actions \
+  --display-name="GitHub Actions"
 
-export SA_EMAIL="github-deployer@${PROJECT_ID}.iam.gserviceaccount.com"
+export SA_EMAIL="github-actions@${PROJECT_ID}.iam.gserviceaccount.com"
 
 # Grant required roles for Cloud Run deployment and image pushing
 gcloud projects add-iam-policy-binding ${PROJECT_ID} \

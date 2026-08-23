@@ -10,9 +10,9 @@ Back to: [docs/deployment/DEPLOYMENT_OPTIONS.md](docs/deployment/DEPLOYMENT_OPTI
 
 1. Sign in to [MongoDB Atlas Console](https://cloud.mongodb.com/).
 2. Create a new organization/project named `Exan`.
-3. Click **Create Deployment** and choose **M0 (Shared/Free)**.
+3. Click **Create Cluster** and choose **M0 (Shared/Free)**.
 4. Select Cloud Provider **Google Cloud (GCP)** and region matching Cloud Run (e.g., `us-central1` / `iowa`).
-5. Set Cluster Name to `exan-cluster-beta` and click **Create Deployment**.
+5. Set Cluster Name to `exan-cluster-beta` and click **Create Cluster**.
 
 ---
 
@@ -41,7 +41,7 @@ Back to: [docs/deployment/DEPLOYMENT_OPTIONS.md](docs/deployment/DEPLOYMENT_OPTI
 
 ## 4. Retrieve Connection String
 
-1. Navigate to **Database** → **Deployments**.
+1. Navigate to **Database** → **Clusters**.
 2. Click **Connect** on `exan-cluster-beta`.
 3. Choose **Drivers** (Node.js / Python).
 4. Copy the connection string in the format:

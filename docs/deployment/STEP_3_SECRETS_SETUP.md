@@ -33,7 +33,7 @@ Create a Secret Manager entry for the Google Gemini provider used by `inference`
 # Google Gemini API Key
 gcloud secrets create GEMINI_API_KEY --replication-policy="automatic"
 gcloud secrets versions add GEMINI_API_KEY \
-  --data-file=<(printf '%s' "AIzaSy-your-gemini-key")
+  --data-file=<(printf '%s' "GEMINI_API_KEY")
 ```
 
 ---

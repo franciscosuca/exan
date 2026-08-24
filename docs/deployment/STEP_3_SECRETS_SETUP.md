@@ -19,28 +19,21 @@ gcloud secrets create JWT_SECRET \
   --replication-policy="automatic"
 
 # Add secret version
-echo -n "${JWT_SECRET_VAL}" | \
-  gcloud secrets versions add JWT_SECRET --data-file=-
+gcloud secrets versions add JWT_SECRET \
+  --data-file=<(printf '%s' "${JWT_SECRET_VAL}")
 ```
 
 ---
 
 ## 2. Store AI Provider API Keys
 
-Create Secret Manager entries for each external LLM / AI vision provider used by `inference`:
+Create a Secret Manager entry for the Google Gemini provider used by `inference`:
 
 ```bash
-# OpenAI API Key
-gcloud secrets create OPENAI_API_KEY --replication-policy="automatic"
-echo -n "sk-your-openai-api-key" | gcloud secrets versions add OPENAI_API_KEY --data-file=-
-
-# Anthropic API Key
-gcloud secrets create ANTHROPIC_API_KEY --replication-policy="automatic"
-echo -n "sk-ant-your-anthropic-key" | gcloud secrets versions add ANTHROPIC_API_KEY --data-file=-
-
 # Google Gemini API Key
 gcloud secrets create GEMINI_API_KEY --replication-policy="automatic"
-echo -n "AIzaSy-your-gemini-key" | gcloud secrets versions add GEMINI_API_KEY --data-file=-
+gcloud secrets versions add GEMINI_API_KEY \
+  --data-file=<(printf '%s' "AIzaSy-your-gemini-key")
 ```
 
 ---

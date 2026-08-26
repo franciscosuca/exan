@@ -2,6 +2,8 @@
 
 Step-by-step guide to provisioning the Google Cloud infrastructure (Artifact Registry, Cloud Run services, IAM bindings, and Secret references) using Terraform.
 
+Before starting, read [Terraform Basics and macOS Setup](TERRAFORM_BASICS.md) for the Terraform workflow, installation, and Google Cloud authentication steps.
+
 Back to: [docs/deployment/DEPLOYMENT_OPTIONS.md](docs/deployment/DEPLOYMENT_OPTIONS.md#rollout-checklist)
 
 ---

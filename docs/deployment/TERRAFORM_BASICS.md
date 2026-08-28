@@ -89,11 +89,11 @@ terraform validate
 
 terraform plan \
   -var="project_id=YOUR_PROJECT_ID" \
-  -var="region=us-central1"
+  -var="region=europe-west1"
 
 terraform apply \
   -var="project_id=YOUR_PROJECT_ID" \
-  -var="region=us-central1"
+  -var="region=europe-west1"
 ```
 
 You can put the same non-secret values in `terraform.tfvars` instead:

@@ -55,13 +55,13 @@ provider "google" {
 ```hcl
 variable "project_id" {
   type        = string
-  description = "GCP Project ID"
+  description = "exan-beta"
 }
 
 variable "region" {
   type        = string
   description = "Primary GCP Region"
-  default     = "us-central1"
+  default     = "europe-west1"
 }
 
 variable "repository_name" {

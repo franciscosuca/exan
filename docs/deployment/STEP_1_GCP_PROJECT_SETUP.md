@@ -10,7 +10,7 @@ Back to: [docs/deployment/DEPLOYMENT_OPTIONS.md](docs/deployment/DEPLOYMENT_OPTI
 
 ```bash
 # Set environment variables
-export PROJECT_ID="exan-beta-prod"
+export PROJECT_ID="exan-beta"
 export REGION="europe-west1"
 
 # Create GCP project

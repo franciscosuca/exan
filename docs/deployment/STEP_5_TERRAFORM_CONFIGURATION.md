@@ -39,7 +39,7 @@ terraform {
   }
 
   backend "gcs" {
-    bucket = "exan-tf-state-PROJECT_ID" # Replace with your state bucket from Step 1
+    bucket = "tf-state-exan-beta"
     prefix = "terraform/state/beta"
   }
 }

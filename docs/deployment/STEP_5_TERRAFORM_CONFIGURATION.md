@@ -112,7 +112,7 @@ resource "google_cloud_run_v2_service" "auth_server" {
 
     scaling {
       min_instance_count = 0
-      max_instance_count = 5
+      max_instance_count = 2
     }
 
     containers {
@@ -165,7 +165,7 @@ resource "google_cloud_run_v2_service" "inference" {
 
   template {
     service_account = google_service_account.cloudrun_sa.email
-    timeout         = "3600s" # 60 minutes for AI evaluation jobs
+    timeout         = "120s" # 2 minutes for AI evaluation jobs
 
     scaling {
       min_instance_count = 0
@@ -182,7 +182,7 @@ resource "google_cloud_run_v2_service" "inference" {
       resources {
         limits = {
           cpu    = "2"
-          memory = "2Gi"
+          memory = "512Mi"
         }
       }
 
@@ -191,26 +191,6 @@ resource "google_cloud_run_v2_service" "inference" {
         value_source {
           secret_key_ref {
             secret  = "JWT_SECRET"
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "OPENAI_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = "OPENAI_API_KEY"
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "ANTHROPIC_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = "ANTHROPIC_API_KEY"
             version = "latest"
           }
         }
@@ -240,7 +220,7 @@ resource "google_cloud_run_v2_service" "webapp" {
 
     scaling {
       min_instance_count = 0
-      max_instance_count = 10
+      max_instance_count = 2
     }
 
     containers {

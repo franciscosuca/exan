@@ -34,7 +34,7 @@ resource "google_cloud_run_v2_service" "auth_server" {
 
     scaling {
       min_instance_count = 0
-      max_instance_count = 2
+      max_instance_count = 1
     }
 
     containers {
@@ -104,7 +104,7 @@ resource "google_cloud_run_v2_service" "inference" {
       resources {
         limits = {
           cpu    = "2"
-          memory = "2Gi"
+          memory = "512Mi"
         }
       }
 
@@ -142,7 +142,7 @@ resource "google_cloud_run_v2_service" "webapp" {
 
     scaling {
       min_instance_count = 0
-      max_instance_count = 2
+      max_instance_count = 1
     }
 
     containers {

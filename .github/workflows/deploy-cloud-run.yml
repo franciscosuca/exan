@@ -9,12 +9,12 @@ on:
       region:
         description: 'Google Cloud region'
         required: false
-        default: 'us-central1'
+        default: 'europe-west1'
         type: string
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: ${{ github.event.inputs.region || 'us-central1' }}
+  REGION: ${{ github.event.inputs.region || 'europe-west1' }}
   REPO_NAME: 'exan-repo'
 
 jobs:
@@ -106,6 +106,7 @@ jobs:
             --allow-unauthenticated \
             --port 3001 \
             --memory 512Mi \
+            --min-instances 0 \
             --cpu 1 \
             --set-env-vars PORT=3001 \
             --set-secrets JWT_SECRET=JWT_SECRET:latest,MONGO_URI=MONGO_URI:latest
@@ -127,9 +128,10 @@ jobs:
             --platform managed \
             --allow-unauthenticated \
             --port 8000 \
-            --memory 2Gi \
+            --memory 512Mi \
             --cpu 2 \
-            --timeout 3600 \
+            --timeout 120s \
+            --min-instances 0 \
             --max-instances 1 \
             --set-secrets JWT_SECRET=JWT_SECRET:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest
 
@@ -151,4 +153,5 @@ jobs:
             --allow-unauthenticated \
             --port 80 \
             --memory 512Mi \
+            --min-instances 0 \
             --cpu 1

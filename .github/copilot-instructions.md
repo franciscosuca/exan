@@ -52,6 +52,7 @@ These instructions are project-agnostic and should apply to most repositories.
 
 For coding-task final responses only:
 
+- Answers under 200 words.
 - If files changed, list each changed file with a concise reason.
 - If exactly one file changed, do not add a separate summary.
 - If more than one file changed, add a final summary under 50 words.
@@ -60,7 +61,7 @@ For coding-task final responses only:
 
 For questions, reviews, brainstorming, and status updates:
 
-- Answer the user's request directly.
+- Answer the user's request directly within 100 words.
 - Do not force the “files changed” format.
 - Do not show reasoning or implementation details unless the user asks for them.
 - For reviews, list findings first, ordered by severity.

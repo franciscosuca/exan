@@ -55,7 +55,7 @@ provider "google" {
 ```hcl
 variable "project_id" {
   type        = string
-  description = "exan-beta"
+  description = "GCP Project ID"
 }
 
 variable "region" {

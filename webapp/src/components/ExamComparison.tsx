@@ -18,6 +18,7 @@ import {
   type ComparisonResult,
 } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { isFileSizeExceeded } from '../lib/file-validation';
 import { ArrowRight, Loader2, Plus, RotateCcw } from 'lucide-react';
 
 interface ExamComparisonProps {
@@ -150,6 +151,11 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
 
   const handleExamTemplate = async (files: File[]) => {
     if (!requireSelection() || files.length === 0) return;
+    // TODO: This 32 MiB limit check is a temporary safeguard for Cloud Run and must be reworked later.
+    if (isFileSizeExceeded(files)) {
+      setError(t('fileDropzone.sizeLimitExceeded'));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -165,6 +171,11 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
 
   const handleAnswerKey = async (files: File[]) => {
     if (!requireSelection() || !examStructure || files.length === 0) return;
+    // TODO: This 32 MiB limit check is a temporary safeguard for Cloud Run and must be reworked later.
+    if (isFileSizeExceeded(files)) {
+      setError(t('fileDropzone.sizeLimitExceeded'));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -197,6 +208,11 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
 
   const handleStudentExams = async (files: File[]) => {
     if (!requireSelection() || !examStructure || !answerKey || files.length === 0) return;
+    // TODO: This 32 MiB limit check is a temporary safeguard for Cloud Run and must be reworked later.
+    if (isFileSizeExceeded(files)) {
+      setError(t('fileDropzone.sizeLimitExceeded'));
+      return;
+    }
     setLoading(true);
     setError(null);
     try {

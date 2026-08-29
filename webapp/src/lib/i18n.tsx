@@ -142,6 +142,8 @@ const translations = {
     'grammarResults.howToImprove': 'How to Improve',
 
     'fileDropzone.dropping': 'Drop files here...',
+    'fileDropzone.maxSizeWarning': 'Uploaded file(s) cannot be bigger than 32 MiB.',
+    'fileDropzone.sizeLimitExceeded': 'The uploaded file(s) exceed the maximum size limit of 32 MiB.',
 
     'language.en': 'English',
     'language.de': 'German',
@@ -275,6 +277,8 @@ const translations = {
     'grammarResults.howToImprove': 'So kannst du dich verbessern',
 
     'fileDropzone.dropping': 'Dateien hier ablegen...',
+    'fileDropzone.maxSizeWarning': 'Hochgeladene Datei(en) dürfen nicht größer als 32 MiB sein.',
+    'fileDropzone.sizeLimitExceeded': 'Die hochgeladene(n) Datei(en) überschreiten das maximale Größenlimit von 32 MiB.',
 
     'language.en': 'Englisch',
     'language.de': 'Deutsch',

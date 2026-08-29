@@ -11,6 +11,9 @@ frontend/dist/
 # Environment
 .env
 uv.lock
+.terraform/
+*.tfstate
+*.tfstate.*
 
 # IDE
 .idea/

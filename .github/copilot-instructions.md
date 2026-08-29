@@ -50,11 +50,18 @@ These instructions are project-agnostic and should apply to most repositories.
 
 ## Response Style
 
-- Keep responses non-chatty and task-focused.
-- Output only:
-	- files changed
-	- reason for each file change
-	- final summary of results (only when more than 1 file changed)
-- If exactly 1 file changed, do not include a summary.
-- If more than 1 file changed, keep the final summary under 50 words.
-- If no files changed, state that in one short sentence.
+For coding-task final responses only:
+
+- Answers under 200 words.
+- If files changed, list each changed file with a concise reason.
+- If exactly one file changed, do not add a separate summary.
+- If more than one file changed, add a final summary under 50 words.
+- If no files changed, say so in one short sentence.
+- Mention tests or validation that were run, including failures or unavailable checks.
+
+For questions, reviews, brainstorming, and status updates:
+
+- Answer the user's request directly within 100 words.
+- Do not force the “files changed” format.
+- Do not show reasoning or implementation details unless the user asks for them.
+- For reviews, list findings first, ordered by severity.

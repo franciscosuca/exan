@@ -11,6 +11,7 @@ import {
   type GrammarEvaluationResponse,
 } from '../lib/api';
 import { useLanguage } from '../lib/i18n';
+import { isFileSizeExceeded } from '../lib/file-validation';
 import { Loader2, Trash2, RotateCcw } from 'lucide-react';
 
 interface GrammarEvaluationProps {
@@ -86,7 +87,14 @@ export function GrammarEvaluation({ onBack }: GrammarEvaluationProps) {
 
   const handleFiles = (newFiles: File[]) => {
     if (!requireSelection()) return;
-    setFiles((prev) => [...prev, ...newFiles]);
+    const combinedFiles = [...files, ...newFiles];
+    // TODO: This 32 MiB limit check is a temporary safeguard for Cloud Run and must be reworked later.
+    if (isFileSizeExceeded(combinedFiles)) {
+      setError(t('fileDropzone.sizeLimitExceeded'));
+      return;
+    }
+    setError(null);
+    setFiles(combinedFiles);
   };
 
   const removeFile = (index: number) => {
@@ -97,6 +105,11 @@ export function GrammarEvaluation({ onBack }: GrammarEvaluationProps) {
     if (!requireSelection()) return;
     if (files.length === 0) {
       setError(t('grammarEvaluation.noFiles'));
+      return;
+    }
+    // TODO: This 32 MiB limit check is a temporary safeguard for Cloud Run and must be reworked later.
+    if (isFileSizeExceeded(files)) {
+      setError(t('fileDropzone.sizeLimitExceeded'));
       return;
     }
     setLoading(true);

@@ -21,6 +21,7 @@ jobs:
   check-gcp-auth:
     name: Check GCP authentication
     runs-on: ubuntu-latest
+    permissions: {}
     outputs:
       configured: ${{ steps.check.outputs.configured }}
     steps:

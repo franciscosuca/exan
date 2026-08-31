@@ -18,8 +18,30 @@ env:
   REPO_NAME: 'exan-repo'
 
 jobs:
+  check-gcp-auth:
+    name: Check GCP authentication
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      configured: ${{ steps.check.outputs.configured }}
+    steps:
+      - name: Validate Workload Identity Federation configuration
+        id: check
+        env:
+          GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+          GCP_WIF_SERVICE_ACCOUNT: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+        run: |
+          if [[ -n "$GCP_WIF_PROVIDER" && -n "$GCP_WIF_SERVICE_ACCOUNT" ]]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "GCP WIF secrets are not configured; skipping deployment."
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
   build-and-deploy:
     name: Build, Push & Deploy to Cloud Run
+    needs: check-gcp-auth
+    if: ${{ needs.check-gcp-auth.outputs.configured == 'true' }}
     runs-on: ubuntu-latest
     permissions:
       contents: read

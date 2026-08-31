@@ -11,6 +11,10 @@ RUN bun run build
 FROM nginx:alpine
 
 COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf.template
+COPY nginx-entrypoint.sh /usr/local/bin/exan-nginx-entrypoint
+RUN chmod +x /usr/local/bin/exan-nginx-entrypoint
+
+ENTRYPOINT ["/usr/local/bin/exan-nginx-entrypoint"]
 
 EXPOSE 80

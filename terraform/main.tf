@@ -158,6 +158,16 @@ resource "google_cloud_run_v2_service" "webapp" {
           memory = "512Mi"
         }
       }
+
+      env {
+        name  = "AUTH_SERVER_URL"
+        value = google_cloud_run_v2_service.auth_server.uri
+      }
+
+      env {
+        name  = "INFERENCE_SERVER_URL"
+        value = google_cloud_run_v2_service.inference.uri
+      }
     }
   }
 }

@@ -1,3 +1,10 @@
+## [1.7.2](https://github.com/franciscosuca/exan/compare/v1.7.1...v1.7.2) (2026-08-31)
+
+### Bug Fixes
+
+* **restrict preflight workflow permissions:** fix: restrict preflight workflow permissions ([a7f8a0e](https://github.com/franciscosuca/exan/commit/a7f8a0ed49cff92e27453d17b708fc59f2f33867))
+* **skip cloud deployment without GCP credentials:** fix: skip cloud deployment without GCP credentials ([f864513](https://github.com/franciscosuca/exan/commit/f8645136c5e741b3fd29cdd70208c9b45d0976a3))
+
 ## [1.7.1](https://github.com/franciscosuca/exan/compare/v1.7.0...v1.7.1) (2026-08-31)
 
 ### Bug Fixes

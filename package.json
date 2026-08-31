@@ -1,6 +1,6 @@
 {
   "name": "exan",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "AI-powered exam scanning and grading application",
   "private": true,
   "scripts": {

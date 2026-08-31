@@ -70,6 +70,17 @@ gcloud secrets versions access latest --secret="JWT_SECRET"
 
 ---
 
+## 5. Configure GitHub Actions Secrets for GCP Authentication
+
+The steps above create secrets in **GCP Secret Manager**, which the deployed Cloud Run services read at runtime. Those are separate from the credentials the `deploy-cloud-run.yml` **GitHub Actions workflow** needs to authenticate to GCP *before* it can deploy anything. Storing secrets only in GCP is not enough — the workflow runs on GitHub's infrastructure and cannot access GCP until it authenticates, so at least one of the following must be added as a **GitHub repository secret** (Settings → Secrets and variables → Actions):
+
+- **Workload Identity Federation (recommended, keyless)**: set both `GCP_WIF_PROVIDER` (the full workload identity provider resource name) and `GCP_WIF_SERVICE_ACCOUNT` (the service account email to impersonate). See [Workload Identity Federation](https://cloud.google.com/iam/docs/workload-identity-federation) and [`google-github-actions/auth`](https://github.com/google-github-actions/auth#workload-identity-federation-through-a-service-account) for how to create the provider and grant it impersonation rights.
+- **Service account key (fallback)**: create a JSON key for a service account with the required deploy permissions and store its contents as `GCP_CREDENTIALS_JSON`.
+
+If none of these secrets are set, the workflow fails fast with a clear error instead of attempting an invalid authentication call.
+
+---
+
 ## Official Documentation & References
 
 - [GCP Secret Manager Quickstart](https://cloud.google.com/secret-manager/docs/quickstart)

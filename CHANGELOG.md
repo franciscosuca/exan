@@ -1,3 +1,13 @@
+## [1.7.1](https://github.com/franciscosuca/exan/compare/v1.7.0...v1.7.1) (2026-08-31)
+
+### Bug Fixes
+
+* **remove credentials_json from Cloud Run deployment workflow:** fix: remove credentials_json from Cloud Run deployment workflow ([e7d4e57](https://github.com/franciscosuca/exan/commit/e7d4e57467672fb490512527893300cc2a220269))
+* **remove test job from Cloud Run deployment workflow:** fix: remove test job from Cloud Run deployment workflow ([d3a73a3](https://github.com/franciscosuca/exan/commit/d3a73a38f8630d7af03b20442f9d2661ded02eea))
+* **set PROJECT_ID to a fixed value in Cloud Run deployment workflow:** fix: set PROJECT_ID to a fixed value in Cloud Run deployment workflow ([8b24b57](https://github.com/franciscosuca/exan/commit/8b24b57360d3400c4f78806bb408cdf9dab8c5c5))
+* **update Cloud Run deployment secrets to remove unused keys:** fix: update Cloud Run deployment secrets to remove unused keys ([5f51ac3](https://github.com/franciscosuca/exan/commit/5f51ac32cf36320a0a0aa16fbe4cbc53db474360))
+* **update Cloud Run deployment workflow to resolve backend URLs and streamline configuration:** fix: update Cloud Run deployment workflow to resolve backend URLs and streamline configuration ([1f14608](https://github.com/franciscosuca/exan/commit/1f14608a1ec1dedb8c790e058975eeb7eddb0b51))
+
 ## [1.7.0](https://github.com/franciscosuca/exan/compare/v1.6.1...v1.7.0) (2026-08-29)
 
 ### Features

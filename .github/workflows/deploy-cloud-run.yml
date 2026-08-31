@@ -132,7 +132,7 @@ jobs:
             --timeout 120s \
             --min-instances 0 \
             --max-instances 1 \
-            --set-secrets JWT_SECRET=JWT_SECRET:latest,OPENAI_API_KEY=OPENAI_API_KEY:latest,ANTHROPIC_API_KEY=ANTHROPIC_API_KEY:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest
+            --set-secrets JWT_SECRET=JWT_SECRET:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest
 
       # =====================================================================
       # 3. WEBAPP

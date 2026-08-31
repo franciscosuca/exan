@@ -193,6 +193,9 @@ compatibility aliases with the same operations and response contracts.
 │   └── tests/          # Pytest test suite
 ├── auth/               # Node/Express JWT auth microservice
 ├── db/                 # Mongo connection helper + init script
+├── mvp/                # Standalone MVP: scan documents from a phone into a desktop browser
+│   ├── client/          # Vite + React app (desktop viewer and phone uploader)
+│   └── server/          # Express + ws relay server (session pairing + photo relay)
 ├── docs/
 │   ├── deployment/DEPLOYMENT_OPTIONS.md  # Beta deployment platform analysis
 │   └── MODEL_TRAINING.md  # Guide for fine-tuning custom models

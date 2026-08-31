@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import QRCode from 'qrcode';
 import { createSession } from '../lib/session';
 import { toWebSocketUrl } from '../lib/config';
+import { toSafeImageObjectUrl } from '../lib/image';
 
 interface DesktopProps {
   onBack: () => void;
@@ -16,6 +17,7 @@ export default function Desktop({ onBack }: DesktopProps) {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [photos, setPhotos] = useState<string[]>([]);
   const socketRef = useRef<WebSocket | null>(null);
+  const photosRef = useRef<string[]>([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,8 +42,12 @@ export default function Desktop({ onBack }: DesktopProps) {
           if (message.type === 'paired') {
             setStatus('waiting');
           } else if (message.type === 'photo') {
-            setStatus('connected');
-            setPhotos((prev) => [message.dataUrl, ...prev]);
+            const objectUrl = toSafeImageObjectUrl(message.dataUrl);
+            if (objectUrl) {
+              setStatus('connected');
+              photosRef.current = [objectUrl, ...photosRef.current];
+              setPhotos(photosRef.current);
+            }
           }
         };
         socket.onerror = () => setStatus('error');
@@ -59,6 +65,13 @@ export default function Desktop({ onBack }: DesktopProps) {
     return () => {
       cancelled = true;
       socketRef.current?.close();
+    };
+  }, []);
+
+  useEffect(() => {
+    // Revoke every object URL created for this session when the component unmounts.
+    return () => {
+      photosRef.current.forEach((url) => URL.revokeObjectURL(url));
     };
   }, []);
 
@@ -85,7 +98,7 @@ export default function Desktop({ onBack }: DesktopProps) {
           <h2>Received photos ({photos.length})</h2>
           <div className="gallery">
             {photos.map((photo, index) => (
-              <img key={`${index}-${photo.length}`} src={photo} alt={`Scanned document ${photos.length - index}`} />
+              <img key={photo} src={photo} alt={`Scanned document ${photos.length - index}`} />
             ))}
           </div>
         </div>

@@ -8,6 +8,10 @@ const PORT = Number(process.env.PORT ?? 4000);
 const SESSION_TTL_MS = 30 * 60 * 1000; // 30 minutes
 const MAX_PHOTO_BYTES = 8 * 1024 * 1024; // 8 MB, generous for a phone photo data URL
 
+// Only allow raster image formats. SVG is intentionally excluded because it can embed
+// scripts, and this data URL is later rendered directly in an <img> on the desktop.
+const SAFE_IMAGE_DATA_URL = /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
+
 interface Session {
   id: string;
   createdAt: number;
@@ -54,8 +58,8 @@ app.post("/api/sessions/:id/photos", (req, res) => {
   }
 
   const { dataUrl } = req.body ?? {};
-  if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) {
-    res.status(400).json({ error: "dataUrl must be an image data URL" });
+  if (typeof dataUrl !== "string" || !SAFE_IMAGE_DATA_URL.test(dataUrl)) {
+    res.status(400).json({ error: "dataUrl must be a PNG, JPEG, WEBP, or GIF image data URL" });
     return;
   }
   if (dataUrl.length > MAX_PHOTO_BYTES) {

@@ -38,8 +38,9 @@ The webapp uses a multi-stage Docker build in `webapp/Dockerfile`.
 4. The script runs TypeScript checks and `vite build`.
 5. Vite writes browser-ready HTML, JavaScript, and CSS into `dist/`.
 6. Docker creates the final container from `nginx:alpine`.
-7. Docker copies only the contents of `dist/` and the nginx configuration into that container.
-8. The temporary Bun build stage is not used to serve the application.
+7. Docker copies the contents of `dist/`, the nginx template, and the startup script into that container.
+8. The startup script renders the upstream URLs into nginx configuration before nginx starts.
+9. The temporary Bun build stage is not used to serve the application.
 
 ```mermaid
 flowchart LR

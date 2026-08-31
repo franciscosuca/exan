@@ -17,9 +17,9 @@ env:
   REGION: ${{ github.event.inputs.region || 'europe-west1' }}
   REPO_NAME: 'exan-repo'
 
+jobs:
   build-and-deploy:
     name: Build, Push & Deploy to Cloud Run
-    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -90,6 +90,24 @@ env:
             --max-instances 1 \
             --set-secrets JWT_SECRET=JWT_SECRET:latest,GEMINI_API_KEY=GEMINI_API_KEY:latest
 
+      - name: Resolve Cloud Run backend URLs
+        id: backend-urls
+        run: |
+          AUTH_SERVER_URL="$(gcloud run services describe auth-server \
+            --region "${{ env.REGION }}" \
+            --format='value(status.url)')"
+          INFERENCE_SERVER_URL="$(gcloud run services describe inference \
+            --region "${{ env.REGION }}" \
+            --format='value(status.url)')"
+
+          if [[ -z "$AUTH_SERVER_URL" || -z "$INFERENCE_SERVER_URL" ]]; then
+            echo "Cloud Run backend URL lookup returned an empty value" >&2
+            exit 1
+          fi
+
+          echo "auth_server_url=$AUTH_SERVER_URL" >> "$GITHUB_OUTPUT"
+          echo "inference_server_url=$INFERENCE_SERVER_URL" >> "$GITHUB_OUTPUT"
+
       # =====================================================================
       # 3. WEBAPP
       # =====================================================================
@@ -109,4 +127,5 @@ env:
             --port 80 \
             --memory 512Mi \
             --min-instances 0 \
-            --cpu 1
+            --cpu 1 \
+            --set-env-vars "AUTH_SERVER_URL=${{ steps.backend-urls.outputs.auth_server_url }},INFERENCE_SERVER_URL=${{ steps.backend-urls.outputs.inference_server_url }}"

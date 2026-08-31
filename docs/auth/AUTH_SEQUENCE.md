@@ -86,9 +86,9 @@ sequenceDiagram
 
 1. **Webapp proxy routing**
    - The frontend uses relative `/api/auth/*` URLs, so browser requests stay on the webapp origin and do not require CORS.
-   - In the Docker/Codespaces build, `webapp/nginx.conf` forwards `/api/auth/` to `http://auth-server:3001/api/auth/` using Docker service discovery.
+   - Docker Compose supplies local upstream URLs to the shared `webapp/nginx.conf` template, so `/api/auth/` forwards to `http://auth-server:3001/api/auth/` using Docker service discovery.
    - During `npm run dev`, `webapp/vite.config.ts` forwards `/api/auth` to `http://localhost:3001`.
-   - Nginx sends remaining `/api/` requests to the inference service at `http://inference:8000`.
+   - Nginx sends remaining `/api/` requests to the inference service at `http://inference:8000` locally; Cloud Run supplies its HTTPS service URI at startup.
 
 2. **Server startup** (`server.ts`)
    - Connects to MongoDB via `connectToDatabase()`.

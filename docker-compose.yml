@@ -49,6 +49,9 @@ services:
     container_name: exan-webapp
     ports:
       - "3000:80"
+    environment:
+      - AUTH_SERVER_URL=http://auth-server:3001
+      - INFERENCE_SERVER_URL=http://inference:8000
     depends_on:
       - inference
       - auth-server

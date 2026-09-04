@@ -40,6 +40,7 @@ The options and their subtopics are maintained separately so this index remains 
 - [Runtime provider, credential, model, and effort selection](PROVIDER_RUNTIME.md): detailed provider-connection alternatives and API contract.
 - [Phone scanning integration options](scanning/SCANNING_INTEGRATION_OPTIONS.md): mobile capture and desktop handoff alternatives.
 - [First release deployment options](deployment/DEPLOYMENT_OPTIONS.md): hosting platform comparison, container-versus-Kubernetes topology, and infrastructure automation for the beta deployment.
+- [Local and desktop distribution options](desktop/DESKTOP_OPTIONS.md): PWA, Electron, and Tauri comparison for shipping Exan as an installable macOS and Windows application connected to a local LLM.
 
 ## Recommended Architecture
 

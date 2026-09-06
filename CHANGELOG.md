@@ -1,3 +1,9 @@
+## [1.7.3](https://github.com/franciscosuca/exan/compare/v1.7.2...v1.7.3) (2026-09-06)
+
+### Bug Fixes
+
+* **remove unnecessary environment variable PORT from Cloud Run deployment:** fix: remove unnecessary environment variable PORT from Cloud Run deployment ([a46cf08](https://github.com/franciscosuca/exan/commit/a46cf084175a4a1aa1498ad3e0ed274a4f8749fe))
+
 ## [1.7.2](https://github.com/franciscosuca/exan/compare/v1.7.1...v1.7.2) (2026-08-31)
 
 ### Bug Fixes

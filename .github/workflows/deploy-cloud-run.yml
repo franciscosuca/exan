@@ -24,6 +24,12 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    # The 'secrets' context is not allowed in step-level 'if' expressions,
+    # so expose the auth secrets as job-level env vars and test those instead.
+    env:
+      GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
+      GCP_WIF_SERVICE_ACCOUNT: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
+      GCP_CREDENTIALS_JSON: ${{ secrets.GCP_CREDENTIALS_JSON }}
 
     steps:
       - name: Checkout code
@@ -31,24 +37,24 @@ jobs:
 
       - name: Verify GCP authentication secrets are configured
         run: |
-          if [ -n "${{ secrets.GCP_WIF_PROVIDER }}" ] && [ -n "${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}" ]; then
+          if [ -n "$GCP_WIF_PROVIDER" ] && [ -n "$GCP_WIF_SERVICE_ACCOUNT" ]; then
             exit 0
           fi
-          if [ -n "${{ secrets.GCP_CREDENTIALS_JSON }}" ]; then
+          if [ -n "$GCP_CREDENTIALS_JSON" ]; then
             exit 0
           fi
           echo "::error::No GCP authentication method configured. Set either (GCP_WIF_PROVIDER and GCP_WIF_SERVICE_ACCOUNT) or GCP_CREDENTIALS_JSON as GitHub Actions repository secrets. See docs/deployment/STEP_3_SECRETS_SETUP.md for setup instructions." >&2
           exit 1
 
       - name: Authenticate to Google Cloud (Workload Identity Federation)
-        if: ${{ secrets.GCP_WIF_PROVIDER != '' && secrets.GCP_WIF_SERVICE_ACCOUNT != '' }}
+        if: ${{ env.GCP_WIF_PROVIDER != '' && env.GCP_WIF_SERVICE_ACCOUNT != '' }}
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.GCP_WIF_PROVIDER }}
           service_account: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
 
       - name: Authenticate to Google Cloud (Service Account Key)
-        if: ${{ (secrets.GCP_WIF_PROVIDER == '' || secrets.GCP_WIF_SERVICE_ACCOUNT == '') && secrets.GCP_CREDENTIALS_JSON != '' }}
+        if: ${{ (env.GCP_WIF_PROVIDER == '' || env.GCP_WIF_SERVICE_ACCOUNT == '') && env.GCP_CREDENTIALS_JSON != '' }}
         uses: google-github-actions/auth@v2
         with:
           credentials_json: ${{ secrets.GCP_CREDENTIALS_JSON }}

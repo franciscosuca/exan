@@ -108,7 +108,6 @@ jobs:
             --memory 512Mi \
             --min-instances 0 \
             --cpu 1 \
-            --set-env-vars PORT=3001 \
             --set-secrets JWT_SECRET=JWT_SECRET:latest,MONGO_URI=MONGO_URI:latest
 
       # =====================================================================

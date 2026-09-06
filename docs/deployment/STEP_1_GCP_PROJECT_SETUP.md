@@ -101,6 +101,54 @@ gcloud projects add-iam-policy-binding ${PROJECT_ID} \
   --role="roles/iam.serviceAccountUser"
 ```
 
+### 5a. Create the Workload Identity Pool and OIDC Provider
+
+```bash
+export PROJECT_NUMBER=$(gcloud projects describe ${PROJECT_ID} --format='value(projectNumber)')
+export GITHUB_REPO="OWNER/REPO"   # e.g. "myuser/exan"
+
+# Create the pool
+gcloud iam workload-identity-pools create github-pool \
+  --location=global \
+  --display-name="GitHub Actions Pool"
+
+# Create the OIDC provider that trusts GitHub's token issuer
+gcloud iam workload-identity-pools providers create-oidc github-provider \
+  --location=global \
+  --workload-identity-pool=github-pool \
+  --display-name="GitHub Provider" \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="assertion.repository=='${GITHUB_REPO}'"
+
+# Allow tokens from this repository to impersonate the service account
+gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} \
+  --role="roles/iam.workloadIdentityUser" \
+  --member="principalSet://iam.googleapis.com/projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/attribute.repository/${GITHUB_REPO}"
+```
+
+### 5b. Register the GitHub Repository Secrets
+
+In GitHub → Settings → Secrets and variables → Actions, add:
+
+- `GCP_WIF_PROVIDER` — full provider resource name, printed by:
+
+  ```bash
+  echo "projects/${PROJECT_NUMBER}/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+  ```
+
+- `GCP_WIF_SERVICE_ACCOUNT` — the service account email (`${SA_EMAIL}`).
+
+### 5c. Fallback: Service Account Key (not recommended)
+
+If Workload Identity Federation cannot be used, create a JSON key instead:
+
+```bash
+gcloud iam service-accounts keys create key.json --iam-account=${SA_EMAIL}
+```
+
+Store the **entire contents** of `key.json` as the GitHub secret `GCP_CREDENTIALS_JSON`, then delete the local file. The workflow uses WIF when both `GCP_WIF_*` secrets are set and falls back to this key otherwise. Keep the unused alternative unset.
+
 ---
 
 ## Official Documentation & References

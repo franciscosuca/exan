@@ -4,10 +4,10 @@ Summary of deployment and workflow issues identified in the Google Cloud Run dep
 
 ---
 
-### 1. Conflicting GCP Authentication Inputs (WIF vs. Key) ✅
+### 1. Flexible GCP Authentication Inputs (WIF or Service Account Key) ✅
 - **Area**: CI/CD (`.github/workflows/deploy-cloud-run.yml`)
-- **Problem**: `google-github-actions/auth@v2` was supplied with both `workload_identity_provider` and `credentials_json`. The action requires exactly one authentication method and throws a fatal error if both are provided.
-- **Solution**: Removed `credentials_json` to standardize on Workload Identity Federation (WIF).
+- **Problem**: `google-github-actions/auth@v2` requires exactly one authentication method. Supplying both `workload_identity_provider` and `credentials_json`, or providing neither, causes a fatal error.
+- **Solution**: Prefer Workload Identity Federation (WIF) when `GCP_WIF_PROVIDER` and `GCP_WIF_SERVICE_ACCOUNT` secrets are set; otherwise fall back to `credentials_json` via the `GCP_CREDENTIALS_JSON` secret, but only when it is present. A precheck step now fails fast with a clear error message if neither authentication method is configured, instead of calling `google-github-actions/auth@v2` with an empty `credentials_json`. See [STEP_3_SECRETS_SETUP.md](docs/deployment/STEP_3_SECRETS_SETUP.md#5-configure-github-actions-secrets-for-gcp-authentication) for how to set these as GitHub Actions secrets.
 - **Status**: **Resolved** in [deploy-cloud-run.yml](.github/workflows/deploy-cloud-run.yml).
 
 ---

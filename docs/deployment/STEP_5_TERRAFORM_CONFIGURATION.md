@@ -80,6 +80,12 @@ import {
   id = "projects/${var.project_id}/locations/${var.region}/repositories/${var.repository_name}"
 }
 
+data "google_secret_manager_secret" "application" {
+  for_each  = toset(["JWT_SECRET", "MONGO_URI", "GEMINI_API_KEY"])
+  project   = var.project_id
+  secret_id = each.value
+}
+
 # Keep this resource block after import so Terraform manages its configuration.
 resource "google_artifact_registry_repository" "repo" {
   location      = var.region
@@ -94,11 +100,11 @@ resource "google_service_account" "cloudrun_sa" {
   display_name = "Exan Cloud Run Runtime Service Account"
 }
 
-# Grant Secret Manager Secret Accessor to Runtime SA
-resource "google_project_iam_member" "secret_accessor" {
-  project = var.project_id
-  role    = "roles/secretmanager.secretAccessor"
-  member  = "serviceAccount:${google_service_account.cloudrun_sa.email}"
+resource "google_secret_manager_secret_iam_member" "runtime_access" {
+  for_each  = data.google_secret_manager_secret.application
+  secret_id = each.value.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloudrun_sa.email}"
 }
 
 # 3. Cloud Run: auth-server
@@ -127,11 +133,6 @@ resource "google_cloud_run_v2_service" "auth_server" {
           cpu    = "1"
           memory = "512Mi"
         }
-      }
-
-      env {
-        name  = "PORT"
-        value = "3001"
       }
 
       env {
@@ -284,6 +285,11 @@ output "inference_url" {
 output "artifact_registry_repo" {
   value       = google_artifact_registry_repository.repo.name
   description = "Artifact Registry Docker repository identifier"
+}
+
+output "cloudrun_runtime_service_account" {
+  value       = google_service_account.cloudrun_sa.email
+  description = "Dedicated Cloud Run runtime service account"
 }
 ```
 

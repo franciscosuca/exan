@@ -17,3 +17,8 @@ output "artifact_registry_repo" {
   value       = google_artifact_registry_repository.repo.name
   description = "Artifact Registry Docker repository identifier"
 }
+
+output "cloudrun_runtime_service_account" {
+  value       = google_service_account.cloudrun_sa.email
+  description = "Dedicated Cloud Run runtime service account"
+}

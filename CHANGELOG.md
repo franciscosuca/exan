@@ -1,3 +1,11 @@
+## [1.7.4](https://github.com/franciscosuca/exan/compare/v1.7.3...v1.7.4) (2026-09-07)
+
+### Bug Fixes
+
+* **add GCP_RUN_SERVICE_ACCOUNT to deployment documentation and Terraform configuration:** fix: add GCP_RUN_SERVICE_ACCOUNT to deployment documentation and Terraform configuration ([bae0b2e](https://github.com/franciscosuca/exan/commit/bae0b2ee0338abf8d8fa61a2e128eb3726858c45))
+* **add service account to Cloud Run deployment steps:** fix: add service account to Cloud Run deployment steps ([c886da2](https://github.com/franciscosuca/exan/commit/c886da2f41fc08bc9bbf5525235c6e9c45c02bd7))
+* **update service account variable for Cloud Run deployment:** fix: update service account variable for Cloud Run deployment ([96e06ce](https://github.com/franciscosuca/exan/commit/96e06ce663c18b7bba2d3b3b33f279a15c1e93a2))
+
 ## [1.7.3](https://github.com/franciscosuca/exan/compare/v1.7.2...v1.7.3) (2026-09-06)
 
 ### Bug Fixes

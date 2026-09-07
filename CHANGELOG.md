@@ -1,3 +1,9 @@
+## [1.7.5](https://github.com/franciscosuca/exan/compare/v1.7.4...v1.7.5) (2026-09-07)
+
+### Bug Fixes
+
+* **add CMD instruction to Dockerfile for nginx:** fix: add CMD instruction to Dockerfile for nginx ([347ca6d](https://github.com/franciscosuca/exan/commit/347ca6d2da0978cba1ca752fe3d140b37c3ad557))
+
 ## [1.7.4](https://github.com/franciscosuca/exan/compare/v1.7.3...v1.7.4) (2026-09-07)
 
 ### Bug Fixes

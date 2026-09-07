@@ -125,6 +125,7 @@ The current workflow reads these values from **Settings -> Secrets and variables
 ```text
 GCP_WIF_PROVIDER=projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider
 GCP_WIF_SERVICE_ACCOUNT=github-actions@exan-beta.iam.gserviceaccount.com
+GCP_RUN_SERVICE_ACCOUNT=exan-cloudrun-runtime@exan-beta.iam.gserviceaccount.com
 ```
 
 Replace `PROJECT_NUMBER` with the numeric GCP project number. Use the repository owner and name, not the project ID, in the provider condition and IAM binding:
@@ -133,7 +134,7 @@ Replace `PROJECT_NUMBER` with the numeric GCP project number. Use the repository
 OWNER/REPO
 ```
 
-These two values are identifiers that tell the authentication action which provider and service account to use. They are stored as GitHub repository secrets because the workflow currently reads them through the `secrets` context; they are not application secrets retrieved from GCP.
+`GCP_WIF_PROVIDER` and `GCP_WIF_SERVICE_ACCOUNT` are identifiers that tell the authentication action which provider and service account to use. `GCP_RUN_SERVICE_ACCOUNT` is the runtime identity passed to every `gcloud run deploy` via `--service-account`. They are stored as GitHub repository secrets because the workflow reads them through the `secrets` context; they are not application secrets retrieved from GCP.
 
 ### Fallback when WIF is not configured
 
@@ -150,6 +151,7 @@ The values therefore mean:
 | `GCP_WIF_PROVIDER` | `projects/PROJECT_NUMBER/locations/global/workloadIdentityPools/github-pool/providers/github-provider` |
 | `GCP_WIF_SERVICE_ACCOUNT` | `github-actions@exan-beta.iam.gserviceaccount.com` |
 | `GCP_CREDENTIALS_JSON` | The entire JSON service-account key document, including its private key. |
+| `GCP_RUN_SERVICE_ACCOUNT` | `exan-cloudrun-runtime@exan-beta.iam.gserviceaccount.com` |
 
 The workflow behavior is:
 
@@ -213,9 +215,9 @@ The WIF pool therefore does not help the application read `JWT_SECRET` or `GEMIN
 
 ### Important project wiring note
 
-Step 3 creates a dedicated runtime service account named `exan-cloudrun-runtime`. The current deployment commands use `--set-secrets`, but they do not explicitly include `--service-account`.
+Every `gcloud run deploy` command in the workflow passes `--service-account "${{ secrets.GCP_RUN_SERVICE_ACCOUNT }}"`, which must be the dedicated runtime account `exan-cloudrun-runtime@exan-beta.iam.gserviceaccount.com` — the same account Terraform assigns to its Cloud Run services. That account must have `roles/secretmanager.secretAccessor` on the application secrets, and the `github-actions` deployer must have `roles/iam.serviceAccountUser` on it (otherwise the deploy fails with an `iam.serviceAccounts.actAs` error).
 
-Unless another configuration sets the service identity, Cloud Run will use its default service identity. That identity must have the Secret Manager Secret Accessor role, or the deploy commands should explicitly select the dedicated runtime account. This is separate from the WIF setup and should be verified before deployment.
+The default compute account (`PROJECT_NUMBER-compute@developer.gserviceaccount.com`) is not used by any deployment path and does not need Secret Manager access. This is separate from the WIF setup: the `github-actions` account deploys the revision, while the Cloud Run runtime identity reads secrets when the revision starts.
 
 ## Short mental model
 

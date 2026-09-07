@@ -2,6 +2,8 @@
 
 Step-by-step guide to generating application secrets, storing AI provider API keys in Secret Manager, and configuring access policies.
 
+Secret values are created outside Terraform. Terraform reads the existing Secret Manager entries and configures access for the Cloud Run runtime accounts without storing secret values in Terraform state or Git.
+
 Back to: [docs/deployment/DEPLOYMENT_OPTIONS.md](docs/deployment/DEPLOYMENT_OPTIONS.md#rollout-checklist)
 
 ---
@@ -25,7 +27,24 @@ gcloud secrets versions add JWT_SECRET \
 
 ---
 
-## 2. Store AI Provider API Keys
+## 2. Store `MONGO_URI`
+
+Create a Secret Manager entry for the MongoDB Atlas connection string used by `auth-server`:
+
+```bash
+# Replace the value with the connection string for this environment.
+MONGO_URI_VAL='mongodb+srv://USER:PASSWORD@CLUSTER.mongodb.net/exan?retryWrites=true&w=majority'
+
+gcloud secrets create MONGO_URI \
+  --replication-policy="automatic"
+
+gcloud secrets versions add MONGO_URI \
+  --data-file=<(printf '%s' "${MONGO_URI_VAL}")
+```
+
+Do not commit the connection string. If `MONGO_URI` already exists, add a new version instead of creating the secret again.
+
+## 3. Store AI Provider API Keys
 
 Create a Secret Manager entry for the Google Gemini provider used by `inference`:
 
@@ -38,26 +57,35 @@ gcloud secrets versions add GEMINI_API_KEY \
 
 ---
 
-## 3. Create Cloud Run Runtime Service Account & Grant Access
+## 4. Create the Cloud Run Runtime Account & Grant Access
 
-Cloud Run instances must assume a dedicated service account with `Secret Accessor` permissions to mount secrets as environment variables:
+The Cloud Run services run as the dedicated account `exan-cloudrun-runtime@${PROJECT_ID}.iam.gserviceaccount.com`. The GitHub Actions workflow pins this identity with `--service-account` (from the `GCP_RUN_SERVICE_ACCOUNT` repository secret), and Terraform assigns the same identity to its Cloud Run services.
+
+This account needs `Secret Manager Secret Accessor` access to the application secrets used by the services: `JWT_SECRET`, `MONGO_URI`, and `GEMINI_API_KEY`. The default compute account does not need this role because no deployment path uses it.
 
 ```bash
-# Create runtime service account
-gcloud iam service-accounts create exan-cloudrun-runtime \
-  --display-name="Exan Cloud Run Runtime SA"
-
+export PROJECT_ID="exan-beta"
 export RUNTIME_SA="exan-cloudrun-runtime@${PROJECT_ID}.iam.gserviceaccount.com"
 
-# Grant Secret Manager Secret Accessor role on project level
-gcloud projects add-iam-policy-binding ${PROJECT_ID} \
-  --member="serviceAccount:${RUNTIME_SA}" \
-  --role="roles/secretmanager.secretAccessor"
+# Create the dedicated runtime account once.
+gcloud iam service-accounts create exan-cloudrun-runtime \
+  --project="${PROJECT_ID}" \
+  --display-name="Exan Cloud Run Runtime SA"
+
+# Grant secret-level access to the runtime account.
+for SECRET in JWT_SECRET MONGO_URI GEMINI_API_KEY; do
+  gcloud secrets add-iam-policy-binding "${SECRET}" \
+    --project="${PROJECT_ID}" \
+    --member="serviceAccount:${RUNTIME_SA}" \
+    --role="roles/secretmanager.secretAccessor"
+done
 ```
+
+If `exan-cloudrun-runtime` already exists, skip the create command. Secret-level grants keep unrelated project secrets inaccessible to the runtime account.
 
 ---
 
-## 4. Verify Secrets Configuration
+## 5. Verify Secrets Configuration
 
 List all registered secrets and confirm versions are active:
 
@@ -66,11 +94,15 @@ gcloud secrets list
 
 # Test retrieving payload (example for JWT_SECRET)
 gcloud secrets versions access latest --secret="JWT_SECRET"
+
+# Confirm the IAM policy is present on application secrets.
+gcloud secrets get-iam-policy JWT_SECRET --project="${PROJECT_ID}"
+gcloud secrets get-iam-policy MONGO_URI --project="${PROJECT_ID}"
 ```
 
 ---
 
-## 5. Configure GitHub Actions Secrets for GCP Authentication
+## 6. Configure GitHub Actions Secrets for GCP Authentication
 
 The steps above create secrets in **GCP Secret Manager**, which the deployed Cloud Run services read at runtime. Those are separate from the credentials the `deploy-cloud-run.yml` **GitHub Actions workflow** needs to authenticate to GCP *before* it can deploy anything. Storing secrets only in GCP is not enough — the workflow runs on GitHub's infrastructure and cannot access GCP until it authenticates, so at least one of the following must be added as a **GitHub repository secret** (Settings → Secrets and variables → Actions):
 

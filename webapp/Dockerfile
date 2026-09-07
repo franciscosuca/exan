@@ -16,5 +16,6 @@ COPY nginx-entrypoint.sh /usr/local/bin/exan-nginx-entrypoint
 RUN chmod +x /usr/local/bin/exan-nginx-entrypoint
 
 ENTRYPOINT ["/usr/local/bin/exan-nginx-entrypoint"]
+CMD ["nginx", "-g", "daemon off;"]
 
 EXPOSE 80

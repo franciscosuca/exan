@@ -52,7 +52,7 @@ jobs:
       GCP_WIF_PROVIDER: ${{ secrets.GCP_WIF_PROVIDER }}
       GCP_WIF_SERVICE_ACCOUNT: ${{ secrets.GCP_WIF_SERVICE_ACCOUNT }}
       GCP_CREDENTIALS_JSON: ${{ secrets.GCP_CREDENTIALS_JSON }}
-      SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
+      GCP_RUN_SERVICE_ACCOUNT: ${{ secrets.GCP_RUN_SERVICE_ACCOUNT }}
 
     steps:
       - name: Checkout code
@@ -104,7 +104,7 @@ jobs:
             --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/auth-server:${{ github.sha }}" \
             --region "${{ env.REGION }}" \
             --platform managed \
-            --service-account "${{ env.SERVICE_ACCOUNT }}" \
+            --service-account "${{ env.GCP_RUN_SERVICE_ACCOUNT }}" \
             --allow-unauthenticated \
             --port 3001 \
             --memory 512Mi \
@@ -127,7 +127,7 @@ jobs:
             --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/inference:${{ github.sha }}" \
             --region "${{ env.REGION }}" \
             --platform managed \
-            --service-account "${{ env.SERVICE_ACCOUNT }}" \
+            --service-account "${{ env.GCP_RUN_SERVICE_ACCOUNT }}" \
             --allow-unauthenticated \
             --port 8000 \
             --memory 512Mi \
@@ -170,7 +170,7 @@ jobs:
             --image "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/webapp:${{ github.sha }}" \
             --region "${{ env.REGION }}" \
             --platform managed \
-            --service-account "${{ env.SERVICE_ACCOUNT }}" \
+            --service-account "${{ env.GCP_RUN_SERVICE_ACCOUNT }}" \
             --allow-unauthenticated \
             --port 80 \
             --memory 512Mi \

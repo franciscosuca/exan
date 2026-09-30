@@ -1,6 +1,23 @@
 import { throwResponseError } from './response-error';
 
-const API_BASE = '/api';
+declare global {
+  interface Window {
+    __EXAN_API_BASE__?: string;
+    __EXAN_API_SECRET__?: string;
+  }
+}
+
+export function getApiBase(): string {
+  return window.__EXAN_API_BASE__ || import.meta.env.VITE_API_BASE_URL || '/api';
+}
+
+function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
+  const headers = new Headers(init.headers);
+  const secret = window.__EXAN_API_SECRET__;
+  if (!secret) return fetch(input, init);
+  headers.set('Authorization', 'Bearer ' + secret);
+  return fetch(input, { ...init, headers });
+}
 
 export type QuestionNumber = number | string;
 
@@ -88,8 +105,8 @@ export interface GrammarEvaluationResponse {
 // --- API Functions ---
 
 export async function getProviders(): Promise<ProviderConfig[]> {
-  const requestUrl = `${API_BASE}/providers`;
-  const res = await fetch(requestUrl);
+  const requestUrl = `${getApiBase()}/providers`;
+  const res = await apiFetch(requestUrl);
   if (!res.ok) {
     await throwResponseError(res, {
       fallbackMessage: 'Failed to fetch providers',
@@ -101,8 +118,8 @@ export async function getProviders(): Promise<ProviderConfig[]> {
 }
 
 export async function getProviderModels(provider: string): Promise<ProviderModel[]> {
-  const requestUrl = `${API_BASE}/providers/${encodeURIComponent(provider)}/models`;
-  const res = await fetch(requestUrl);
+  const requestUrl = `${getApiBase()}/providers/${encodeURIComponent(provider)}/models`;
+  const res = await apiFetch(requestUrl);
   if (!res.ok) {
     await throwResponseError(res, {
       fallbackMessage: 'Failed to fetch models',
@@ -128,8 +145,8 @@ export async function uploadExamTemplate(
     form.append('criteria', normalizedCriteria);
   }
 
-  const requestUrl = `${API_BASE}/exam-comparison/template`;
-  const res = await fetch(requestUrl, { method: 'POST', body: form });
+  const requestUrl = `${getApiBase()}/exam-comparison/template`;
+  const res = await apiFetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
       fallbackMessage: 'Upload failed',
@@ -152,8 +169,8 @@ export async function uploadAnswerKey(
   form.append('provider', provider);
   form.append('model', model);
 
-  const requestUrl = `${API_BASE}/exam-comparison/answer-key`;
-  const res = await fetch(requestUrl, { method: 'POST', body: form });
+  const requestUrl = `${getApiBase()}/exam-comparison/answer-key`;
+  const res = await apiFetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
       fallbackMessage: 'Upload failed',
@@ -165,8 +182,8 @@ export async function uploadAnswerKey(
 }
 
 export async function updateAnswerKey(examId: string, answers: Answer[]): Promise<AnswerKey> {
-  const requestUrl = `${API_BASE}/exam-comparison/answer-key/${encodeURIComponent(examId)}`;
-  const res = await fetch(requestUrl, {
+  const requestUrl = `${getApiBase()}/exam-comparison/answer-key/${encodeURIComponent(examId)}`;
+  const res = await apiFetch(requestUrl, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ answers }),
@@ -193,8 +210,8 @@ export async function compareStudentExams(
   form.append('provider', provider);
   form.append('model', model);
 
-  const requestUrl = `${API_BASE}/exam-comparison/compare`;
-  const res = await fetch(requestUrl, { method: 'POST', body: form });
+  const requestUrl = `${getApiBase()}/exam-comparison/compare`;
+  const res = await apiFetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
       fallbackMessage: 'Comparison failed',
@@ -219,8 +236,8 @@ export async function grammarEvaluate(
   form.append('correction_language', correctionLanguage);
   form.append('summary_language', summaryLanguage);
 
-  const requestUrl = `${API_BASE}/grammar-evaluation/evaluate`;
-  const res = await fetch(requestUrl, { method: 'POST', body: form });
+  const requestUrl = `${getApiBase()}/grammar-evaluation/evaluate`;
+  const res = await apiFetch(requestUrl, { method: 'POST', body: form });
   if (!res.ok) {
     await throwResponseError(res, {
       fallbackMessage: 'Evaluation failed',

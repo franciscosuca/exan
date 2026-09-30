@@ -8,11 +8,28 @@ from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from .api.routes import exam_comparison, grammar_evaluation, providers
+from .config import settings
 from .providers.registry import get_provider  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
 app = FastAPI(title="Exan API", version="0.1.0")
+
+
+@app.middleware("http")
+async def require_desktop_secret(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    if settings.startup_secret and request.url.path != "/health":
+        expected = "Bearer " + settings.startup_secret
+        if request.headers.get("authorization") != expected:
+            return Response(status_code=401, content="Unauthorized")
+    return await call_next(request)
+
+
+@app.get("/health")
+async def health() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 async def _replay_body(body: bytes):
@@ -81,7 +98,7 @@ async def log_http_errors(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

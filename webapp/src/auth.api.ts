@@ -1,6 +1,8 @@
 import { throwResponseError } from "./lib/response-error";
 
-const API_BASE = "/api";
+function getAuthBase(): string {
+  return window.__EXAN_API_BASE__ || import.meta.env.VITE_API_BASE_URL || "/api";
+}
 
 export interface AuthResponse {
   token: string;
@@ -15,7 +17,7 @@ export async function login(
   username: string,
   password: string
 ): Promise<AuthResponse> {
-  const requestUrl = `${API_BASE}/auth/login`;
+  const requestUrl = `${getAuthBase()}/auth/login`;
   const res = await fetch(requestUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -38,7 +40,7 @@ export async function register(
   password: string,
   repeatPassword: string
 ): Promise<AuthResponse> {
-  const requestUrl = `${API_BASE}/auth/register`;
+  const requestUrl = `${getAuthBase()}/auth/register`;
   const res = await fetch(requestUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },

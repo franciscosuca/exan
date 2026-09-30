@@ -1,0 +1,14 @@
+{
+  "name": "exan-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "tauri": "tauri",
+    "build": "bun run --cwd ../webapp build && tauri build",
+    "dev": "bun run --cwd ../webapp build && tauri dev"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.0"
+  }
+}

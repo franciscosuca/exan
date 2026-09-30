@@ -1,0 +1,10 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "default",
+  "description": "Allow the desktop shell to start its local inference sidecar.",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "shell:allow-sidecar"
+  ]
+}

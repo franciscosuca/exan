@@ -8,7 +8,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-LOG_ROOT = Path(__file__).resolve().parents[3] / "logs"
+from ..config import settings
+
+LOG_ROOT = settings.log_root
 logger = logging.getLogger(__name__)
 
 

@@ -388,4 +388,15 @@ The desktop target neutralises most of the [beta blockers](../deployment/DEPLOYM
 - [ ] Add the signed, notarized release matrix to CI and verify auto-update end to end.
 - [ ] Smoke-test the full workflow (template, answer key, grading, batch evaluation) against Ollama and LM Studio on a clean macOS and a clean Windows machine.
 
+### Option 4 implementation status
+
+The initial Tauri v2 shell is now available under `desktop/`. It builds the
+existing `webapp/` into the platform WebView, starts a PyInstaller-built
+`exan-inference` sidecar on `127.0.0.1` using an ephemeral port, and passes the
+port and per-launch bearer secret through a capability-scoped Tauri command.
+Build the sidecar with `cd inference && ./build_sidecar.sh`, then place the
+target-triple-suffixed binary under `desktop/src-tauri/binaries/` before running
+the Tauri build. Hosted Docker and browser development retain their existing
+defaults.
+
 > Browser policies for loopback access, platform signing requirements, and framework version support all change frequently. Re-verify the constraints in [Option 2](#option-2-pwa-on-a-public-origin-calling-the-local-llm-from-the-browser) and [Cross-Cutting Concerns](#cross-cutting-concerns) against current vendor documentation before committing to a plan.

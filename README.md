@@ -134,6 +134,30 @@ docker compose up --build
 
 The app will be available at `http://localhost:3000`. The inference API runs on port 8000 internally.
 
+### Installable Local App (PWA)
+
+With the Docker Compose stack running, open `http://localhost:3000` in Chrome or
+Edge and use the browser's **Install Exan** action (in the address bar or
+browser menu). The installed app runs in its own window and uses the same local
+origin as the Docker-served app.
+
+For local inference, install Ollama on the host and pull a vision model:
+
+```bash
+ollama pull qwen2.5-vl
+```
+
+The Compose setup routes inference requests to Ollama on the host. To choose a
+different model, set `OLLAMA_MODEL` in `inference/.env` before starting the
+stack. LM Studio is also supported; start its local server and set
+`LMSTUDIO_MODEL` in the same file. See [Using Local Providers](#using-local-providers)
+for setup details.
+
+Keep Docker Compose running while using Exan. The service worker caches only
+the application shell and static assets; `/api/*` requests, including uploaded
+documents and grading operations, are never cached. Install support varies by
+browser; Chromium-based browsers are the recommended desktop option.
+
 ### Cloud Deployment
 
 Docker Compose covers local and self-hosted runs. For the first beta release on a cloud provider, see [First release deployment options](docs/deployment/DEPLOYMENT_OPTIONS.md), which compares Cloud Run, Compute Engine, GKE, Firebase, and third-party PaaS, and records the recommended topology and automation.

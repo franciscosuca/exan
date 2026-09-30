@@ -4,14 +4,6 @@ import './index.css'
 import App from './App.tsx'
 import { LanguageProvider } from './lib/i18n'
 
-if (import.meta.env.PROD && 'serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    void navigator.serviceWorker.register('/sw.js').catch(() => {
-      // The app remains usable when service workers are unavailable.
-    })
-  })
-}
-
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>

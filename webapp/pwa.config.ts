@@ -1,3 +1,5 @@
+import type { VitePWAOptions } from 'vite-plugin-pwa'
+
 export const pwaOptions = {
   registerType: 'autoUpdate',
   includeAssets: ['favicon.svg', 'pwa-icon.svg'],
@@ -30,4 +32,4 @@ export const pwaOptions = {
       },
     ],
   },
-}
+} satisfies Partial<VitePWAOptions>

@@ -38,7 +38,8 @@ pub fn run() {
             tauri::async_runtime::spawn(async move {
                 while let Some(event) = rx.recv().await {
                     if let CommandEvent::Stdout(line) = event {
-                        if let Some(port) = line.strip_prefix("EXAN_PORT=") {
+                        let line = String::from_utf8_lossy(&line);
+                        if let Some(port) = line.trim().strip_prefix("EXAN_PORT=") {
                             if let Ok(mut current) = state.lock() {
                                 *current = Some(ApiConfig {
                                     base_url: format!("http://127.0.0.1:{port}/api"),

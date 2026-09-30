@@ -5,6 +5,14 @@
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "shell:allow-sidecar"
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        {
+          "name": "binaries/exan-inference",
+          "sidecar": true
+        }
+      ]
+    }
   ]
 }

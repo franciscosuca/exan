@@ -14,7 +14,8 @@ export function getApiBase(): string {
 function apiFetch(input: RequestInfo | URL, init: RequestInit = {}): Promise<Response> {
   const headers = new Headers(init.headers);
   const secret = window.__EXAN_API_SECRET__;
-  if (secret) headers.set('Authorization', 'Bearer ' + secret);
+  if (!secret) return fetch(input, init);
+  headers.set('Authorization', 'Bearer ' + secret);
   return fetch(input, { ...init, headers });
 }
 

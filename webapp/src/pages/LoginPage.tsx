@@ -5,10 +5,9 @@ import { useLanguage } from "../lib/i18n";
 
 interface LoginPageProps {
   onSuccess: (username: string) => void;
-  onNavigateToRegister: () => void;
 }
 
-export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
+export function LoginPage({ onSuccess }: LoginPageProps) {
   const { t } = useLanguage();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -82,16 +81,6 @@ export function LoginPage({ onSuccess, onNavigateToRegister }: LoginPageProps) {
             {loading ? t('auth.login.submitting') : t('auth.login.submit')}
           </button>
         </form>
-        <p className="mt-4 text-center text-sm text-gray-600">
-          {t('auth.login.noAccount')}{" "}
-          <button
-            type="button"
-            onClick={onNavigateToRegister}
-            className="font-medium text-blue-600 hover:text-blue-700"
-          >
-            {t('auth.login.register')}
-          </button>
-        </p>
       </div>
     </div>
   );

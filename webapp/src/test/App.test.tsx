@@ -23,10 +23,9 @@ vi.mock('../lib/api', () => ({
   grammarEvaluate: vi.fn(),
 }));
 
-// Mock the auth API module used for login/register/logout
+// Mock the auth API module used for login/logout
 vi.mock('../auth.api', () => ({
   login: vi.fn(),
-  register: vi.fn(),
   saveToken: vi.fn(),
   getToken: vi.fn(),
   clearToken: vi.fn(),
@@ -113,13 +112,10 @@ describe('App', () => {
       expect(screen.queryByText('Welcome to Exan')).not.toBeInTheDocument();
     });
 
-    it('navigates to the registration page and back to login', async () => {
+    it('does not offer account registration', async () => {
       renderApp();
-      fireEvent.click(screen.getByRole('button', { name: 'Register' }));
-      expect(screen.getByRole('heading', { name: 'Register' })).toBeInTheDocument();
-
-      fireEvent.click(screen.getByRole('button', { name: 'Login' }));
-      expect(screen.getByRole('heading', { name: 'Login' })).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Register' })).not.toBeInTheDocument();
+      expect(screen.queryByText('No account?')).not.toBeInTheDocument();
     });
   });
 });

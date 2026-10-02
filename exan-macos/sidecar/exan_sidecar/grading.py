@@ -122,7 +122,11 @@ def _loose(text: str) -> str:
 # ---------------------------------------------------------------------------
 
 _CHOICE_SINGLE = re.compile(r"^\(?([a-h])\)?\.?$")
-_CHOICE_MULTI = re.compile(r"^\(?[a-h]\)?(?:\s*(?:,|;|&|\+|\band\b|\bund\b|\by\b|\bet\b|\s)\s*\(?[a-h]\)?)+$")
+# A separator is either punctuation/a conjunction with optional spaces around it, or plain whitespace.
+# Keeping the two cases apart avoids exponential backtracking on long runs of spaces.
+_CHOICE_MULTI = re.compile(
+    r"^\(?[a-h]\)?(?:(?:\s*(?:[,;&+]|\band\b|\bund\b|\by\b|\bet\b)\s*|\s+)\(?[a-h]\)?)+$"
+)
 _CHOICE_WITH_TEXT = re.compile(r"^\(?([a-h])[).:]\s*(.+)$")
 
 

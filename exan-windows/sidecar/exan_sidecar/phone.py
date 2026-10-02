@@ -252,10 +252,13 @@ class PhoneBridge:
 
         @app.get("/m/{token}")
         async def page(token: str) -> HTMLResponse:
+            current = bridge.token
+            if current is None or not hmac.compare_digest(token.encode(), current.encode()):
+                return HTMLResponse("Not found", status_code=404)
             nonce = secrets.token_urlsafe(16)
             lang = bridge.state.settings.get().language
             config = {
-                "base": f"/m/{token}",
+                "base": f"/m/{current}",
                 "target": bridge.target,
                 "lang": lang,
                 "maxFiles": MAX_PHONE_FILES,

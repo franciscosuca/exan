@@ -32,17 +32,32 @@ class ParsedSheet:
                 self.answers[index[key]] = (self.answers[index[key]][0], answer)
 
 
-_THINK_BLOCK = re.compile(r"<think>.*?</think>", re.S | re.I)
 _FENCE = re.compile(r"```[a-zA-Z]*\s*(.*?)```", re.S)
 # DeepSeek-OCR grounding tags such as <|ref|>text<|/ref|><|det|>[[...]]<|/det|>
-_GROUNDING = re.compile(r"<\|det\|>.*?<\|/det\|>|<\|/?ref\|>|<\|/?grounding\|>", re.S)
+_GROUNDING_TAG = re.compile(r"<\|/?ref\|>|<\|/?grounding\|>")
+
+
+def _remove_blocks(text: str, start: str, end: str) -> str:
+    """Remove every ``start ... end`` block (case-insensitive) in linear time; unclosed starts are kept."""
+    lower = text.lower()
+    parts: list[str] = []
+    position = 0
+    while (begin := lower.find(start, position)) != -1:
+        finish = lower.find(end, begin + len(start))
+        if finish == -1:
+            break
+        parts.append(text[position:begin])
+        position = finish + len(end)
+    parts.append(text[position:])
+    return "".join(parts)
 
 
 def strip_reasoning(text: str) -> str:
-    text = _THINK_BLOCK.sub("", text or "")
-    if "</think>" in text:
-        text = text.rsplit("</think>", 1)[1]
-    return _GROUNDING.sub("", text).strip()
+    text = _remove_blocks(text or "", "<think>", "</think>")
+    if "</think>" in text.lower():
+        text = text[text.lower().rindex("</think>") + len("</think>") :]
+    text = _remove_blocks(text, "<|det|>", "<|/det|>")
+    return _GROUNDING_TAG.sub("", text).strip()
 
 
 def parse_model_output(text: str) -> ParsedSheet:
@@ -154,7 +169,8 @@ _QUESTION_LABEL = re.compile(
 
 
 def looks_like_question(label: object) -> bool:
-    return bool(_QUESTION_LABEL.match(str(label).strip()))
+    text = str(label).strip()
+    return len(text) <= 40 and bool(_QUESTION_LABEL.match(text))
 
 
 def sheet_from_json(data: Any) -> ParsedSheet:

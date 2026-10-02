@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { FileDropzone } from './FileDropzone';
 import { ProviderSelector } from './ProviderSelector';
+import { SelectionRequiredNotice } from './SelectionRequiredNotice';
 import { StepIndicator } from './StepIndicator';
 import { ComparisonResults } from './ComparisonResults';
 import {
@@ -75,6 +76,13 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
         setModelsError(e instanceof Error ? e.message : t('common.modelLoadError'));
       })
       .finally(() => setModelsLoading(false));
+  };
+
+  const handleModelSelect = (model: string) => {
+    setSelectedModel(model);
+    if (model) {
+      setError((current) => (current === t('common.selectionRequired') ? null : current));
+    }
   };
 
   const canUseWorkflow = selectedProvider === 'gemini' && selectedModel.trim().length > 0;
@@ -272,7 +280,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
               <select
                 id="exam-model"
                 value={selectedModel}
-                onChange={(event) => setSelectedModel(event.target.value)}
+                onChange={(event) => handleModelSelect(event.target.value)}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 shadow-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
               >
                 <option value="">{t('common.selectModel')}</option>
@@ -286,6 +294,13 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
           </div>
         )}
       </div>
+
+      {!loading && (
+        <SelectionRequiredNotice
+          hasProvider={Boolean(selectedProvider)}
+          hasModel={selectedModel.trim().length > 0}
+        />
+      )}
 
       {error && (
         <div className="mb-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
@@ -481,7 +496,7 @@ export function ExamComparison({ onBack }: ExamComparisonProps) {
                 <button
                   type="button"
                   onClick={continueToStudentExams}
-                  disabled={!canContinueWithAnswerKey}
+                  disabled={!canUseWorkflow || !canContinueWithAnswerKey}
                   className="inline-flex items-center justify-center gap-1.5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {t('examComparison.step2.continue')}

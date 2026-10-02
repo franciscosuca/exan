@@ -3,10 +3,25 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "description": "Exan for Windows - local exam correction with small on-device vision models",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
+    "setup": "node scripts/sidecar-task.mjs setup && node scripts/build-sidecar.mjs",
+    "start": "node scripts/build-sidecar.mjs --if-needed && tauri dev",
+    "package": "node scripts/build-sidecar.mjs && tauri build",
+    "build:sidecar": "node scripts/build-sidecar.mjs",
     "dev": "vite",
+    "dev:engine": "node scripts/sidecar-task.mjs dev",
+    "dev:browser": "vite --mode browser",
     "build": "tsc && vite build",
-    "preview": "vite preview",
+    "test": "vitest run",
+    "test:engine": "node scripts/sidecar-task.mjs test",
+    "lint": "oxlint src scripts",
+    "lint:engine": "node scripts/sidecar-task.mjs lint",
+    "check": "tsc --noEmit && npm run lint && npm run test && npm run lint:engine && npm run test:engine",
     "tauri": "tauri"
   },
   "dependencies": {
@@ -33,7 +48,5 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.2",
     "vitest": "^5.0.3"
-  },
-  "description": "Exan for Windows - local exam correction with small on-device vision models",
-  "license": "MIT"
+  }
 }

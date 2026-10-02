@@ -55,6 +55,8 @@ const translations = {
     'common.noModels': 'No text-generation models are available.',
     'common.modelLoadError': 'Could not load models',
     'common.selectionRequired': 'Select an AI provider and model before continuing.',
+    'common.selectionMissingProvider': 'Choose an AI provider above, then pick a model. Uploads and evaluation stay locked until both are selected.',
+    'common.selectionMissingModel': 'Pick an AI model above. Uploads and evaluation stay locked until a model is selected.',
     'common.cannotConnect': 'Cannot connect to backend. Is the server running?',
     'common.noProviders':
       'No AI providers available. Please configure at least one provider in the backend.',
@@ -190,6 +192,8 @@ const translations = {
     'common.noModels': 'Keine Modelle für Textgenerierung verfügbar.',
     'common.modelLoadError': 'Modelle konnten nicht geladen werden',
     'common.selectionRequired': 'Wähle zuerst einen KI-Anbieter und ein Modell aus.',
+    'common.selectionMissingProvider': 'Wähle oben einen KI-Anbieter und anschließend ein Modell. Upload und Auswertung bleiben gesperrt, bis beides ausgewählt ist.',
+    'common.selectionMissingModel': 'Wähle oben ein KI-Modell. Upload und Auswertung bleiben gesperrt, bis ein Modell ausgewählt ist.',
     'common.cannotConnect': 'Verbindung zum Server nicht möglich. Läuft der Server?',
     'common.noProviders':
       'Keine KI-Anbieter verfügbar. Bitte konfiguriere mindestens einen Anbieter im Backend.',

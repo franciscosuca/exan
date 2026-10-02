@@ -1,3 +1,4 @@
+import { filterGoogleModels } from '../lib/model-filter';
 import { useState, useEffect } from 'react';
 import { FileDropzone } from './FileDropzone';
 import { ProviderSelector } from './ProviderSelector';
@@ -64,7 +65,7 @@ export function GrammarEvaluation({ onBack }: GrammarEvaluationProps) {
 
     setModelsLoading(true);
     getProviderModels(provider)
-      .then(setModels)
+      .then((fetched) => setModels(filterGoogleModels(fetched)))
       .catch((e: unknown) => {
         setModelsError(e instanceof Error ? e.message : t('common.modelLoadError'));
       })

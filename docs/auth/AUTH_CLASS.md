@@ -8,7 +8,6 @@ classDiagram
 
     class Frontend {
         +login(username, password)
-        +register(username, password, repeatPassword)
         +saveToken(token)
         +getToken() string
         +clearToken()
@@ -21,7 +20,6 @@ classDiagram
     class AuthAPI {
         +API_BASE: string
         +login(username, password) Promise~AuthResponse~
-        +register(username, password, repeatPassword) Promise~AuthResponse~
         +saveToken(token)
         +getToken() string | null
         +clearToken()
@@ -60,8 +58,6 @@ classDiagram
     }
 
     class UserModel {
-        +SALT_ROUNDS: number
-        +createUser(db, username, password) Promise~User~
         +verifyUser(db, username, password) Promise~User~
         +ensureIndexes(db) Promise~void~
         -getUsersCollection(db) Collection~User~
@@ -103,7 +99,7 @@ classDiagram
     AuthServer --> AuthRoutes : mounts /api/auth
     AuthServer --> AuthMiddleware : uses on /api/me
 
-    AuthRoutes --> UserModel : createUser / verifyUser
+    AuthRoutes --> UserModel : verifyUser
     AuthRoutes --> TokenModule : generateToken
 
     UserModel --> MongoDB : findOne / insertOne / createIndex
@@ -122,7 +118,7 @@ classDiagram
 | `AuthAPI` | `webapp/src/auth.api.ts` | HTTP client that calls the `/api/auth` endpoints and manages `localStorage`. |
 | `AuthServer` | `auth/server.ts` | Bootstraps Express, connects to MongoDB, mounts routes, and starts listening. |
 | `DatabaseConnection` | `db/connection.ts` | Manages the MongoDB client lifecycle and provides the `Db` instance. |
-| `AuthRoutes` | `auth/routes/auth.routes.ts` | Defines `/register` and `/login` endpoints and orchestrates model + token calls. |
+| `AuthRoutes` | `auth/routes/auth.routes.ts` | Defines the `/login` endpoint and orchestrates model + token calls. |
 | `UserModel` | `auth/lib/user.model.ts` | Handles MongoDB user queries, bcrypt hashing, and password verification. |
 | `TokenModule` | `auth/lib/token.ts` | Signs and verifies JWT tokens with `JWT_SECRET` and a 24-hour expiry. |
 | `AuthMiddleware` | `auth/middleware/auth.middleware.ts` | Validates the `Authorization` header and attaches the decoded user to `req.user`. |

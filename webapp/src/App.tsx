@@ -2,19 +2,16 @@ import { useState } from 'react';
 import { ExamComparison } from './components/ExamComparison';
 import { GrammarEvaluation } from './components/GrammarEvaluation';
 import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { ClipboardCheck, FileText, LogOut, UserRound } from 'lucide-react';
 import { getUsername, isAuthenticated, logout, saveUsername } from './auth.api';
 import { useLanguage } from './lib/i18n';
 
 type AppMode = 'landing' | 'exam-comparison' | 'grammar-evaluation';
-type AuthView = 'login' | 'register';
 
 function App() {
   const { t } = useLanguage();
   const [mode, setMode] = useState<AppMode>('landing');
-  const [authView, setAuthView] = useState<AuthView>('login');
   const [username, setUsername] = useState<string | null>(() =>
     isAuthenticated() ? getUsername() : null
   );
@@ -22,7 +19,6 @@ function App() {
   function handleAuthSuccess(name: string) {
     saveUsername(name);
     setUsername(name);
-    setAuthView('login');
     setMode('landing');
   }
 
@@ -30,21 +26,10 @@ function App() {
     logout();
     setUsername(null);
     setMode('landing');
-    setAuthView('login');
   }
 
   if (!username) {
-    return authView === 'login' ? (
-      <LoginPage
-        onSuccess={handleAuthSuccess}
-        onNavigateToRegister={() => setAuthView('register')}
-      />
-    ) : (
-      <RegisterPage
-        onSuccess={handleAuthSuccess}
-        onNavigateToLogin={() => setAuthView('login')}
-      />
-    );
+    return <LoginPage onSuccess={handleAuthSuccess} />;
   }
 
   return (

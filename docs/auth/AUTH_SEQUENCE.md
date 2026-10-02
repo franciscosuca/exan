@@ -27,25 +27,6 @@ sequenceDiagram
    %% Same-origin proxy routing
    Note over FE,PX: Browser requests stay on the webapp origin
 
-    %% Registration
-   FE->>PX: POST /api/auth/register<br/>{username, password, repeatPassword}
-   PX->>SRV: Forward /api/auth/register<br/>to auth-server:3001
-   SRV->>RT: Dispatch /register
-    RT->>RT: Validate input
-    RT->>UM: createUser(db, username, password)
-    UM->>DB: findOne({username})
-    DB-->>UM: null
-    UM->>UM: bcrypt.hash(password, 12)
-    UM->>DB: insertOne({username, passwordHash, createdAt})
-    DB-->>UM: new user
-    UM-->>RT: User
-    RT->>TK: generateToken({userId, username})
-    TK-->>RT: JWT
-   RT-->>SRV: 201 {token, username}
-   SRV-->>PX: 201 {token, username}
-   PX-->>FE: 201 {token, username}
-    FE->>FE: saveToken(token)
-
     %% Login
    FE->>PX: POST /api/auth/login<br/>{username, password}
    PX->>SRV: Forward /api/auth/login<br/>to auth-server:3001
@@ -96,12 +77,9 @@ sequenceDiagram
    - Mounts `/api/auth` routes from `auth.routes.ts`.
    - Registers the protected `/api/me` route with `authMiddleware`.
 
-3. **Registration** (`POST /api/auth/register`)
-   - The frontend sends `{username, password, repeatPassword}`.
-   - `auth.routes.ts` validates input length and password match.
-   - `user.model.ts` checks for existing usernames and inserts a new document with a bcrypt hash (12 rounds).
-   - `token.ts` generates a signed JWT (24-hour expiry).
-   - The frontend receives `{token, username}` and stores the token.
+3. **Account provisioning**
+   - Self-service registration is disabled; there is no `/api/auth/register` endpoint.
+   - Accounts are provisioned directly in MongoDB Atlas as documents in the `users` collection (`{username, passwordHash, createdAt}`, with `passwordHash` a bcrypt hash).
 
 4. **Login** (`POST /api/auth/login`)
    - The frontend sends `{username, password}`.
@@ -123,7 +101,7 @@ sequenceDiagram
 | `webapp/nginx.conf` | Proxies containerized `/api/auth/` requests to `auth-server:3001` and other `/api/` requests to `inference:8000`. |
 | `webapp/vite.config.ts` | Proxies local-development `/api/auth` requests to `localhost:3001`. |
 | `server.ts` | Bootstraps Express, connects to MongoDB, mounts routes, and starts listening. |
-| `auth.routes.ts` | Defines `/register` and `/login` endpoints and orchestrates model + token calls. |
+| `auth.routes.ts` | Defines the `/login` endpoint and orchestrates model + token calls. |
 | `auth.middleware.ts` | Validates the `Authorization` header and attaches the decoded user to `req.user`. |
 | `token.ts` | Signs and verifies JWT tokens with `JWT_SECRET` and a 24-hour expiry. |
 | `user.model.ts` | Handles MongoDB user queries, bcrypt hashing, and password verification. |

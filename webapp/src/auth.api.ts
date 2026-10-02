@@ -33,29 +33,6 @@ export async function login(
   return res.json();
 }
 
-export async function register(
-  username: string,
-  password: string,
-  repeatPassword: string
-): Promise<AuthResponse> {
-  const requestUrl = `${API_BASE}/auth/register`;
-  const res = await fetch(requestUrl, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ username, password, repeatPassword }),
-  });
-
-  if (!res.ok) {
-    await throwResponseError(res, {
-      fallbackMessage: "Registration failed",
-      method: "POST",
-      requestUrl,
-    });
-  }
-
-  return res.json();
-}
-
 export function saveToken(token: string): void {
   localStorage.setItem("auth_token", token);
 }

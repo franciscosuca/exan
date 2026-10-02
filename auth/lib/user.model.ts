@@ -8,34 +8,8 @@ export interface User {
   createdAt: Date;
 }
 
-const SALT_ROUNDS = 12;
-
 function getUsersCollection(db: Db): Collection<User> {
   return db.collection<User>("users");
-}
-
-export async function createUser(
-  db: Db,
-  username: string,
-  password: string
-): Promise<User> {
-  const collection = getUsersCollection(db);
-
-  const existing = await collection.findOne({ username });
-  if (existing) {
-    throw new Error("Username already exists");
-  }
-
-  const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-
-  const user: User = {
-    username,
-    passwordHash,
-    createdAt: new Date(),
-  };
-
-  await collection.insertOne(user);
-  return user;
 }
 
 export async function verifyUser(

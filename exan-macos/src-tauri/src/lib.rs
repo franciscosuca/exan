@@ -3,8 +3,8 @@ mod sidecar;
 use std::path::PathBuf;
 
 use sidecar::{SidecarStatus, Supervisor};
-use tauri::{AppHandle, RunEvent, State};
-use tauri_plugin_dialog::DialogExt;
+use tauri::{AppHandle, RunEvent, State, WebviewWindow};
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons, MessageDialogKind};
 use tauri_plugin_opener::OpenerExt;
 
 /// Links the UI may open in the default browser. Anything else is refused.
@@ -72,6 +72,34 @@ async fn save_text_file(
     Ok(Some(path.display().to_string()))
 }
 
+/// Asks before a destructive action and returns whether the user confirmed.
+///
+/// The UI cannot use `window.confirm`: the dialog plugin replaces it with an async function, so
+/// `window.confirm(...)` is always truthy and the action would run without asking. (WKWebView on
+/// macOS would not show it anyway, because wry does not implement the dialog.)
+///
+/// The dialog is attached to the calling window (a sheet on macOS). Without a parent, macOS shows a
+/// free-floating system alert that stays on screen even if the app quits.
+#[tauri::command]
+async fn confirm_action(
+    window: WebviewWindow,
+    message: String,
+    ok_label: String,
+    cancel_label: String,
+) -> Result<bool, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        window
+            .dialog()
+            .message(message)
+            .parent(&window)
+            .kind(MessageDialogKind::Warning)
+            .buttons(MessageDialogButtons::OkCancelCustom(ok_label, cancel_label))
+            .blocking_show()
+    })
+    .await
+    .map_err(|err| err.to_string())
+}
+
 #[tauri::command]
 fn open_help(app: AppHandle, topic: String) -> Result<(), String> {
     let url = help_url(&topic).ok_or_else(|| "unknown link".to_string())?;
@@ -91,6 +119,7 @@ pub fn run() {
             engine_status,
             restart_engine,
             save_text_file,
+            confirm_action,
             open_help
         ])
         .setup(|app| {

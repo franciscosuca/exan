@@ -6,7 +6,7 @@ import { ParticipantsStep } from "./components/ParticipantsStep";
 import { ResultsStep } from "./components/ResultsStep";
 import { SettingsPanel, useRuntime } from "./components/SettingsPanel";
 import { PhoneDialog } from "./components/PhoneDialog";
-import { restartEngine, watchEngine, type Connection, type EngineStatus } from "./lib/bridge";
+import { confirmAction, restartEngine, watchEngine, type Connection, type EngineStatus } from "./lib/bridge";
 import { I18nProvider, useI18n, type Language } from "./lib/i18n";
 import { AppProvider, useApp } from "./lib/store";
 import type { PhoneTarget } from "./lib/types";
@@ -61,7 +61,13 @@ function Workspace() {
           ))}
           <Button
             variant="ghost"
-            onClick={() => window.confirm(t("newSessionConfirm")) && void act(() => api.resetSession()).then(() => setStep("key"))}
+            onClick={() =>
+              void confirmAction(t("newSessionConfirm"), t("delete"), t("cancel")).then(async (confirmed) => {
+                if (!confirmed) return;
+                await act(() => api.resetSession());
+                setStep("key");
+              })
+            }
           >
             <RotateCcw size={16} /> {t("newSession")}
           </Button>

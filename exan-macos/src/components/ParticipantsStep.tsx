@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { RotateCw, ScanText, Square, Trash2 } from "lucide-react";
+import { confirmAction } from "../lib/bridge";
 import { useI18n } from "../lib/i18n";
 import { useApp } from "../lib/store";
 import type { Grouping, ParticipantView } from "../lib/types";
@@ -92,7 +93,11 @@ export function ParticipantsStep({ onPhone }: { onPhone: () => void }) {
                     variant="danger"
                     className="ml-auto px-1"
                     aria-label={`${t("delete")} ${participantName(participant, t)}`}
-                    onClick={() => window.confirm(t("deleteConfirm")) && void act(() => api.deleteParticipant(participant.id))}
+                    onClick={() =>
+                      void confirmAction(t("deleteConfirm"), t("delete"), t("cancel")).then(async (confirmed) => {
+                        if (confirmed) await act(() => api.deleteParticipant(participant.id));
+                      })
+                    }
                   >
                     <Trash2 size={14} />
                   </Button>

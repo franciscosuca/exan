@@ -11,9 +11,10 @@
   "scripts": {
     "setup": "node scripts/sidecar-task.mjs setup && node scripts/build-sidecar.mjs && node scripts/fetch-runtime.mjs",
     "start": "node scripts/build-sidecar.mjs --if-needed && node scripts/fetch-runtime.mjs --if-needed && tauri dev",
-    "package": "node scripts/build-sidecar.mjs && node scripts/fetch-runtime.mjs --if-needed && tauri build",
+    "package": "node scripts/build-sidecar.mjs && node scripts/fetch-runtime.mjs --if-needed && node scripts/installer-models.mjs && tauri build",
     "build:sidecar": "node scripts/build-sidecar.mjs",
     "fetch:runtime": "node scripts/fetch-runtime.mjs",
+    "installer:models": "node scripts/installer-models.mjs",
     "dev": "vite",
     "dev:engine": "node scripts/sidecar-task.mjs dev",
     "dev:browser": "vite --mode browser",
@@ -22,7 +23,7 @@
     "test:engine": "node scripts/sidecar-task.mjs test",
     "lint": "oxlint src scripts",
     "lint:engine": "node scripts/sidecar-task.mjs lint",
-    "check": "tsc --noEmit && npm run lint && npm run test && npm run lint:engine && npm run test:engine",
+    "check": "tsc --noEmit && node scripts/installer-models.mjs --check && npm run lint && npm run test && npm run lint:engine && npm run test:engine",
     "tauri": "tauri"
   },
   "dependencies": {

@@ -58,7 +58,9 @@
           "English",
           "German"
         ],
-        "displayLanguageSelector": true
+        "displayLanguageSelector": true,
+        "template": "windows/installer.nsi",
+        "installerHooks": "windows/hooks.nsh"
       }
     }
   }

@@ -1,13 +1,13 @@
 # Exan for macOS
 
-Correct exams on your Mac without a server, account, or database. You photograph or scan the answer key and the participants' answer sheets. A small vision model that runs **on your Mac** reads the answers, and Exan grades every participant against the key. Photos never leave the computer, except when you choose to send them from your phone to the Mac over your own Wi‑Fi.
+Correct exams on your Mac without a server, account, or database. You photograph or scan the answer key and the participants' answer sheets. A small OCR or vision model that runs **on your Mac** reads the answers, and Exan grades every participant against the key. Photos never leave the computer, except when you choose to send them from your phone to the Mac over your own Wi‑Fi.
 
 | | |
 |---|---|
-| Platforms | macOS 13 Ventura or newer, Apple Silicon (recommended) or Intel |
-| Memory | 8 GB RAM for the 3–4B models, 16 GB for the 7B models |
-| Local model | [Ollama](https://ollama.com/download) (recommended) or any OpenAI‑compatible local server such as [LM Studio](https://lmstudio.ai) |
-| Output | `Exan.app` and `Exan_<version>_<arch>.dmg` |
+| Platforms | macOS 13.3 Ventura or newer, Apple Silicon (recommended) or Intel |
+| Memory | 4 GB RAM for the smallest model, 8 GB for the 3B model (see [Models](#models)) |
+| Reading model | **Built in**: Exan ships [llama.cpp](https://github.com/ggml-org/llama.cpp) and downloads the model you pick on the first start, after you agree. [Ollama](https://ollama.com/download) or [LM Studio](https://lmstudio.ai) still work (Settings) |
+| Output | `Exan.app` and `Exan_<version>_<arch>.dmg` (about 40 MB; no model inside) |
 
 ## How it works
 
@@ -18,9 +18,11 @@ Correct exams on your Mac without a server, account, or database. You photograph
 │  └─ starts/stops the engine (exan-sidecar)          │
 │        Python + FastAPI, 127.0.0.1:<random port>,   │
 │        random secret per start, data in memory      │
+│          └─ starts llama-server (bundled llama.cpp) │
+│             for the chosen model, 127.0.0.1 only    │
 └───────────────┬─────────────────────────────────────┘
-                │ http://127.0.0.1:11434 (Ollama) or :1234 (LM Studio)
-          small vision model (Qwen2.5‑VL 3B, …)
+                │ or: Ollama (:11434) / LM Studio (:1234)
+     model files in ~/Library/Application Support/com.exan.desktop/models
 ```
 
 - **No accounts and no database.** One correction session lives in memory. *New correction* clears it. CSV export is the only file Exan writes, apart from settings and logs.
@@ -29,18 +31,19 @@ Correct exams on your Mac without a server, account, or database. You photograph
 
 ## Models
 
-All suggestions run locally. They were chosen from Hugging Face's overview of open OCR models (<https://huggingface.co/blog/ocr-open-models>) and filtered to sizes that run on ordinary Macs:
+No model is part of the app, so the download stays small. On the first start Exan shows **Choose a reading model**: the smallest model is preselected, every entry shows its download size, memory needs and licence, and nothing is downloaded until you tick *I agree that Exan downloads … from Hugging Face (huggingface.co)*. The models come from Hugging Face's overview of open OCR models (<https://huggingface.co/blog/ocr-open-models>); each file is pinned to a repository revision and checked with SHA‑256 (`sidecar/exan_sidecar/engine/models.json`):
 
-| Model (Ollama name) | Download | RAM | Notes |
-|---|---|---|---|
-| `qwen2.5vl:3b` ★ | 3.2 GB | 8 GB | Best balance for handwriting and checkboxes |
-| `qwen3-vl:4b` | 3.3 GB | 8 GB | Newer and often more accurate; needs a recent Ollama |
-| `granite3.2-vision:2b` | 2.4 GB | 6 GB | Smallest; good for printed sheets |
-| `gemma3:4b` | 3.3 GB | 8 GB | General vision model |
-| `qwen2.5vl:7b` | 6.0 GB | 16 GB | More accurate, slower |
-| `deepseek-ocr:3b` | 6.7 GB | 16 GB | Pure OCR mode (text first, then parsed) |
+| Built-in model | Download | RAM | Licence | Reads |
+|---|---|---|---|---|
+| Granite‑Docling 258M (IBM) ★ recommended | 0.28 GB | 4 GB | Apache‑2.0 | printed and typed text; often misses short handwritten answers |
+| PaddleOCR‑VL 1.6 (0.9B) | 1.8 GB | 6 GB | Apache‑2.0 | printed text and handwriting, copies exactly what is written |
+| Qwen2.5‑VL 3B | 2.8 GB | 8 GB | Qwen Research Licence (research/evaluation only) | general vision model; also ticked or circled options |
 
-You can download a model from **Settings → Download** inside the app, or with `ollama pull qwen2.5vl:3b`. With LM Studio, load any vision model (for example an MLX build of Qwen2.5‑VL 3B), start its local server, and pick **OpenAI‑compatible** in Settings.
+Measured on this project's four sample sheets (answer key plus three handwriting-style answer sheets, 24 answers) on an M5 Max: PaddleOCR‑VL read 24/24 answers (about 1.5 s per page), Qwen2.5‑VL 23/24 (about 3 s per page; it once wrote the correct answer instead of the participant's), Granite‑Docling at most 10/24 (fast, but it drops short handwritten answers and sometimes repeats itself). OCR models transcribe the page and Exan finds the answers next to the question numbers or labels such as *Antwort:*; Qwen returns JSON.
+
+Why on the first start: Mac apps are installed by dragging them from the DMG into *Applications*, which has no installer pages, so the first start completes the installation (the Windows installer asks during installation).
+
+Downloads resume where they stopped. **Settings → Built-in models** downloads more models (after the same consent), switches between them and removes them. **Ollama** or **LM Studio** (OpenAI‑compatible) can still be selected under Settings → Local model runtime, with the models listed there.
 
 ---
 
@@ -50,19 +53,20 @@ The code was written and tested in a Linux sandbox. The engine, the UI and the R
 
 1. **Install the tools (once):**
    ```bash
-   xcode-select --install                                           # Apple command-line tools (clang, codesign)
+   xcode-select --install                                           # Apple command-line tools (clang, codesign, otool)
    curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh   # Rust (stable)
    brew install node@22 python@3.12                                 # or the installers from nodejs.org / python.org
-   brew install --cask ollama                                       # or https://ollama.com/download
    ```
+   Ollama is optional now; the reading model runs in the bundled llama.cpp runtime.
 2. **Get the code:** move this `exan-macos/` folder into its own repository (or `cd` into it), then:
    ```bash
    npm ci
    npm run setup        # creates sidecar/.venv, installs the engine, builds src-tauri/binaries/exan-sidecar-<arch>-apple-darwin
+                        # and fetches the pinned llama.cpp build into src-tauri/runtime/
    ```
 3. **Run it:** `npm start`. The first Rust build takes a few minutes. Then check that:
-   - the window opens and the status changes from *Engine is starting…* to the key step;
-   - **Settings** shows Ollama as reachable, and you can download/select `qwen2.5vl:3b`;
+   - the window opens and the status changes from *Engine is starting…* to **Choose a reading model**;
+   - after ticking the consent box, the recommended model downloads with a progress bar and the key step appears;
    - you can upload a key photo and a participant photo, read them, and see **Results**;
    - **CSV export** opens the save dialog and the file opens in Numbers/Excel with correct umlauts.
 4. **Test the phone upload:** click **Take photos with your phone**, scan the QR code with a phone on the same Wi‑Fi, and send a photo. The first time, macOS asks *"Allow Exan to find devices on your local network?"* — click **Allow**. If the phone cannot connect, check **System Settings → Network → Firewall** (allow Exan) and make sure the Wi‑Fi has no "client isolation" (common on guest networks).
@@ -92,15 +96,16 @@ Please send me any error output from steps 2–5 (and `~/Library/Logs/com.exan.d
    Then click **Read**. Open a card to see the photo next to the recognised answers, fix answers, or override a verdict.
 3. **Results:** points, percentages and per‑question statistics. Export a summary or a detailed CSV (UTF‑8 with BOM; `;` as separator in German and `,` in English, so Excel and Numbers open it correctly).
 
-Settings (runtime URL, model, reading mode, image size, timeout and language) are stored in `~/Library/Application Support/com.exan.desktop/settings.json`. Logs are in `~/Library/Logs/com.exan.desktop/`.
+Settings (runtime, model, reading mode, image size, timeout and language) are stored in `~/Library/Application Support/com.exan.desktop/settings.json`, downloaded models in `models/` next to it. Logs (`sidecar.log`, `runtime.log`) are in `~/Library/Logs/com.exan.desktop/`.
 
 ## Development
 
 | Command | What it does |
 |---|---|
-| `npm run setup` | Creates `sidecar/.venv` (Python 3.11+) and builds the engine binary for this Mac |
+| `npm run setup` | Creates `sidecar/.venv` (Python 3.11+), builds the engine binary for this Mac and fetches the llama.cpp runtime |
 | `npm start` | Rebuilds the engine if its sources changed, then runs `tauri dev` with hot reload |
-| `npm run package` | Builds the engine and the signed `.app` + `.dmg` |
+| `npm run package` | Builds the engine and the signed `.app` + `.dmg` (with the runtime, without models) |
+| `npm run fetch:runtime` | Downloads the llama.cpp build pinned in `scripts/runtime.lock.json` (SHA‑256 checked) into `src-tauri/runtime/` |
 | `npm run check` | Type-check, lint and unit tests for UI and engine |
 | `npm run dev:engine` + `npm run dev:browser` | Engine on `127.0.0.1:8765` and the UI in a normal browser (values in `.env.browser`) |
 
@@ -110,10 +115,13 @@ Layout:
 exan-macos/
 ├─ src/                React 19 + Tailwind 4 UI (lib/ = API client, store, i18n; components/ = screens)
 ├─ src-tauri/          Rust shell: engine supervisor (sidecar.rs), commands (lib.rs), bundle config,
-│                      Info.plist (local-network prompt), Entitlements.plist (hardened runtime)
-├─ sidecar/            Python engine: FastAPI API, grading, parsing, image handling, Ollama/OpenAI clients,
-│                      phone upload page, PyInstaller spec, pytest suite
-└─ scripts/            build-sidecar.mjs (PyInstaller → src-tauri/binaries), sidecar-task.mjs (venv tasks)
+│                      Info.plist (local-network prompt), Entitlements.plist (hardened runtime),
+│                      runtime/ (llama-server + libraries, fetched, not committed)
+├─ sidecar/            Python engine: FastAPI API, grading, parsing, image handling, built-in runtime
+│                      (engine/llamacpp.py, model_store.py, models.json), Ollama/OpenAI clients,
+│                      model downloads, phone upload page, PyInstaller spec, pytest suite
+└─ scripts/            build-sidecar.mjs (PyInstaller → src-tauri/binaries), fetch-runtime.mjs + runtime.lock.json
+                       (llama.cpp → src-tauri/runtime), sidecar-task.mjs (venv tasks)
 ```
 
 Security: the engine listens on `127.0.0.1` only. Every API call needs the random secret that the shell creates on each start. The phone page is only served on the local network after you start it from the QR dialog. It accepts private-network addresses only, needs an unguessable token in the URL, and stops after inactivity or when you click *End connection*.
@@ -124,8 +132,11 @@ Security: the engine listens on `127.0.0.1` only. Every API call needs the rando
 |---|---|
 | *"Exan" cannot be opened because the developer cannot be verified* | Right‑click → Open, or `xattr -dr com.apple.quarantine /Applications/Exan.app` (see step 7) |
 | Engine stays at *starting* / *could not be started* | Click **Restart**; check `~/Library/Logs/com.exan.desktop/sidecar.log`; run `src-tauri/binaries/exan-sidecar-* --version` |
-| *Ollama is not reachable* | Start the Ollama app (menu bar icon) or run `ollama serve`; the URL must be `http://127.0.0.1:11434` |
-| Reading is slow | Use a 3–4B model, lower *Max. image size* to 1280, and close other memory‑heavy apps |
+| *The built-in model runtime is missing* | Reinstall Exan; in development run `npm run fetch:runtime` |
+| The model download fails | Exan needs `https://huggingface.co` (files are served from Hugging Face's CDN). Proxy settings (`HTTPS_PROXY`) are used. Click the download again: it continues where it stopped |
+| *The built-in runtime stopped …* | See `~/Library/Logs/com.exan.desktop/runtime.log`; usually not enough memory for the model: pick a smaller one |
+| *Ollama is not reachable* | Only when Ollama is selected: start the Ollama app (menu bar icon) or run `ollama serve`; the URL must be `http://127.0.0.1:11434` |
+| Reading is slow | Use a smaller model and close other memory‑heavy apps. `EXAN_RUNTIME_ARGS` passes extra flags to llama-server (for example `--device none` to read on the CPU only) |
 | Phone cannot open the page | Same Wi‑Fi, allow *Local Network* for Exan in **System Settings → Privacy & Security → Local Network**, and allow Exan in the firewall |
 | `npm run setup` cannot find Python | `brew install python@3.12` (or `uv python install 3.12`), or `EXAN_PYTHON=/path/to/python3.12 npm run setup` |
 | `npm run package` stops at `bundle_dmg.sh` with *Finder got an error: AppleEvent timed out* or *Not authorized to send Apple events to Finder* | The DMG step asks Finder to arrange the DMG window. Allow your terminal under **System Settings → Privacy & Security → Automation → Finder** (macOS asks once). Without a GUI session (for example over SSH), run `CI=true npm run package`, which skips the window layout. `Exan.app` is already built at this point. |

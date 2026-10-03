@@ -1,0 +1,18 @@
+{
+  "$comment": "llama.cpp build bundled as Exan's built-in model runtime (MIT licence). Update `build`, the URLs and the SHA-256 values together; scripts/fetch-runtime.mjs refuses files that do not match.",
+  "build": "b11376",
+  "targets": {
+    "aarch64-apple-darwin": {
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11376/llama-b11376-bin-macos-arm64.tar.gz",
+      "sha256": "ff9ceceb06f668766e46b8a788ae0c5b8243b40868b294c0584f79f465ed4af8"
+    },
+    "x86_64-apple-darwin": {
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11376/llama-b11376-bin-macos-x64.tar.gz",
+      "sha256": "02965be7302bc1d69e84cb8d9700e94926c9534f59c4bfa50eb7c152721f7cc6"
+    },
+    "x86_64-pc-windows-msvc": {
+      "url": "https://github.com/ggml-org/llama.cpp/releases/download/b11376/llama-b11376-bin-win-vulkan-x64.zip",
+      "sha256": "10f4b62741be8a36088627384042a6f19f4822f307f8f43d369a6569874def1b"
+    }
+  }
+}

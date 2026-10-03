@@ -1,0 +1,99 @@
+# Builds and tests Exan for macOS on Apple Silicon and Intel and uploads the DMGs.
+# GitHub only runs this once `exan-macos/` is the root of its own repository.
+#
+# Optional signing + notarization (otherwise the app is signed ad hoc), as repository secrets:
+#   APPLE_CERTIFICATE           base64 of the "Developer ID Application" .p12
+#   APPLE_CERTIFICATE_PASSWORD  password of that .p12
+#   APPLE_SIGNING_IDENTITY      e.g. "Developer ID Application: Your Name (TEAMID)"
+#   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID
+name: build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  macos:
+    name: macOS ${{ matrix.arch }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            arch: aarch64
+          - runner: macos-15-intel
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    env:
+      HAS_SIGNING: ${{ secrets.APPLE_CERTIFICATE != '' }}
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install UI dependencies
+        run: npm ci
+
+      - name: Set up the engine and build it for this architecture
+        run: npm run setup
+
+      - name: Type-check, lint and test (UI + engine)
+        run: npm run check
+
+      - name: Build app (ad hoc signed)
+        if: env.HAS_SIGNING != 'true'
+        run: npx tauri build
+
+      - name: Build app (Developer ID, hardened runtime, notarized)
+        if: env.HAS_SIGNING == 'true'
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          node -e 'require("fs").writeFileSync("signed.conf.json", JSON.stringify({bundle: {macOS: {hardenedRuntime: true, signingIdentity: process.env.APPLE_SIGNING_IDENTITY}}}))'
+          npx tauri build --config signed.conf.json
+
+      - name: Rust lint and tests
+        working-directory: src-tauri
+        run: |
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo test --locked
+
+      - name: Smoke test the bundled engine and model runtime
+        run: |
+          app="src-tauri/target/release/bundle/macos/Exan.app"
+          "$app/Contents/MacOS/exan-sidecar" --version
+          "$app/Contents/MacOS/exan-sidecar" models list
+          "$app/Contents/Resources/runtime/llama-server" --version
+          codesign --verify --deep --strict --verbose=2 "$app"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: exan-macos-${{ matrix.arch }}
+          path: src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error

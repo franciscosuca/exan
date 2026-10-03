@@ -108,8 +108,10 @@ export interface SessionView {
   phone: { active: boolean; target: PhoneTarget; uploads: number };
 }
 
+export type RuntimeKind = "builtin" | "ollama" | "openai";
+
 export interface Settings {
-  runtime: "ollama" | "openai";
+  runtime: RuntimeKind;
   ollama_url: string;
   openai_url: string;
   model: string;
@@ -159,6 +161,26 @@ export interface CatalogModel {
   recommended: boolean;
   notes: string;
   min_ollama: string;
+}
+
+/** A model of the built-in runtime (GET /models). */
+export interface BuiltinModel {
+  id: string;
+  label: string;
+  vendor: string;
+  params: string;
+  mode: "ocr" | "structured";
+  recommended: boolean;
+  license: string;
+  homepage: string;
+  min_ram_gb: number;
+  download_bytes: number;
+  downloaded_bytes: number;
+  installed: boolean;
+  notes: Partial<Record<"de" | "en", string>>;
+  /** One line, used where space is short (installer page). */
+  summary: Partial<Record<"de" | "en", string>>;
+  source: string;
 }
 
 export interface PhoneView {

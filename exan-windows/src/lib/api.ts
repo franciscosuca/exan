@@ -1,6 +1,7 @@
 import type { Connection } from "./bridge";
 import type {
   AnswerView,
+  BuiltinModel,
   CatalogModel,
   Grouping,
   KeyItem,
@@ -88,6 +89,8 @@ export class Api {
   catalog = () => this.json<CatalogModel[]>("/catalog");
   pull = (model: string) => this.send<PullView>("POST", "/runtime/pull", { model });
   cancelPull = () => this.send<PullView>("DELETE", "/runtime/pull");
+  models = () => this.json<BuiltinModel[]>("/models");
+  deleteModel = (id: string) => this.send<BuiltinModel[]>("DELETE", `/models/${encodeURIComponent(id)}`);
 
   addKeyPages = (files: File[]) => this.upload("/key/pages", files);
   deleteKeyPage = (id: string) => this.send<Updated>("DELETE", `/key/pages/${encodeURIComponent(id)}`);

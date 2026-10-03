@@ -5,6 +5,7 @@ import { KeyStep } from "./components/KeyStep";
 import { ParticipantsStep } from "./components/ParticipantsStep";
 import { ResultsStep } from "./components/ResultsStep";
 import { SettingsPanel, useRuntime } from "./components/SettingsPanel";
+import { SetupWizard } from "./components/SetupWizard";
 import { PhoneDialog } from "./components/PhoneDialog";
 import { confirmAction, restartEngine, watchEngine, type Connection, type EngineStatus } from "./lib/bridge";
 import { I18nProvider, useI18n, type Language } from "./lib/i18n";
@@ -26,6 +27,8 @@ function Workspace() {
   }, [api, language]);
 
   const ready = runtime?.reachable && runtime.model_installed;
+  // Built-in runtime without a downloaded model: the setup screen replaces the workspace.
+  const needsModel = runtime?.kind === "builtin" && !runtime.model_installed;
   const steps: [Step, string, number | null][] = [
     ["key", t("stepKey"), session?.key.items.length ?? null],
     ["participants", t("stepParticipants"), session?.participants.length ?? null],
@@ -76,7 +79,7 @@ function Workspace() {
           </Button>
         </div>
       </header>
-      {runtime && !ready && (
+      {runtime && !ready && !needsModel && (
         <div className="flex items-center justify-between gap-4 border-b-hair border-accent bg-accent/5 px-6 py-3 text-sm text-accent" data-testid="setup-banner">
           <span>{t("setupNeeded")}</span>
           <Button variant="primary" onClick={() => setSettingsOpen(true)}>
@@ -88,6 +91,8 @@ function Workspace() {
       <main className="mx-auto w-full max-w-7xl flex-1 px-6 py-8">
         {!session ? (
           <p className="text-sm text-muted">{t("engineStarting")}</p>
+        ) : needsModel && runtime ? (
+          <SetupWizard runtime={runtime} onReady={refresh} onAdvanced={() => setSettingsOpen(true)} />
         ) : step === "key" ? (
           <KeyStep onPhone={() => setPhoneTarget("key")} />
         ) : step === "participants" ? (

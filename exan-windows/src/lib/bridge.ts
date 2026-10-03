@@ -82,6 +82,16 @@ export async function openHelp(topic: "ollama" | "lmstudio" | "models"): Promise
   window.open(urls[topic], "_blank", "noopener,noreferrer");
 }
 
+/**
+ * Asks before a destructive action. Resolves to true only when the user confirmed.
+ * The desktop app shows a native dialog: there, the dialog plugin replaces `window.confirm` with an async
+ * function whose result is always truthy (and WKWebView on macOS would not show it at all).
+ */
+export async function confirmAction(message: string, okLabel: string, cancelLabel: string): Promise<boolean> {
+  if (inDesktopApp()) return (await invoke<boolean>("confirm_action", { message, okLabel, cancelLabel })) === true;
+  return window.confirm(message);
+}
+
 /** Saves text through the native save dialog (desktop) or a download (browser). Returns false when cancelled. */
 export async function saveTextFile(fileName: string, contents: string): Promise<boolean> {
   if (inDesktopApp()) {

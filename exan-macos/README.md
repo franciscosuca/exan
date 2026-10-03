@@ -127,7 +127,8 @@ Security: the engine listens on `127.0.0.1` only. Every API call needs the rando
 | *Ollama is not reachable* | Start the Ollama app (menu bar icon) or run `ollama serve`; the URL must be `http://127.0.0.1:11434` |
 | Reading is slow | Use a 3–4B model, lower *Max. image size* to 1280, and close other memory‑heavy apps |
 | Phone cannot open the page | Same Wi‑Fi, allow *Local Network* for Exan in **System Settings → Privacy & Security → Local Network**, and allow Exan in the firewall |
-| `npm run setup` cannot find Python | `brew install python@3.12` or `EXAN_PYTHON=/path/to/python3.12 npm run setup` |
+| `npm run setup` cannot find Python | `brew install python@3.12` (or `uv python install 3.12`), or `EXAN_PYTHON=/path/to/python3.12 npm run setup` |
+| `npm run package` stops at `bundle_dmg.sh` with *Finder got an error: AppleEvent timed out* or *Not authorized to send Apple events to Finder* | The DMG step asks Finder to arrange the DMG window. Allow your terminal under **System Settings → Privacy & Security → Automation → Finder** (macOS asks once). Without a GUI session (for example over SSH), run `CI=true npm run package`, which skips the window layout. `Exan.app` is already built at this point. |
 
 ## Why there is no iOS/iPadOS version (yet)
 

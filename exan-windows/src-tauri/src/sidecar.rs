@@ -1,7 +1,8 @@
 //! Supervises the local Exan engine (the frozen Python sidecar).
 //!
 //! Contract (see `sidecar/exan_sidecar/__main__.py`):
-//! * the shell passes a random secret, the data and log directories through the environment,
+//! * the shell passes a random secret, the data, log and model directories and the bundled model
+//!   runtime (llama.cpp) through the environment,
 //! * the engine binds `127.0.0.1` on a free port and prints `EXAN_PORT=<port>` on stdout,
 //! * every API call must send that secret as a bearer token (Authorization header),
 //! * writing `shutdown` to stdin (or closing stdin) stops the engine.
@@ -129,6 +130,13 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
     let log_dir = paths
         .app_log_dir()
         .map_err(|err| format!("no log directory: {err}"))?;
+    // Models are large: keep them in the local (non-roaming) data folder.
+    let models_dir = paths
+        .app_local_data_dir()
+        .map_err(|err| format!("no local data directory: {err}"))?
+        .join("models");
+    // The bundled llama.cpp runtime (`bundle.resources`); missing in a build without `npm run setup`.
+    let runtime_dir = paths.resource_dir().ok().map(|dir| dir.join("runtime"));
     let _ = std::fs::create_dir_all(&data_dir);
     let _ = std::fs::create_dir_all(&log_dir);
 
@@ -137,13 +145,18 @@ pub fn start<R: Runtime>(app: &AppHandle<R>) -> Result<(), String> {
         .sidecar(SIDECAR_NAME)
         .map_err(|err| format!("engine binary not found: {err}"))
         .and_then(|command| {
-            command
+            let command = command
                 .env("EXAN_SECRET", &secret)
                 .env("EXAN_DATA_DIR", &data_dir)
                 .env("EXAN_LOG_DIR", &log_dir)
-                .env("EXAN_WATCH_STDIN", "1")
-                .spawn()
-                .map_err(|err| format!("the engine could not be started: {err}"))
+                .env("EXAN_MODELS_DIR", &models_dir)
+                .env("EXAN_WATCH_STDIN", "1");
+            match &runtime_dir {
+                Some(dir) => command.env("EXAN_RUNTIME_DIR", dir),
+                None => command,
+            }
+            .spawn()
+            .map_err(|err| format!("the engine could not be started: {err}"))
         });
 
     let supervisor = app.state::<Supervisor>();

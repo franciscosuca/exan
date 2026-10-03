@@ -48,6 +48,26 @@ def default_data_dir() -> Path:
     return Path(base) / "exan"
 
 
+# Bundle identifier of the desktop app (src-tauri/tauri.conf.json). The folders below match Tauri's
+# app_data_dir() and app_local_data_dir(), so the installer and the CLI use the same places as the app.
+DESKTOP_BUNDLE_ID = "com.exan.desktop"
+
+
+def desktop_data_dir() -> Path:
+    if sys.platform == "win32":
+        return Path(os.environ.get("APPDATA") or Path.home() / "AppData" / "Roaming") / DESKTOP_BUNDLE_ID
+    if sys.platform == "darwin":
+        return Path.home() / "Library" / "Application Support" / DESKTOP_BUNDLE_ID
+    return Path(os.environ.get("XDG_DATA_HOME") or Path.home() / ".local" / "share") / DESKTOP_BUNDLE_ID
+
+
+def desktop_models_dir() -> Path:
+    if sys.platform == "win32":
+        local = Path(os.environ.get("LOCALAPPDATA") or Path.home() / "AppData" / "Local")
+        return local / DESKTOP_BUNDLE_ID / "models"
+    return desktop_data_dir() / "models"
+
+
 @dataclass(frozen=True)
 class RuntimeConfig:
     secret: str
@@ -57,6 +77,14 @@ class RuntimeConfig:
     log_dir: Path
     cors_origins: tuple[str, ...]
     watch_stdin: bool
+    # Folder with the bundled llama-server (None: built-in runtime unavailable, e.g. in browser dev mode).
+    runtime_dir: Path | None = None
+    # Downloaded models; defaults to <data_dir>/models. The desktop shell uses the local (non-roaming) folder.
+    models_dir: Path | None = None
+
+    @property
+    def model_root(self) -> Path:
+        return self.models_dir if self.models_dir is not None else self.data_dir / "models"
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> RuntimeConfig:
@@ -94,10 +122,12 @@ class RuntimeConfig:
             log_dir=log_dir,
             cors_origins=origins,
             watch_stdin=env.get("EXAN_WATCH_STDIN", "0").strip() == "1",
+            runtime_dir=Path(env["EXAN_RUNTIME_DIR"]) if env.get("EXAN_RUNTIME_DIR") else None,
+            models_dir=Path(env["EXAN_MODELS_DIR"]) if env.get("EXAN_MODELS_DIR") else None,
         )
 
 
-RuntimeKind = Literal["ollama", "openai"]
+RuntimeKind = Literal["builtin", "ollama", "openai"]
 ExtractionMode = Literal["auto", "structured", "ocr"]
 Language = Literal["de", "en"]
 
@@ -115,7 +145,7 @@ def _validate_http_url(value: str) -> str:
 class Settings(BaseModel):
     """User preferences persisted in the app-data directory (no secrets are stored here)."""
 
-    runtime: RuntimeKind = "ollama"
+    runtime: RuntimeKind = "builtin"
     ollama_url: str = "http://127.0.0.1:11434"
     openai_url: str = "http://127.0.0.1:1234/v1"
     model: str = Field("", max_length=200)
@@ -135,6 +165,8 @@ class Settings(BaseModel):
         return value.strip()
 
     def runtime_url(self) -> str:
+        if self.runtime == "builtin":
+            return "builtin"
         return self.ollama_url if self.runtime == "ollama" else self.openai_url
 
 

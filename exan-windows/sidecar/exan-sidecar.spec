@@ -7,7 +7,8 @@ a = Analysis(
     ["sidecar_entry.py"],
     pathex=["."],
     binaries=[],
-    datas=[],
+    # The model catalog is package data (read with importlib.resources).
+    datas=[("exan_sidecar/engine/models.json", "exan_sidecar/engine")],
     hiddenimports=hiddenimports,
     hookspath=[],
     hooksconfig={},

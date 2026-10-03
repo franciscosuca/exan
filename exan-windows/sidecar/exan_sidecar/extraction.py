@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Literal
 
 from .engine.base import EngineError, VisionEngine
+from .engine.builtin_catalog import get_model as get_builtin_model
 from .engine.catalog import OCR, resolve_mode
 from .engine.prompts import ANSWER_SCHEMA, key_prompt, ocr_prompt, participant_prompt
 from .grading import AnswerItem, KeyItem, question_key
@@ -135,10 +136,17 @@ class Extractor:
         if not settings.model:
             raise EngineError("no_model", "Choose a model in the settings first.")
         engine = self.state.engine()
-        mode = resolve_mode(settings.extraction_mode, settings.model)
-        reader = _PageReader(
-            engine, settings.model, mode, settings.max_image_side, settings.extraction_mode == "auto"
-        )
+        if settings.runtime == "builtin":
+            builtin = get_builtin_model(settings.model)
+            if builtin is None:
+                raise EngineError("model_missing", "Choose one of the built-in models in the settings.")
+            # Built-in models use the reading mode and image size they were tested with.
+            reader = _PageReader(engine, builtin.id, builtin.mode, builtin.image_side, allow_fallback=True)
+        else:
+            mode = resolve_mode(settings.extraction_mode, settings.model)
+            reader = _PageReader(
+                engine, settings.model, mode, settings.max_image_side, settings.extraction_mode == "auto"
+            )
         if job.kind == "key":
             await self._read_key(job, reader)
         else:

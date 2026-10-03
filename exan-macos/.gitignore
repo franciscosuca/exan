@@ -37,5 +37,10 @@ __pycache__/
 src-tauri/binaries/*
 !src-tauri/binaries/.gitkeep
 
+# Built-in model runtime (llama.cpp) fetched by `npm run fetch:runtime`, and its download cache
+src-tauri/runtime/*
+!src-tauri/runtime/.gitkeep
+.cache/
+
 # Test output
 coverage/

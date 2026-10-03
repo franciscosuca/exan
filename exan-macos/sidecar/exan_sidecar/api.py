@@ -18,6 +18,8 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 
 from . import __version__
 from .engine.base import EngineError
+from .engine.builtin_catalog import catalog as builtin_catalog
+from .engine.builtin_catalog import get_model as get_builtin_model
 from .engine.catalog import catalog_view
 from .errors import ApiError
 from .export import export_csv
@@ -209,6 +211,10 @@ def create_app(state: AppState) -> FastAPI:
             raise ApiError(422, "invalid_settings", f"{field}: {first.get('msg', 'invalid value')}") from exc
         except ValueError as exc:
             raise ApiError(422, "invalid_settings", str(exc)) from exc
+        # Free the memory of a built-in model that is no longer used.
+        loaded = state.llama.model_id
+        if loaded and (settings.runtime != "builtin" or settings.model != loaded):
+            await state.llama.stop()
         return settings.model_dump()
 
     # -- runtime --------------------------------------------------------------------
@@ -229,11 +235,41 @@ def create_app(state: AppState) -> FastAPI:
     async def catalog() -> list[dict[str, Any]]:
         return catalog_view()
 
+    @api.get("/models")
+    async def builtin_models() -> list[dict[str, Any]]:
+        """Models of the built-in runtime with their download state."""
+        return [
+            {
+                **model.view(),
+                "installed": state.models.is_installed(model),
+                "downloaded_bytes": state.models.downloaded_bytes(model),
+            }
+            for model in builtin_catalog()
+        ]
+
+    @api.delete("/models/{model_id}")
+    async def delete_builtin_model(model_id: str) -> list[dict[str, Any]]:
+        model = get_builtin_model(model_id)
+        if model is None:
+            raise ApiError(404, "model_not_found", "This model is not one of Exan's built-in models.")
+        if state.pull.running_model() == model.id:
+            raise ApiError(409, "pull_running", "Cancel the download of this model first.")
+        if state.llama.model_id == model.id:
+            await state.llama.stop()
+        state.models.delete(model)
+        return await builtin_models()
+
     @api.post("/runtime/pull")
     async def start_pull(body: PullIn) -> dict[str, Any]:
-        if state.settings.get().runtime != "ollama":
-            raise ApiError(400, "unsupported", "Downloading models is only available with Ollama.")
-        if not _MODEL_NAME.match(body.model):
+        runtime = state.settings.get().runtime
+        if runtime == "builtin":
+            if get_builtin_model(body.model) is None:
+                raise ApiError(422, "invalid_model", "This is not one of Exan's built-in models.")
+        elif runtime != "ollama":
+            raise ApiError(
+                400, "unsupported", "Download models in the model server app (for example LM Studio)."
+            )
+        elif not _MODEL_NAME.match(body.model):
             raise ApiError(422, "invalid_model", "This is not a valid model name.")
         state.pull.start(body.model)
         return state.pull.view()

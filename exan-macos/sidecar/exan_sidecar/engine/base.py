@@ -89,7 +89,7 @@ class RuntimeStatus:
             "version": self.version,
             "models": [m.view() for m in self.models],
             "error": self.error.view() if self.error else None,
-            "can_pull": self.kind == "ollama",
+            "can_pull": self.kind in ("ollama", "builtin"),
         }
 
 

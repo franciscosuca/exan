@@ -124,3 +124,12 @@ def test_summarize() -> None:
     assert stats["best"] == 100.0 and stats["worst"] == 50.0
     assert [q["rate"] for q in stats["questions"]] == [100.0, 50.0]
     assert summarize(key, [])["average"] is None
+
+
+def test_fill_in_lines_count_as_blank() -> None:
+    from exan_sidecar.grading import is_blank, normalize_answer
+
+    for blank in ("_____", "........", "- - -", "—"):
+        assert is_blank(normalize_answer(blank)), blank
+    assert not is_blank(normalize_answer("0,5"))
+    assert check_answer("Paris", "_____").verdict == "missing"

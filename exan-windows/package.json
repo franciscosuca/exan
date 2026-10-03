@@ -9,10 +9,11 @@
     "node": ">=22"
   },
   "scripts": {
-    "setup": "node scripts/sidecar-task.mjs setup && node scripts/build-sidecar.mjs",
-    "start": "node scripts/build-sidecar.mjs --if-needed && tauri dev",
-    "package": "node scripts/build-sidecar.mjs && tauri build",
+    "setup": "node scripts/sidecar-task.mjs setup && node scripts/build-sidecar.mjs && node scripts/fetch-runtime.mjs",
+    "start": "node scripts/build-sidecar.mjs --if-needed && node scripts/fetch-runtime.mjs --if-needed && tauri dev",
+    "package": "node scripts/build-sidecar.mjs && node scripts/fetch-runtime.mjs --if-needed && tauri build",
     "build:sidecar": "node scripts/build-sidecar.mjs",
+    "fetch:runtime": "node scripts/fetch-runtime.mjs",
     "dev": "vite",
     "dev:engine": "node scripts/sidecar-task.mjs dev",
     "dev:browser": "vite --mode browser",

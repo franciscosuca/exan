@@ -7,19 +7,21 @@ reads the ``EXAN_PORT=<port>`` line from stdout and sends the secret as a bearer
 from __future__ import annotations
 
 import argparse
+import contextlib
 import logging
 import os
 import socket
 import sys
 import threading
 import time
+from collections.abc import Callable
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import TextIO
 
 import uvicorn
 
-from . import __version__
+from . import __version__, cli
 from .config import ConfigError, RuntimeConfig
 
 log = logging.getLogger("exan_sidecar")
@@ -51,7 +53,9 @@ def setup_logging(log_dir: Path) -> None:
         logging.getLogger(noisy).setLevel(logging.WARNING)
 
 
-def watch_stdin(server: uvicorn.Server, stream: TextIO | None = None) -> threading.Thread:
+def watch_stdin(
+    server: uvicorn.Server, stream: TextIO | None = None, *, on_exit: Callable[[], None] | None = None
+) -> threading.Thread:
     """Stop when the desktop shell says so or disappears (stdin closes)."""
     source = stream if stream is not None else sys.stdin
 
@@ -66,6 +70,9 @@ def watch_stdin(server: uvicorn.Server, stream: TextIO | None = None) -> threadi
         server.should_exit = True
         time.sleep(FORCED_EXIT_GRACE_SECONDS)
         log.warning("Forcing exit after the shutdown grace period")
+        if on_exit is not None:
+            with contextlib.suppress(Exception):
+                on_exit()
         logging.shutdown()
         os._exit(0)
 
@@ -100,10 +107,14 @@ def main(argv: list[str] | None = None) -> int:
     configure_stdio()
     parser = argparse.ArgumentParser(prog="exan-sidecar", description="Local engine of the Exan desktop app.")
     parser.add_argument("--version", action="store_true", help="print the version and exit")
+    subparsers = parser.add_subparsers(dest="command")
+    cli.add_parser(subparsers)
     args = parser.parse_args(argv)
     if args.version:
         print(__version__)
         return 0
+    if args.command == "models":
+        return cli.run(args)
 
     try:
         config = RuntimeConfig.from_env()
@@ -140,10 +151,11 @@ def main(argv: list[str] | None = None) -> int:
         )
     )
     if config.watch_stdin:
-        watch_stdin(server)
+        watch_stdin(server, on_exit=state.llama.stop_now)
     log.info("Exan engine %s listening on %s:%s", __version__, config.host, port)
     print(f"EXAN_PORT={port}", flush=True)
     server.run(sockets=[sock])
+    state.llama.stop_now()
     log.info("Exan engine stopped")
     return 0
 

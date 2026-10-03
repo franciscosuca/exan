@@ -101,7 +101,11 @@ _BLANK = {
 
 
 def is_blank(normalized: str) -> bool:
-    return normalized in _BLANK
+    # Lines of underscores, dots or dashes are empty answer lines that an OCR model transcribed.
+    return normalized in _BLANK or bool(_FILLER_ONLY.fullmatch(normalized))
+
+
+_FILLER_ONLY = re.compile(r"[\s_.\-–—…·]+")
 
 
 def strip_accents(text: str) -> str:

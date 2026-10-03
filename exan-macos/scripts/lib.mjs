@@ -1,6 +1,7 @@
 // Shared helpers for the build scripts. Plain Node (no dependencies) so they run on macOS and Windows.
 import { spawnSync } from "node:child_process";
 import { existsSync } from "node:fs";
+import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import process from "node:process";
 import { fileURLToPath } from "node:url";
@@ -76,4 +77,12 @@ export function targetTriple(explicit) {
   const host = info?.split("\n").find((line) => line.startsWith("host:"));
   if (!host) fail("rustc was not found. Install Rust from https://rustup.rs and open a new terminal.");
   return host.slice("host:".length).trim();
+}
+
+/** Models folder of the desktop app (Tauri app_local_data_dir/models), shared with browser dev mode. */
+export function desktopModelsDir() {
+  const id = "com.exan.desktop";
+  if (isWindows) return join(process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local"), id, "models");
+  if (process.platform === "darwin") return join(homedir(), "Library", "Application Support", id, "models");
+  return join(process.env.XDG_DATA_HOME || join(homedir(), ".local", "share"), id, "models");
 }

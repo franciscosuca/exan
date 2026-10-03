@@ -84,10 +84,12 @@ jobs:
           cargo clippy --all-targets --locked -- -D warnings
           cargo test --locked
 
-      - name: Smoke test the bundled engine
+      - name: Smoke test the bundled engine and model runtime
         run: |
           app="src-tauri/target/release/bundle/macos/Exan.app"
           "$app/Contents/MacOS/exan-sidecar" --version
+          "$app/Contents/MacOS/exan-sidecar" models list
+          "$app/Contents/Resources/runtime/llama-server" --version
           codesign --verify --deep --strict --verbose=2 "$app"
 
       - uses: actions/upload-artifact@v4

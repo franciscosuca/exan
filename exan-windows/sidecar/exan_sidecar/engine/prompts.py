@@ -70,9 +70,16 @@ def participant_prompt(questions: Sequence[str] = ()) -> str:
 
 def ocr_prompt(model: str) -> str:
     """Prompt for OCR-specialised models that transcribe pages instead of following JSON instructions."""
+    from .builtin_catalog import get_model
+
+    builtin = get_model(model)
+    if builtin is not None and builtin.prompt:
+        return builtin.prompt
     lowered = model.lower()
     if "deepseek-ocr" in lowered:
         return "Free OCR."
+    if "paddleocr" in lowered:
+        return "OCR:"
     if "granite-docling" in lowered or "docling" in lowered:
         return "Convert this page to docling."
     return (

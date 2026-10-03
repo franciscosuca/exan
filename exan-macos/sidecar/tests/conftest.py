@@ -95,7 +95,7 @@ def engine() -> FakeEngine:
 @pytest.fixture
 def state(tmp_path: Path, engine: FakeEngine) -> AppState:
     app_state = AppState(make_config(tmp_path), engine_factory=lambda kind, url, timeout: engine)
-    app_state.settings.update({"model": "qwen2.5vl:3b"})
+    app_state.settings.update({"runtime": "ollama", "model": "qwen2.5vl:3b"})
     return app_state
 
 

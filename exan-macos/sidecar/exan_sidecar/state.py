@@ -10,6 +10,8 @@ from typing import Any, Literal
 
 from .config import RuntimeConfig, SettingsStore
 from .engine.base import EngineError, VisionEngine, create_engine
+from .engine.llamacpp import BuiltinEngine, LlamaServer
+from .engine.model_store import ModelStore
 from .errors import ApiError
 from .extraction import Extractor
 from .images import ImageError, prepare_upload
@@ -22,7 +24,7 @@ EngineFactory = Callable[[str, str, float], VisionEngine]
 
 
 class PullManager:
-    """Downloads one Ollama model at a time and exposes its progress."""
+    """Downloads one model at a time (built-in model or Ollama pull) and exposes its progress."""
 
     def __init__(self, state: AppState) -> None:
         self.state = state
@@ -47,6 +49,9 @@ class PullManager:
             "total": None,
         }
         self._task = asyncio.create_task(self._run(model), name="exan-pull")
+
+    def running_model(self) -> str | None:
+        return self._status.get("model") if self.running else None
 
     async def _run(self, model: str) -> None:
         engine = self.state.engine()
@@ -85,17 +90,22 @@ class AppState:
         self.config = config
         self.settings = SettingsStore(config.data_dir / "settings.json")
         self.session = Session()
+        self.models = ModelStore(config.model_root)
+        self.llama = LlamaServer(config.runtime_dir, config.log_dir, config.data_dir)
         self.extractor = Extractor(self)
         self.pull = PullManager(self)
         self.phone = PhoneBridge(self)
-        self._engine_factory: EngineFactory = engine_factory or (
-            lambda kind, url, timeout: create_engine(kind, url, timeout)
-        )
+        self._engine_factory: EngineFactory = engine_factory or self._default_engine
         self._engine: VisionEngine | None = None
         self._engine_key: tuple[str, str, int] | None = None
         self._retired: list[VisionEngine] = []
 
     # -- engine ---------------------------------------------------------------
+    def _default_engine(self, kind: str, url: str, timeout: float) -> VisionEngine:
+        if kind == "builtin":
+            return BuiltinEngine(self.models, self.llama, timeout=timeout)
+        return create_engine(kind, url, timeout)
+
     def engine(self) -> VisionEngine:
         settings = self.settings.get()
         key = (settings.runtime, settings.runtime_url(), settings.request_timeout)
@@ -122,6 +132,7 @@ class AppState:
                     await engine.aclose()
         self._retired.clear()
         self._engine = None
+        await self.llama.stop()
 
     # -- views ------------------------------------------------------------------
     def session_view(self) -> dict[str, Any]:

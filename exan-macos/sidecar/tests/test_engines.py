@@ -160,8 +160,9 @@ async def test_openai_compatible_with_schema_fallback() -> None:
             )
         body = json.loads(request.content)
         seen.append(body)
-        image = body["messages"][0]["content"][1]["image_url"]["url"]
+        image = body["messages"][0]["content"][0]["image_url"]["url"]
         assert image.startswith("data:image/jpeg;base64,")
+        assert body["messages"][0]["content"][1] == {"type": "text", "text": "p"}
         if "response_format" in body:
             return httpx.Response(400, json={"error": {"message": "response_format is not supported"}})
         return httpx.Response(

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from exan_sidecar.parsing import ParsedSheet, parse_model_output, parse_text, sheet_from_json
@@ -91,3 +93,69 @@ def test_merge_prefers_first_non_blank() -> None:
 def test_garbage_gives_nothing() -> None:
     assert parse_model_output("I cannot read this image.").answers == []
     assert parse_model_output("").answers == []
+
+
+# -- Output of the built-in OCR models (recorded from real runs on photographed test sheets) ------
+
+FIXTURES = Path(__file__).with_name("fixtures")
+SHEET = ["1", "2", "3", "4", "5", "6"]
+
+
+@pytest.mark.parametrize(
+    ("fixture", "name", "answers"),
+    [
+        ("paddle-key", "", ["B", "A, C", "wahr", "0,7", "Photosynthese", "Paris"]),
+        ("paddle-ben", "Ben Müller", ["A", "A", "falsch", "0,25", "Photosynthese", ""]),
+        ("paddle-carla", "Carla Rossi", ["B", "A,C", "wahr", "0.7", "Photosynthese", "Paris"]),
+        ("granite-anna", "Anna Schmiadt", ["B", "C, A", "richtig", "0.7", "Fotosynthese", "Paris"]),
+        # granite-docling looped on this page: only Q2 was read, the loop residue must not become answers.
+        ("granite-key", "", ["", "A, C", "", "", "", ""]),
+    ],
+)
+def test_recorded_ocr_output(fixture: str, name: str, answers: list[str]) -> None:
+    sheet = parse_model_output((FIXTURES / f"ocr-{fixture}.txt").read_text(encoding="utf-8"))
+    assert sheet.name == name
+    assert [q for q, _ in sheet.answers] == SHEET
+    assert [a for _, a in sheet.answers] == answers
+
+
+def test_answer_labels_beat_the_printed_question_text() -> None:
+    text = (
+        "1. Welche Stadt ist die Hauptstadt? (z.B. 0,7)\nAntwort:\nParis\n"
+        "2. Wie viel ist 1/2 + 1/4?  Antwort: \\(\\frac{3}{4}\\)\n"
+        "3. Was ist H2O?\n   Answer - $water$\n"
+        "4. Leer gelassen\nAntwort: ........\n"
+    )
+    assert parse_text(text).answers == [("1", "Paris"), ("2", "3/4"), ("3", "water"), ("4", "")]
+
+
+def test_plain_answer_lists_still_work() -> None:
+    assert parse_text("1. B\n2. A, C\n3) 0,7").answers == [("1", "B"), ("2", "A, C"), ("3", "0,7")]
+    assert parse_text("1-B, 2-C, 3-A").answers == [("1", "B"), ("2", "C"), ("3", "A")]
+    # The 7 of a decimal comma is not the start of question 7.
+    assert parse_text("3. Anteil (z.B. 0,7)").answers == [("3", "Anteil (z.B. 0,7)")]
+
+
+def test_doctags_lines_are_rebuilt_from_boxes() -> None:
+    text = (
+        "<doctag><text><loc_36><loc_93><loc_409><loc_100>1. Frage eins</text>"
+        "<text><loc_48><loc_105><loc_82><loc_113>Antwort:</text>"
+        "<text><loc_36><loc_145><loc_319><loc_152>2. Frage zwei</text>"
+        "<text><loc_48><loc_157><loc_82><loc_165>Antwort:</text>"
+        "<checkbox_selected><loc_300><loc_200><loc_360><loc_210>C) Forelle</checkbox_selected>"
+        # handwriting listed after the printed text, on the lines of the labels:
+        "<text><loc_102><loc_104><loc_120><loc_114>B</text>"
+        "<text><loc_102><loc_156><loc_150><loc_166>Paris</text>"
+        "<text><loc_102><loc_156><loc_150><loc_166>Paris</text>"
+        "</doctag>"
+    )
+    from exan_sidecar.parsing import doctags_to_text
+
+    assert doctags_to_text(text).splitlines() == [
+        "1. Frage eins",
+        "Antwort: B",
+        "2. Frage zwei",
+        "Antwort: Paris",
+        "\u2611 C) Forelle",
+    ]
+    assert parse_text(text).answers == [("1", "B"), ("2", "Paris")]

@@ -243,7 +243,8 @@ _NAME_LINE = re.compile(
     r"schüler(?:in)?|teilnehmer(?:in)?|alumno|alumna)(?:\*\*)?\s*[:\-–]\s*(?:\*\*)?\s*(?P<name>.+?)\s*$",
     re.I,
 )
-_INLINE_MARKER = re.compile(rf"(?:(?<=^)|(?<=[\s,;|]))({_Q})\s*[.):=\-](?!\d)", re.I)
+# A marker starts a list item such as "2-C" in "1-B, 2-C"; the 7 in a decimal like "0,7)" is not one.
+_INLINE_MARKER = re.compile(rf"(?:(?<=^)|(?<=[\s,;|]))(?<!\d,)({_Q})\s*[.):=\-](?!\d)", re.I)
 _ANSWER_PREFIX = re.compile(
     r"^(?:answer|antwort|respuesta|réponse|reponse|lösung|loesung|solution)\s*[:\-]\s*", re.I
 )
@@ -268,6 +269,9 @@ def _html_tables_to_rows(text: str) -> str:
 
 # DocTags (granite-docling) and other markup that OCR models emit around the text.
 _DOCTAG_LOCATION = re.compile(r"<loc_\d+>")
+_DOCTAG_BOX = re.compile(r"<loc_(\d+)><loc_(\d+)><loc_(\d+)><loc_(\d+)>")
+_DOCTAG_OPEN = re.compile(r"<([a-z_0-9]+)>\s*$")
+_UNFINISHED_TAG = re.compile(r"<[^<>]*$")
 _OTSL_CELL = re.compile(r"<(?:fcel|ecel|ched|rhed|srow|lcel|ucel|xcel)>")
 _BLOCK_END = re.compile(
     r"<br\s*/?>|</(?:p|div|li|text|list_item|title|caption|doctag|otsl|section_header(?:_level_\d)?)>", re.I
@@ -285,6 +289,107 @@ def _strip_markup(text: str) -> str:
     return html.unescape(_GENERIC_TAG.sub("", text))
 
 
+def _same_line(top: int, bottom: int, other_top: int, other_bottom: int) -> bool:
+    heights = sorted((max(1, bottom - top), max(1, other_bottom - other_top)))
+    overlap = min(bottom, other_bottom) - max(top, other_top)
+    # Only text of similar height forms a line; a tall table or paragraph never swallows a word.
+    return overlap > heights[0] / 2 and heights[1] <= 3 * heights[0]
+
+
+def doctags_to_text(text: str) -> str:
+    """Rebuild reading lines from DocTags element boxes.
+
+    granite-docling emits every element with its box (``<loc_x0><loc_y0><loc_x1><loc_y1>``) and often lists
+    handwritten words after all printed text. Each element joins an earlier line it shares (keeping the
+    model's reading order), which puts "Antwort:" and the handwriting next to it back together.
+    """
+    boxes = list(_DOCTAG_BOX.finditer(text))
+    if not boxes:
+        return text
+    text = _UNFINISHED_TAG.sub("", text)  # output cut off by the token limit
+    rows: list[list[tuple[int, int, int, str]]] = []
+    for index, box in enumerate(boxes):
+        end = boxes[index + 1].start() if index + 1 < len(boxes) else len(text)
+        body = _strip_markup(text[box.end() : end])
+        lines = [" ".join(line.split()) for line in body.splitlines()]
+        body = "\n".join(line for line in lines if line)
+        if not body:
+            continue
+        opener = _DOCTAG_OPEN.search(text[max(0, box.start() - 40) : box.start()])
+        if opener and opener.group(1) == "checkbox_selected":
+            body = "☑ " + body
+        elif opener and opener.group(1) == "checkbox_unselected":
+            body = "☐ " + body
+        x0, y0, _x1, y1 = (int(value) for value in box.groups())
+        element = (x0, y0, y1, body)
+        target = None
+        if "\n" not in body:  # tables and multi-line blocks stay on their own
+            for row in rows:
+                if "\n" in row[0][3]:
+                    continue
+                if _same_line(min(e[1] for e in row), max(e[2] for e in row), y0, y1):
+                    target = row
+                    break
+        if target is None:
+            rows.append([element])
+        elif all(e[3] != body for e in target):  # small models sometimes repeat the same word many times
+            target.append(element)
+    # A generation loop ("A C B D E F ...") shows up as many one- or two-letter fragments on a line;
+    # they are noise, while a real single-letter answer such as "B" stands alone next to its label.
+    cleaned_rows: list[list[tuple[int, int, int, str]]] = []
+    for row in rows:
+        if sum(len(e[3]) <= 2 for e in row) >= 4:
+            row = [e for e in row if len(e[3]) > 2]
+        if row:
+            cleaned_rows.append(row)
+    return "\n".join(" ".join(e[3] for e in sorted(row, key=lambda e: e[0])) for row in cleaned_rows)
+
+
+# LaTeX that OCR models (PaddleOCR-VL, ...) put around underlined or mathematical answers.
+_LATEX_COMMAND = re.compile(
+    r"\\(?:underline|uline|text|textbf|textit|textrm|textsf|mathrm|mathbf|mathit|mathsf|overline|"
+    r"boxed|emph|operatorname|mbox|hbox)\s*\{([^{}]*)\}"
+)
+_LATEX_FRACTION = re.compile(r"\\[dt]?frac\s*\{([^{}]*)\}\s*\{([^{}]*)\}")
+_LATEX_MATH = re.compile(r"\\\((.*?)\\\)|\\\[(.*?)\\\]|\$\$(.+?)\$\$|\$([^$\n]+?)\$", re.S)
+_LATEX_SYMBOLS = {
+    r"\times": "×",
+    r"\cdot": "·",
+    r"\checkmark": "✓",
+    r"\quad": " ",
+    r"\qquad": " ",
+    r"\_": "_",
+    r"\%": "%",
+    r"\&": "&",
+    r"\#": "#",
+    r"\,": " ",
+    r"\;": " ",
+    r"\:": " ",
+    r"\ ": " ",
+}
+
+
+def _strip_latex(text: str) -> str:
+    if "\\" not in text and "$" not in text:
+        return text
+    text = _LATEX_MATH.sub(lambda m: next(g for g in m.groups() if g is not None), text)
+    previous = None
+    while previous != text:
+        previous = text
+        text = _LATEX_FRACTION.sub(r"\1/\2", _LATEX_COMMAND.sub(r"\1", text))
+    for command, replacement in _LATEX_SYMBOLS.items():
+        text = text.replace(command, replacement)
+    return text
+
+
+# Lines of underscores, dots or dashes are empty answer lines, not answers.
+_FILLER = re.compile(r"[\s_.\-–—…·]*")
+
+
+def _is_filler(text: str) -> bool:
+    return bool(_FILLER.fullmatch(text))
+
+
 def _resolve_checkboxes(answer: str) -> str:
     checked = _CHECKED.findall(answer)
     if checked:
@@ -296,7 +401,13 @@ def _clean_answer(answer: str) -> str:
     answer = _ANSWER_PREFIX.sub("", answer.strip().lstrip("|").strip())
     answer = answer.strip().strip("*_").strip()
     answer = _resolve_checkboxes(answer)
-    return answer.rstrip(",;|").strip()
+    answer = answer.rstrip(",;|").strip()
+    return "" if _is_filler(answer) else answer
+
+
+def _clean_name(name: str) -> str:
+    name = name.strip().strip("*_").strip()
+    return "" if _is_filler(name) else name
 
 
 def _table_row(line: str) -> tuple[str, str] | None:
@@ -336,12 +447,63 @@ def _is_structural(line: str) -> bool:
     return bool(_LINE.match(line) or _NAME_LINE.match(line) or _table_row(line))
 
 
+_INLINE_LABEL = re.compile(
+    r"(?:^|(?<=\s))(?:answer|antwort|respuesta|réponse|reponse|lösung|loesung|solution)\s*[:\-–]\s*", re.I
+)
+
+
+def _labelled_answer(rest: str, lines: list[str], index: int) -> tuple[str | None, int]:
+    """Answer marked with a label ("Antwort: B") on the question line or below it, before the next question.
+
+    OCR models transcribe the printed question as well, so the text after the label is the answer.
+    Returns (answer or None, index of the first line not consumed).
+    """
+    inline = list(_INLINE_LABEL.finditer(rest))
+    if inline:
+        return _clean_answer(rest[inline[-1].end() :]), index
+    look = index
+    while look < len(lines):
+        candidate = lines[look].strip()
+        if candidate and _is_structural(candidate):
+            break
+        label = _ANSWER_PREFIX.match(candidate)
+        if label:
+            answer, consumed = candidate[label.end() :].strip(), look + 1
+            if not answer:
+                following = look + 1
+                while following < len(lines) and not lines[following].strip():
+                    following += 1
+                if following < len(lines):
+                    nxt = lines[following].strip()
+                    if not _is_structural(nxt) and not _ANSWER_PREFIX.match(nxt):
+                        answer, consumed = nxt, following + 1
+            return _clean_answer(answer), consumed
+        look += 1
+    return None, index
+
+
+def _without_repeats(lines: list[str]) -> list[str]:
+    """Drop a line that repeats the previous non-empty line (small models sometimes loop)."""
+    result: list[str] = []
+    previous = None
+    for line in lines:
+        stripped = line.strip()
+        if stripped and stripped == previous:
+            continue
+        if stripped:
+            previous = stripped
+        result.append(line)
+    return result
+
+
 def parse_text(text: str) -> ParsedSheet:
     """Parse free text such as "1. B", "2) Paris", markdown/HTML tables or "1-B, 2-C"."""
     sheet = ParsedSheet()
-    lines = [
-        line.rstrip() for line in _strip_markup(_html_tables_to_rows(strip_reasoning(text))).splitlines()
-    ]
+    source = strip_reasoning(text)
+    if "<loc_" in source:
+        source = doctags_to_text(source)
+    cleaned = _strip_latex(_strip_markup(_html_tables_to_rows(source)))
+    lines = _without_repeats([line.rstrip() for line in cleaned.splitlines()])
     pairs: list[tuple[str, str]] = []
     index = 0
     while index < len(lines):
@@ -350,18 +512,26 @@ def parse_text(text: str) -> ParsedSheet:
         if not line:
             continue
         if not sheet.name and (name_match := _NAME_LINE.match(line)):
-            sheet.name = name_match.group("name").strip().strip("*_").strip()
+            sheet.name = _clean_name(name_match.group("name"))
             continue
         if row := _table_row(line):
             pairs.append(row)
             continue
+        match = _LINE.match(line)
+        if match:
+            # An explicit answer label wins over every other reading of a question line.
+            labelled, after = _labelled_answer(match.group("a") or "", lines, index)
+            if labelled is not None:
+                pairs.append((match.group("q"), labelled))
+                index = after
+                continue
         if inline := _inline_pairs(line):
             pairs.extend(inline)
             continue
-        match = _LINE.match(line)
         if not match:
             continue
-        question, answer = match.group("q"), _clean_answer(match.group("a") or "")
+        question = match.group("q")
+        answer = _clean_answer(match.group("a") or "")
         if not answer:
             compact = re.fullmatch(r"(\d{1,3})([a-h])", question, re.I)
             if compact and index < len(lines) and _LINE.match(lines[index].strip() or "x"):

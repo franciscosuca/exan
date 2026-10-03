@@ -34,7 +34,7 @@ def test_runtime_config_from_env(tmp_path: Path) -> None:
 def test_settings_store_recovers_from_bad_files(tmp_path: Path) -> None:
     path = tmp_path / "settings.json"
     path.write_text("{not json", encoding="utf-8")
-    assert SettingsStore(path).get().runtime == "ollama"
+    assert SettingsStore(path).get().runtime == "builtin"  # default: the built-in runtime
 
     path.write_text(json.dumps({"model": "gemma3:4b", "max_image_side": 1, "language": "en", "legacy": True}))
     settings = SettingsStore(path).get()

@@ -22,14 +22,18 @@ class OpenAICompatEngine:
         timeout: float = 300,
         transport: httpx.AsyncBaseTransport | None = None,
         max_tokens: int = 4096,
+        api_key: str | None = None,
+        options: dict[str, Any] | None = None,
     ) -> None:
         self.base_url = base_url.rstrip("/")
         self.max_tokens = max_tokens
+        self.options = dict(options or {})
         self._client = httpx.AsyncClient(
             base_url=self.base_url,
             timeout=httpx.Timeout(timeout, connect=5.0),
             transport=transport,
             trust_env=False,
+            headers={"Authorization": f"Bearer {api_key}"} if api_key else None,
         )
         self._schema_unsupported: set[str] = set()
 
@@ -63,6 +67,7 @@ class OpenAICompatEngine:
     async def complete(self, *, model: str, prompt: str, image_jpeg: bytes, schema: dict | None) -> str:
         image_url = "data:image/jpeg;base64," + base64.b64encode(image_jpeg).decode("ascii")
         payload: dict[str, Any] = {
+            **self.options,
             "model": model,
             "temperature": 0,
             "max_tokens": self.max_tokens,
@@ -70,9 +75,10 @@ class OpenAICompatEngine:
             "messages": [
                 {
                     "role": "user",
+                    # Image first: OCR models are trained on "<image> prompt" and read worse otherwise.
                     "content": [
-                        {"type": "text", "text": prompt},
                         {"type": "image_url", "image_url": {"url": image_url}},
+                        {"type": "text", "text": prompt},
                     ],
                 }
             ],

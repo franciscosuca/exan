@@ -33,11 +33,14 @@
     ],
     "category": "Education",
     "shortDescription": "Correct exams locally with small vision models",
-    "longDescription": "Exan compares the answer key with the answers of each participant. Photos are read by a small vision/OCR model running on this PC (Ollama or LM Studio); nothing is uploaded to the internet.",
+    "longDescription": "Exan compares the answer key with the answers of each participant. Photos are read by a small OCR or vision model that runs on this PC (built in, or Ollama / LM Studio); nothing is uploaded to the internet. The model is downloaded once, after you agree.",
     "copyright": "Exan contributors",
     "externalBin": [
       "binaries/exan-sidecar"
     ],
+    "resources": {
+      "runtime/*": "runtime/"
+    },
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",

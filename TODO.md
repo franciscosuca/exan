@@ -3,7 +3,8 @@
 ## Miscellaneous
 
 - [x] Test macOs tauri
-- [ ] merge web/macOs/windows
+- [x] merge web/macOs/windows
+- [ ] Clean Docs/misc, Docs/scanning, and Docs/refactory
 
 ## Enhance comparison results
 

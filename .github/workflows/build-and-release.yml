@@ -58,21 +58,21 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('webapp/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('exan-web/webapp/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
       - name: Install dependencies
         run: bun install --frozen-lockfile
-        working-directory: webapp
+        working-directory: exan-web/webapp
 
       - name: Run tests (if any)
         run: bun run test
-        working-directory: webapp
+        working-directory: exan-web/webapp
 
       - name: Build web application
         run: bun run build
-        working-directory: webapp
+        working-directory: exan-web/webapp
 
       - name: Semantic Release
         env:

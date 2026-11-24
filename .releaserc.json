@@ -46,13 +46,14 @@
     [
       "@semantic-release/npm",
       {
-        "npmPublish": false
+        "npmPublish": false,
+        "pkgRoot": "exan-web"
       }
     ],
     [
       "@semantic-release/git",
       {
-        "assets": ["CHANGELOG.md", "package.json", "package-lock.json", "webapp/bun.lock"],
+        "assets": ["CHANGELOG.md", "exan-web/package.json", "exan-web/package-lock.json", "exan-web/webapp/bun.lock"],
         "message": "chore(release): ${nextRelease.version}\n\n${nextRelease.notes}"
       }
     ],

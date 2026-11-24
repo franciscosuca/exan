@@ -1,0 +1,122 @@
+{
+  "_comment": "Models Exan downloads (with the user's consent) and runs with its built-in llama.cpp runtime. Every file is pinned to a repository revision and checked with SHA-256 after download. scripts/installer-models.mjs turns this list into the model page of the Windows installer.",
+  "models": [
+    {
+      "id": "granite-docling-258m",
+      "label": "Granite-Docling 258M",
+      "vendor": "IBM",
+      "params": "258M",
+      "mode": "ocr",
+      "recommended": true,
+      "license": "Apache-2.0",
+      "homepage": "https://huggingface.co/ibm-granite/granite-docling-258M",
+      "min_ram_gb": 4,
+      "prompt": "Convert this page to docling.",
+      "image_side": 2048,
+      "max_tokens": 2048,
+      "ctx_size": 8192,
+      "sampling": { "dry_multiplier": 0.8, "dry_allowed_length": 3 },
+      "summary": { "en": "Smallest and fastest; best with printed or typed answers", "de": "Am kleinsten und schnellsten; am besten bei gedruckten Antworten" },
+      "notes": {
+        "en": "Smallest and fastest. Reads printed and typed answers well, but often misses short handwritten answers.",
+        "de": "Am kleinsten und schnellsten. Liest gedruckte und getippte Antworten gut, übersieht aber oft kurze handschriftliche Antworten."
+      },
+      "files": [
+        {
+          "role": "model",
+          "repo": "ggml-org/granite-docling-258M-GGUF",
+          "revision": "684c1800c5fbd614e29b4d1a82177e6c122af1f3",
+          "path": "granite-docling-258M-Q8_0.gguf",
+          "size": 177918144,
+          "sha256": "b687245c212b59da938e411e2d4485596cbaeed1ae52706582ac38ed6a970f76"
+        },
+        {
+          "role": "mmproj",
+          "repo": "ggml-org/granite-docling-258M-GGUF",
+          "revision": "684c1800c5fbd614e29b4d1a82177e6c122af1f3",
+          "path": "mmproj-granite-docling-258M-Q8_0.gguf",
+          "size": 103769792,
+          "sha256": "3d440e65a91e640dc0a53897ad7897700c39324802aaff2072232b6f21d0cadb"
+        }
+      ]
+    },
+    {
+      "id": "paddleocr-vl-1.6",
+      "label": "PaddleOCR-VL 1.6",
+      "vendor": "PaddlePaddle",
+      "params": "0.9B",
+      "mode": "ocr",
+      "recommended": false,
+      "license": "Apache-2.0",
+      "homepage": "https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6",
+      "min_ram_gb": 6,
+      "prompt": "OCR:",
+      "image_side": 1600,
+      "max_tokens": 4096,
+      "ctx_size": 8192,
+      "sampling": {},
+      "summary": { "en": "Small OCR model that also reads handwriting", "de": "Kleines OCR-Modell, liest auch Handschrift" },
+      "notes": {
+        "en": "Small OCR model that also reads handwriting. It copies exactly what is written, which suits grading.",
+        "de": "Kleines OCR-Modell, das auch Handschrift liest. Es übernimmt genau das Geschriebene, was zum Korrigieren passt."
+      },
+      "files": [
+        {
+          "role": "model",
+          "repo": "PaddlePaddle/PaddleOCR-VL-1.6-GGUF",
+          "revision": "511b09642bb324401f15f97cc23bc67e8f0a291d",
+          "path": "PaddleOCR-VL-1.6-GGUF.gguf",
+          "size": 935769056,
+          "sha256": "f3ae46ec885050acf4b3d31944431e1fd90d50664fb09126af4a3c050ba14ee8"
+        },
+        {
+          "role": "mmproj",
+          "repo": "PaddlePaddle/PaddleOCR-VL-1.6-GGUF",
+          "revision": "511b09642bb324401f15f97cc23bc67e8f0a291d",
+          "path": "PaddleOCR-VL-1.6-GGUF-mmproj.gguf",
+          "size": 881770560,
+          "sha256": "204d757d7610d9b3faab10d506d69e5b244e32bf765e2bab2d0167e65e0a058a"
+        }
+      ]
+    },
+    {
+      "id": "qwen2.5-vl-3b",
+      "label": "Qwen2.5-VL 3B",
+      "vendor": "Qwen (Alibaba Cloud)",
+      "params": "3B",
+      "mode": "structured",
+      "recommended": false,
+      "license": "Qwen Research License (research and evaluation only)",
+      "homepage": "https://huggingface.co/Qwen/Qwen2.5-VL-3B-Instruct",
+      "min_ram_gb": 8,
+      "prompt": "",
+      "image_side": 1600,
+      "max_tokens": 2048,
+      "ctx_size": 8192,
+      "sampling": {},
+      "summary": { "en": "General vision model; licence for research and evaluation only", "de": "Allgemeines Bildmodell; Lizenz nur für Forschung und Erprobung" },
+      "notes": {
+        "en": "General vision model: also understands ticked and circled options. It may write the right answer instead of copying a wrong one.",
+        "de": "Allgemeines Bildmodell: versteht auch angekreuzte und eingekreiste Optionen. Es schreibt manchmal die richtige statt der falschen Antwort."
+      },
+      "files": [
+        {
+          "role": "model",
+          "repo": "ggml-org/Qwen2.5-VL-3B-Instruct-GGUF",
+          "revision": "5037fcf163dd95d1e41d1974465f0898ed108ca2",
+          "path": "Qwen2.5-VL-3B-Instruct-Q4_K_M.gguf",
+          "size": 1929901056,
+          "sha256": "d02fe9b69ad8cadbbd228e387667af66612c44bed29ffc8eb1e7caf9ac486c12"
+        },
+        {
+          "role": "mmproj",
+          "repo": "ggml-org/Qwen2.5-VL-3B-Instruct-GGUF",
+          "revision": "5037fcf163dd95d1e41d1974465f0898ed108ca2",
+          "path": "mmproj-Qwen2.5-VL-3B-Instruct-Q8_0.gguf",
+          "size": 844757728,
+          "sha256": "980c9b2f78c04e6cff93d277ada09e768394f112d75db3b4e9dea8a69f9fb904"
+        }
+      ]
+    }
+  ]
+}

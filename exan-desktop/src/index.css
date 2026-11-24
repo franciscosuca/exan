@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+/* "Technical Monolith" tokens from .github/DESIGN.md: flat surfaces, hairlines, no radius, no shadows. */
+@theme {
+  --font-sans: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --color-surface: #f8f9fa;
+  --color-ink: #000000;
+  --color-muted: #5f5f5f;
+  --color-line: #c6c6c6;
+  --color-accent: #1f41ff;
+  --color-danger: #ba1a1a;
+  --radius-*: initial;
+  --shadow-*: initial;
+}
+
+@utility border-hair {
+  border-width: 0.5px;
+  border-style: solid;
+}
+@utility border-b-hair {
+  border-bottom-width: 0.5px;
+  border-bottom-style: solid;
+}
+@utility border-t-hair {
+  border-top-width: 0.5px;
+  border-top-style: solid;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-surface);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+input,
+select,
+textarea {
+  outline: none;
+}
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+button:focus-visible {
+  outline: 1.5px solid var(--color-accent);
+  outline-offset: 1px;
+}

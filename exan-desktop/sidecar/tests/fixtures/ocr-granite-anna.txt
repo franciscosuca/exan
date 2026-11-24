@@ -1,0 +1,25 @@
+<loc_31><loc_23><loc_126><loc_37>Biologie Test
+<loc_30><loc_43><loc_163><loc_52>Klasse 7b Datum: 02.10.2026
+<loc_31><loc_61><loc_60><loc_71>Name:
+<loc_70><loc_57><loc_183><loc_70>Anna Schmiadt
+<loc_32><loc_92><loc_408><loc_104>1. Welche Organelle betreibt Photosynthese? A) Mitochondrium B) Chloroplast C) Zellkern
+<loc_44><loc_108><loc_79><loc_117>Antwort:
+<loc_94><loc_105><loc_109><loc_116>B
+<loc_32><loc_144><loc_319><loc_154>2. Welche sind Wirbeltiere? (mehrere) A) Frosch B) Biene C) Forelle
+<loc_45><loc_158><loc_81><loc_167>Antwort:
+<loc_94><loc_157><loc_128><loc_168>C, A
+<loc_33><loc_197><loc_318><loc_207>3. Pflanzen geben bei der Photosynthese Sauerstoff ab. (wahr/falsch)
+<loc_46><loc_211><loc_81><loc_220>Antwort:
+<loc_99><loc_208><loc_149><loc_222>richtig
+<loc_32><loc_247><loc_358><loc_257>4. Welcher Anteil der Erde ist ungefahr mit Wasser bedeckt? (als Zahl, 3.0,7)
+
+<loc_47><loc_262><loc_81><loc_271>Antwort:
+<loc_100><loc_260><loc_126><loc_270>0.7
+<loc_37><loc_299><loc_292><loc_309>5. Wie heißt der Prozess, mit dem Pflanzen Zucker herstellen?
+
+<loc_49><loc_313><loc_85><loc_322>Antwort:
+<loc_99><loc_311><loc_194><loc_326>Fotosynthese
+<loc_38><loc_351><loc_163><loc_361>6. Hauptstadt von Frankreich?
+
+<loc_50><loc_365><loc_85><loc_374>Antwort:
+<loc_104><loc_362><loc_144><loc_375>Paris

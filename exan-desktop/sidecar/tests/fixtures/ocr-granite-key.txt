@@ -1,0 +1,95 @@
+<loc_36><loc_22><loc_235><loc_35>Lösungsblatt - Biologie Test
+<loc_36><loc_42><loc_166><loc_49>Klasse 7b · Datum: 02.10.2026
+<loc_36><loc_61><loc_63><loc_69>Name:
+<loc_36><loc_93><loc_409><loc_100>1. Welche Organelle betreibt Photosynthese? A) Mitochondrium B) Chloroplast C) Zellkern
+
+<loc_48><loc_105><loc_82><loc_113>Antwort:
+<loc_36><loc_145><loc_319><loc_152>2. Welche sind Wirbeltiere? (mehrere) A) Frosch B) Biene C) Forelle
+
+<loc_48><loc_157><loc_82><loc_165>Antwort:
+<loc_36><loc_196><loc_317><loc_203>3. Pflanzen geben bei der Photosynthese Sauerstoff ab. (wahr/falsch)
+
+<loc_48><loc_208><loc_82><loc_216>Antwort:
+<loc_36><loc_247><loc_356><loc_254>4. Welcher Anteil der Erde ist ungefähr mit Wasser bedeckt? (als Zahl, 2.B. 0,7)
+
+<loc_48><loc_259><loc_82><loc_267>Antwort:
+<loc_36><loc_298><loc_289><loc_305>5. Wie heißt der Prozess, mit dem Pflanzen Zucker herstellen?
+
+<loc_48><loc_310><loc_82><loc_318>Antwort:
+<loc_36><loc_350><loc_158><loc_357>6. Hauptstadt von Frankreich?
+
+<loc_48><loc_362><loc_82><loc_370>Antwort:
+<loc_102><loc_136><loc_108><loc_144>A
+<loc_108><loc_136><loc_126><loc_144>C
+<loc_102><loc_146><loc_126><loc_155>C
+<loc_126><loc_136><loc_134><loc_144>B
+<loc_134><loc_136><loc_140><loc_144>A
+<loc_140><loc_136><loc_149><loc_144>D
+<loc_149><loc_136><loc_156><loc_144>B
+<loc_156><loc_136><loc_164><loc_144>E
+<loc_164><loc_136><loc_170><loc_144>C
+<loc_170><loc_136><loc_177><loc_144>F
+<loc_177><loc_136><loc_184><loc_144>R
+<loc_184><loc_136><loc_190><loc_144>S
+<loc_190><loc_136><loc_196><loc_144>B
+<loc_196><loc_136><loc_203><loc_144>E
+<loc_203><loc_136><loc_209><loc_144>C
+<loc_209><loc_136><loc_216><loc_144>F
+<loc_216><loc_136><loc_223><loc_144>R
+<loc_223><loc_136><loc_230><loc_144>D
+<loc_230><loc_136><loc_236><loc_144>E
+<loc_236><loc_136><loc_243><loc_144>C
+<loc_243><loc_136><loc_250><loc_144>F
+<loc_250><loc_136><loc_256><loc_144>R
+<loc_256><loc_136><loc_263><loc_144>D
+<loc_263><loc_136><loc_270><loc_144>E
+<loc_270><loc_136><loc_276><loc_144>C
+<loc_276><loc_136><loc_283><loc_144>F
+<loc_283><loc_136><loc_290><loc_144>R
+<loc_290><loc_136><loc_296><loc_144>D
+<loc_296><loc_136><loc_303><loc_144>E
+<loc_303><loc_136><loc_309><loc_144>C
+<loc_309><loc_136><loc_316><loc_144>F
+<loc_316><loc_136><loc_323><loc_144>R
+<loc_323><loc_136><loc_330><loc_144>D
+<loc_330><loc_136><loc_336><loc_144>E
+<loc_336><loc_136><loc_343><loc_144>C
+<loc_343><loc_136><loc_350><loc_144>F
+<loc_350><loc_136><loc_356><loc_144>R
+<loc_356><loc_136><loc_363><loc_144>D
+<loc_363><loc_136><loc_370><loc_144>E
+<loc_370><loc_136><loc_376><loc_144>C
+<loc_376><loc_136><loc_383><loc_144>F
+<loc_383><loc_136><loc_390><loc_144>R
+<loc_390><loc_136><loc_396><loc_144>D
+<loc_396><loc_136><loc_403><loc_144>E
+<loc_403><loc_136><loc_410><loc_144>C
+<loc_410><loc_136><loc_417><loc_144>F
+<loc_417><loc_136><loc_424><loc_144>R
+<loc_424><loc_136><loc_430><loc_144>D
+<loc_430><loc_136><loc_436><loc_144>E
+<loc_436><loc_136><loc_443><loc_144>C
+<loc_443><loc_136><loc_449><loc_144>F
+<loc_449><loc_136><loc_456><loc_144>R
+<loc_456><loc_136><loc_462><loc_144>D
+<loc_462><loc_136><loc_467><loc_144>E
+<loc_467><loc_136><loc_472><loc_144>C
+<loc_472><loc_136><loc_479><loc_144>F
+<loc_36><loc_159><loc_82><loc_167>Antwort:
+<loc_102><loc_157><loc_126><loc_165>A, C
+<loc_126><loc_157><loc_134><loc_164>B
+<loc_134><loc_157><loc_140><loc_164>A
+<loc_140><loc_157><loc_149><loc_164>D
+<loc_149><loc_157><loc_156><loc_164>B
+<loc_156><loc_157><loc_163><loc_164>E
+<loc_163><loc_157><loc_170><loc_164>C
+<loc_170><loc_157><loc_176><loc_164>F
+<loc_176><loc_157><loc_183><loc_164>R
+<loc_183><loc_157><loc_190><loc_164>D
+<loc_190><loc_157><loc_196><loc_164>E
+<loc_196><loc_157><loc_203><loc_164>C
+<loc_203><loc_157><loc_210><loc_164>F
+<loc_210><loc_157><loc_216><loc_164>R
+<loc_216><loc_157><loc_223><loc_164>D
+<loc_223><loc_157><loc_230><loc_164>E
+<loc_

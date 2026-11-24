@@ -30,7 +30,7 @@ The printing press does not remain between the reader and the book after printin
 
 ## Production Build
 
-The webapp uses a multi-stage Docker build in `webapp/Dockerfile`.
+The webapp uses a multi-stage Docker build in `exan-web/webapp/Dockerfile`.
 
 1. Docker creates a temporary build stage from `oven/bun:1`.
 2. Bun installs dependencies from `package.json` and `bun.lock`.

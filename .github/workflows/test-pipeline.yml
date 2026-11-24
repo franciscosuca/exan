@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: webapp
+        working-directory: exan-web/webapp
 
     steps:
       - name: Checkout code
@@ -25,7 +25,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.bun/install/cache
-          key: ${{ runner.os }}-bun-${{ hashFiles('webapp/bun.lock') }}
+          key: ${{ runner.os }}-bun-${{ hashFiles('exan-web/webapp/bun.lock') }}
           restore-keys: |
             ${{ runner.os }}-bun-
 
@@ -42,7 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: inference
+        working-directory: exan-web/inference
 
     steps:
       - name: Checkout code

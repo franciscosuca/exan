@@ -10,12 +10,13 @@ Load this skill explicitly with `/skill:exan-project` when working on Exan. It i
 
 ## Layout and architecture
 
-- `exan-macos/` and `exan-windows/` are parallel Tauri 2 desktop apps. Keep shared source changes mirrored; preserve platform-specific configuration, i18n text, README and workflows.
+- There is one desktop product: `exan-desktop/` is a single Tauri 2 app that builds for macOS (`aarch64-apple-darwin`, `x86_64-apple-darwin`) and Windows (`x86_64-pc-windows-msvc`) from the same source. Do NOT fork it per OS; keep one `src/`, one `src-tauri/`, one `sidecar/`. Per-OS differences live only in bundle config (`src-tauri/tauri.macos.conf.json` / `tauri.windows.conf.json`), NSIS hooks (`src-tauri/windows/`), two i18n strings, packaging scripts and READMEs.
+- The cloud product is `exan-web/` (webapp, auth, inference, db, terraform, Dockerfile.auth, deployment docs). Root holds only cross-cutting docs, `test/`, CI, and the product folders.
 - UI: `src/` (React/Vite). Setup and model management: `src/components/SetupWizard.tsx`, `SettingsPanel.tsx`, `models.tsx`; API types/client: `src/lib/types.ts`, `api.ts`.
 - Shell: `src-tauri/src/` (Rust supervises the Python sidecar). The sidecar passes `EXAN_RUNTIME_DIR` and `EXAN_MODELS_DIR` to the engine.
 - Engine: `sidecar/exan_sidecar/` (FastAPI, grading, OCR parsing). Built-in runtime: `engine/llamacpp.py` and `model_store.py`; pinned model catalog and Hugging Face SHA-256 values: `engine/models.json`.
 - Runtime binaries are fetched, checksum-verified build artifacts in `src-tauri/runtime/`; do not commit runtime binaries or model weights. Model downloads require explicit consent and are resumable. Ollama and OpenAI-compatible servers remain optional alternatives.
-- Cross-platform overview: `docs/desktop/DESKTOP_APPS.md`; detailed setup and troubleshooting: each app's `README.md`.
+- Cross-platform overview: `exan-desktop/docs/DESKTOP_APPS.md`; per-OS guides: `exan-desktop/docs/MACOS.md` and `WINDOWS.md`; top-level READMEs in each product folder.
 
 ## Model caveat (current owner decision pending)
 
@@ -29,7 +30,7 @@ The smallest model, Granite-Docling 258M, is currently recommended because the o
 
 ## Checks
 
-From either app directory (Node 22+, Python 3.11+, Rust; platform native build tools required):
+From `exan-desktop/` (Node 22+, Python 3.11+, Rust; platform native build tools required):
 
 ```sh
 npm ci
@@ -41,4 +42,4 @@ npm run package # installer/bundle
 
 `npm run check` covers TypeScript, oxlint, Vitest, Ruff, and pytest. Also use `(cd src-tauri && cargo fmt --check && cargo clippy --all-targets --locked -- -D warnings && cargo test --locked)` for Rust changes. Windows additionally checks the generated installer model list. `npm run setup` fetches the platform llama.cpp runtime; `npm run fetch:runtime` refreshes it.
 
-Keep loopback services on `127.0.0.1`, keep runtime API keys out of command-line arguments, never bundle model weights, and test shared engine/UI changes in both app folders.
+Keep loopback services on `127.0.0.1`, keep runtime API keys out of command-line arguments, never bundle model weights, and test engine/UI changes so they work on both macOS and Windows (watch for the two i18n string overrides and HEIC-only support).

@@ -12,10 +12,10 @@ You are a specialized Docker engineer for the Exan project. Your job is to creat
 
 Focus on:
 
-- `docker-compose.yml` at repo root
-- `Dockerfile.auth` (Node/Express auth service)
-- `inference/Dockerfile` (Python/FastAPI inference service)
-- `webapp/Dockerfile` and `webapp/nginx.conf` (React frontend served by Nginx)
+- `exan-web/docker-compose.yml` (cloud product root)
+- `exan-web/Dockerfile.auth` (Node/Express auth service)
+- `exan-web/inference/Dockerfile` (Python/FastAPI inference service)
+- `exan-web/webapp/Dockerfile` and `exan-web/webapp/nginx.conf` (React frontend served by Nginx)
 - Container networking, service names, ports, env files, and volume mounts
 
 ## Constraints
@@ -28,12 +28,12 @@ Focus on:
 
 ## Approach
 
-1. **Inspect before changing**: read `docker-compose.yml`, the relevant `Dockerfile(s)`, `.dockerignore` (if any), and any docs mentioning Docker.
+1. **Inspect before changing**: read `exan-web/docker-compose.yml`, the relevant `Dockerfile(s)`, `.dockerignore` (if any), and any docs mentioning Docker.
 2. **Follow project conventions**: use `python:3.11-slim` for Python, `node:20-alpine` for Node, `nginx:alpine` for static serving, `mongo:7` for the database.
 3. **Keep images minimal**: prefer specific base tags, clean caches, and copy only required files.
 4. **Validate with tooling**:
    - `docker compose config` to validate compose syntax.
-   - `docker build -f <Dockerfile> <context>` for each changed image.
+   - `docker build -f <Dockerfile> <context>` for each changed image (the auth-server builds from `exan-web/` context).
    - `docker compose build [--no-cache]` when multiple services change.
    - `docker compose up -d` and health checks when runtime verification is needed.
 5. **Cross-service awareness**: changes to service names, ports, or env vars must stay consistent across `docker-compose.yml`, Dockerfiles, frontend proxy settings, and `nginx.conf`.

@@ -66,7 +66,7 @@ jobs:
           if [ -n "$GCP_CREDENTIALS_JSON" ]; then
             exit 0
           fi
-          echo "::error::No GCP authentication method configured. Set either (GCP_WIF_PROVIDER and GCP_WIF_SERVICE_ACCOUNT) or GCP_CREDENTIALS_JSON as GitHub Actions repository secrets. See docs/deployment/STEP_3_SECRETS_SETUP.md for setup instructions." >&2
+          echo "::error::No GCP authentication method configured. Set either (GCP_WIF_PROVIDER and GCP_WIF_SERVICE_ACCOUNT) or GCP_CREDENTIALS_JSON as GitHub Actions repository secrets. See exan-web/docs/deployment/STEP_3_SECRETS_SETUP.md for setup instructions." >&2
           exit 1
 
       - name: Authenticate to Google Cloud (Workload Identity Federation)
@@ -95,7 +95,7 @@ jobs:
       - name: Build and Push auth-server image
         run: |
           IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/auth-server"
-          docker build -f Dockerfile.auth -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" .
+          docker build -f exan-web/Dockerfile.auth -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" exan-web
           docker push --all-tags "${IMAGE}"
 
       - name: Deploy auth-server to Cloud Run
@@ -118,7 +118,7 @@ jobs:
       - name: Build and Push inference image
         run: |
           IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/inference"
-          docker build -f inference/Dockerfile -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" ./inference
+          docker build -f exan-web/inference/Dockerfile -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" ./exan-web/inference
           docker push --all-tags "${IMAGE}"
 
       - name: Deploy inference to Cloud Run
@@ -161,7 +161,7 @@ jobs:
       - name: Build and Push webapp image
         run: |
           IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/webapp"
-          docker build -f webapp/Dockerfile -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" ./webapp
+          docker build -f exan-web/webapp/Dockerfile -t "${IMAGE}:${{ github.sha }}" -t "${IMAGE}:latest" ./exan-web/webapp
           docker push --all-tags "${IMAGE}"
 
       - name: Deploy webapp to Cloud Run

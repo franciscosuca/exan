@@ -22,17 +22,17 @@ For this feature, "mount the token" should mean **attach a credential to an auth
 
 ### Frontend
 
-- `webapp/src/components/ProviderSelector.tsx` displays only providers whose `available` field is already true. A user therefore cannot select an unconfigured cloud provider and enter a credential.
-- `webapp/src/components/ExamComparison.tsx` and `webapp/src/components/GrammarEvaluation.tsx` each own provider state independently.
-- `webapp/src/lib/api.ts` sends only a provider name with inference requests. It has no credential, connection, model, or reasoning fields.
-- The Exan JWT is stored by `webapp/src/auth.api.ts`, but inference requests do not send it.
+- `exan-web/webapp/src/components/ProviderSelector.tsx` displays only providers whose `available` field is already true. A user therefore cannot select an unconfigured cloud provider and enter a credential.
+- `exan-web/webapp/src/components/ExamComparison.tsx` and `exan-web/webapp/src/components/GrammarEvaluation.tsx` each own provider state independently.
+- `exan-web/webapp/src/lib/api.ts` sends only a provider name with inference requests. It has no credential, connection, model, or reasoning fields.
+- The Exan JWT is stored by `exan-web/webapp/src/auth.api.ts`, but inference requests do not send it.
 - Authentication currently gates the React UI, not the FastAPI endpoints.
 
 ### Inference service
 
-- `inference/app/config.py` loads provider credentials and most model defaults from process environment variables.
+- `exan-web/inference/app/config.py` loads provider credentials and most model defaults from process environment variables.
 - Gemini and Claude model IDs are hard-coded in their provider classes. GPT, Ollama, and LM Studio use process-level settings.
-- `inference/app/providers/registry.py` considers a cloud provider available when an environment key is non-empty. It does not verify the credential with the provider.
+- `exan-web/inference/app/providers/registry.py` considers a cloud provider available when an environment key is non-empty. It does not verify the credential with the provider.
 - Local availability checks ping Ollama and LM Studio, but their model catalogs are discarded.
 - `BaseProvider` has no credential injection, model discovery, model selection, capability, or reasoning-effort contract.
 - All provider instances are created from global settings.
@@ -44,7 +44,7 @@ For this feature, "mount the token" should mean **attach a credential to an auth
 - The Express service issues a 24-hour JWT containing `userId` and `username`.
 - Provider credentials are not represented in the user model.
 - Nginx routes `/api/auth/*` to `auth-server` and all other `/api/*` requests to `inference`.
-- `docker-compose.yml` loads `inference/.env` into the inference process. Those values are deployment-wide, not per-user.
+- `exan-web/docker-compose.yml` loads `exan-web/inference/.env` into the inference process. Those values are deployment-wide, not per-user.
 - Inference, auth, and MongoDB ports are published directly. Nginx is therefore not an enforced security boundary in the current Compose setup.
 
 ## Recommended Runtime Flow
@@ -94,7 +94,7 @@ Local providers skip credential entry but still require availability and model d
 
 | Method | How it works | Pros | Cons | Fit for Exan |
 | --- | --- | --- | --- | --- |
-| Deployment environment variables | Operator puts shared keys in `inference/.env` | Already implemented; simplest deployment | Shared by all users; no runtime selection; weak rotation; environment exposure | Keep as an optional operator-managed mode, not the requested feature |
+| Deployment environment variables | Operator puts shared keys in `exan-web/inference/.env` | Already implemented; simplest deployment | Shared by all users; no runtime selection; weak rotation; environment exposure | Keep as an optional operator-managed mode, not the requested feature |
 | Docker secret file | Container reads a shared key from `/run/secrets` | Better than plain environment variables; works for operator-managed keys | Still service-wide and startup-oriented; not per-user; reload/rotation required | Useful for production deployment defaults only |
 | Credential on every inference request | Browser includes the provider token with every upload | Stateless server; minimal storage | Repeated secret transmission; easy to log accidentally; couples secrets to large multipart requests | Acceptable only for a constrained prototype over TLS |
 | Browser-to-provider calls | Browser calls the provider directly | Exan backend never stores the token | Browser exposure; provider CORS limitations; duplicated adapters; bypasses server controls; poor local-provider support | Not recommended |
@@ -306,15 +306,15 @@ Do not model effort as one mandatory global enum. Return provider/model-specific
 
 Likely files:
 
-- `webapp/src/App.tsx`
-- `webapp/src/components/ProviderSelector.tsx`
+- `exan-web/webapp/src/App.tsx`
+- `exan-web/webapp/src/components/ProviderSelector.tsx`
 - a new provider setup component or hook
-- `webapp/src/components/ExamComparison.tsx`
-- `webapp/src/components/GrammarEvaluation.tsx`
-- `webapp/src/lib/api.ts`
-- `webapp/src/auth.api.ts`
-- `webapp/src/lib/i18n.tsx`
-- component tests under `webapp/src/test/`
+- `exan-web/webapp/src/components/ExamComparison.tsx`
+- `exan-web/webapp/src/components/GrammarEvaluation.tsx`
+- `exan-web/webapp/src/lib/api.ts`
+- `exan-web/webapp/src/auth.api.ts`
+- `exan-web/webapp/src/lib/i18n.tsx`
+- component tests under `exan-web/webapp/src/test/`
 
 Changes:
 
@@ -331,15 +331,15 @@ Changes:
 
 Likely files:
 
-- `inference/app/main.py`
-- `inference/app/config.py`
-- `inference/app/models/__init__.py`
-- `inference/app/providers/__init__.py`
-- `inference/app/providers/registry.py`
+- `exan-web/inference/app/main.py`
+- `exan-web/inference/app/config.py`
+- `exan-web/inference/app/models/__init__.py`
+- `exan-web/inference/app/providers/__init__.py`
+- `exan-web/inference/app/providers/registry.py`
 - all concrete provider adapters
 - new authentication and provider-connection modules
-- `inference/pyproject.toml`
-- tests under `inference/tests/`
+- `exan-web/inference/pyproject.toml`
+- tests under `exan-web/inference/tests/`
 
 Changes:
 
@@ -371,9 +371,9 @@ Only if saved credentials are added later:
 
 Likely files:
 
-- `docker-compose.yml`
-- `webapp/nginx.conf`
-- `webapp/vite.config.ts`
+- `exan-web/docker-compose.yml`
+- `exan-web/webapp/nginx.conf`
+- `exan-web/webapp/vite.config.ts`
 - environment example files
 
 Changes:
